@@ -1,0 +1,23 @@
+#summary Run instructions.
+
+==Checkout==
+
+  * Go to Source page http://code.google.com/p/minimmorts/source/checkout and follow instructions to get your copy of server and client.
+
+==Download third-party stuff==
+
+  * Go to Downloads page http://code.google.com/p/minimmorts/downloads/list and download latest version of *Server lib* and *Client sprites*. Follow instructions at the downloads description to unpack archives to right place.
+
+==Run server==
+
+  * You can compile server manually but its not recommended even for advanced users. Its better to use NetBeans IDE and just open ready project in the server/ directory. Note what project folder name contains version of NetBeans IDE where project was created. Newer projects often cannot be opened in older NetBeans IDE.
+
+  * Copy file config.xml from server/ directory to file config-home.xml in the directory of project what you open _(for example in NetBeans-7.1.2 project/ directory)_
+
+  * After you open project just set project as main project and run it.
+
+==Run client==
+
+  * When server started it listen port on your localhost. Go to client folder client/HTML5/src/ and open file client.html in your browser.
+
+Enjoy :)
