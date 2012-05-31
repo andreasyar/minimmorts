@@ -108,7 +108,7 @@ public class Server {
 
                             if (client.getLastConfirmedStep() == step) {
                                 // Клиент прислал два или более отчётов за один и тот же шаг? Тут явно что-то не так.
-                                messageManager.sendMessage(client, messageManager.createErrorMessage("Dublicated state report."));
+                                messageManager.sendMessage(client, MessageManager.createErrorMessage("Dublicated state report."));
                                 clientsToDisconnect.add(channel);
                                 continue;
                             }
@@ -116,7 +116,7 @@ public class Server {
                                 client.setLastConfirmedStep(step);
                                 addAllActionsRequests(client, stateReportMessage.getActions());
                             } else {
-                                messageManager.sendMessage(client, messageManager.createErrorMessage(SimpleErrorService.getLastError()));
+                                messageManager.sendMessage(client, MessageManager.createErrorMessage(SimpleErrorService.getLastError()));
                                 clientsToDisconnect.add(channel);
                             }
                         } else if (message instanceof LoginMessage) {
@@ -192,13 +192,13 @@ public class Server {
 
                         notifyAllOtherClients(
                             client,
-                            messageManager.createNewUnitMessage(
+                            MessageManager.createNewUnitMessage(
                                 unitManager.createUnit(client.getId(), 4, 4)
                             )
                         );
                         notifyAllOtherClients(
                             client,
-                            messageManager.createNewUnitMessage(
+                            MessageManager.createNewUnitMessage(
                                 unitManager.createUnit(client.getId(), 5, 5)
                             )
                         );
@@ -231,8 +231,8 @@ public class Server {
                             new WelcomeMessage(
                                 client.getId(),
                                 step,
-                                messageManager.createAllNewUnitMessage(unitManager.getAllUnits()),
-                                messageManager.createAllMoveMessage(movementManager.getAllMovements())
+                                MessageManager.createAllNewUnitMessage(unitManager.getAllUnits()),
+                                MessageManager.createAllMoveMessage(movementManager.getAllMovements())
                             )
                         );
 

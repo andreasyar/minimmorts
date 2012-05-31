@@ -18,31 +18,33 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 /**
- *
+ * Обработчик сообщений. Принимает сообщения, расшифровывает сообщения, создаёт
+ * сообщения, зашифровывает сообщения, отправляет сообщения.
  * @author Sorc
  */
 public class MessageManager extends SimpleChannelUpstreamHandler {
     private static final Logger logger = Logger.getLogger(MessageManager.class.getName());
 
+    /**
+     * Список входящих сообщений от клиентов.
+     */
     private final LinkedList<InboxMessage> commonInbox = new LinkedList<>();
 
+    /**
+     * Игровой сервер.
+     */
     private Server gameServer;
+    
+    /**
+     * Кодировщик и декодировщик сообщений в JSON.
+     */
     private final Gson gson = new Gson();
 
-    public static StateReportMessage createStateReportMessage(long step, LinkedList<Unit> units, LinkedList<Message> actions) {
-        LinkedList<Message> unitMessages = new LinkedList<>();
-
-        for (Unit u : units) {
-            unitMessages.add(new UnitMessage(u.getOwnerId(), u.getId(), u.getJ(), u.getI()));
-        }
-
-        return new StateReportMessage(step, unitMessages, actions);
-    }
-    
-    public static MoveMessage createMoveMessage(Movement m) {
-        return new MoveMessage(m.getBegStep(), m.getUnit().getId(), m.getJ(), m.getI());
-    }
-
+    /**
+     * Создаёт сообщения об удалении юнитов.
+     * @param removedUnits удалённые юниты
+     * @return Сообщения об удалении юнитов.
+     */
     public static LinkedList<Message> createAllDelUnitMessage(LinkedList<Unit> removedUnits) {
         LinkedList<Message> delUnitMessages = new LinkedList<>();
         for (Unit unit : removedUnits) {
@@ -51,6 +53,70 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return delUnitMessages;
     }
 
+    /**
+     * Создаёт сообщение об ошибке.
+     * @param text текст ошибки
+     * @return Сообщение об ошибке.
+     */
+    public static ErrorMessage createErrorMessage(String text) {
+        return new ErrorMessage(text);
+    }
+
+    /**
+     * Создаёт сообщения о движении.
+     * @param movements движения
+     * @return Сообщения о движении.
+     */
+    public static LinkedList<Message> createAllMoveMessage(LinkedList<Movement> movements) {
+        LinkedList<Message> moveMessages = new LinkedList<>();
+        for (Movement movement : movements) {
+            moveMessages.add(new MoveMessage(movement.getBegStep(), movement.getUnit().getId(), movement.getJ(), movement.getI()));
+        }
+        return moveMessages;
+    }
+
+    /**
+     * Создаёт сообщения о появлении новых юнитов.
+     * @param units новые юниты
+     * @return Сообщения о появлении новых юнитов.
+     */
+    public static LinkedList<Message> createAllNewUnitMessage(LinkedList<Unit> units) {
+        LinkedList<Message> newUnitMessages = new LinkedList<>();
+        for (Unit unit : units) {
+            newUnitMessages.add(new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI()));
+        }
+        return newUnitMessages;
+    }
+    
+    /**
+     * Создаёт сообщение о движении.
+     * @param m движение
+     * @return Сообщение о движении.
+     */
+    public static MoveMessage createMoveMessage(Movement m) {
+        return new MoveMessage(m.getBegStep(), m.getUnit().getId(), m.getJ(), m.getI());
+    }
+
+    /**
+     * Создаёт сообщение о появлении нового юнита.
+     * @param unit новый юнит
+     * @return Сообщение о появлении нового юнита.
+     */
+    public static NewUnitMessage createNewUnitMessage(Unit unit) {
+        return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI());
+    }
+    
+    /**
+     * Обработчик разрыва соединения клиента с сервером.
+     */
+    @Override
+    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
+        gameServer.clientDisconnected(ctx.getChannel());
+    }
+
+    /**
+     * Обработчик получения сервером сообщения от клиента.
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         Object frame = e.getMessage();
@@ -132,52 +198,15 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
             }
         }
     }
-    
-    @Override
-    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-        gameServer.clientDisconnected(ctx.getChannel());
-    }
 
     public void setGameServer(Server gameServer) {
         this.gameServer = gameServer;
     }
 
-    public NewUnitMessage createNewUnitMessage(long ownerId, long id, int j, int i) {
-        return new NewUnitMessage(ownerId, id, j, i);
-    }
-
-    public NewUnitMessage createNewUnitMessage(Unit unit) {
-        return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI());
-    }
-
-    public LinkedList<Message> createAllNewUnitMessage(LinkedList<Unit> units) {
-        LinkedList<Message> newUnitMessages = new LinkedList<>();
-        for (Unit unit : units) {
-            newUnitMessages.add(new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI()));
-        }
-        return newUnitMessages;
-    }
-
-    public LinkedList<Message> createAllMoveMessage(LinkedList<Movement> movements) {
-        LinkedList<Message> moveMessages = new LinkedList<>();
-        for (Movement movement : movements) {
-            moveMessages.add(new MoveMessage(movement.getBegStep(), movement.getUnit().getId(), movement.getJ(), movement.getI()));
-        }
-        return moveMessages;
-    }
-
-    public LinkedList<DelUnitMessage> createDelUnitMessages(LinkedList<Unit> excessUnits) {
-        LinkedList<DelUnitMessage> delUnitMessages = new LinkedList<>();
-        for (Unit u : excessUnits) {
-            delUnitMessages.add(new DelUnitMessage(u.getId()));
-        }
-        return delUnitMessages;
-    }
-
-    public ErrorMessage createErrorMessage(String text) {
-        return new ErrorMessage(text);
-    }
-
+    /**
+     * Возвращает входящие сообщения от клиентов, очищая список входящих сообщений.
+     * @return Входящие сообщения от клиентов.
+     */
     public LinkedList<InboxMessage> takeFromInbox() {
         LinkedList<InboxMessage> clone;
 
@@ -189,6 +218,12 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return clone;
     }
 
+    /**
+     * Отправляет клиенту подтверждение хода.
+     * @param client клиент
+     * @param step номер хода
+     * @param messages уведомления о событиях за подтверждаемый ход
+     */
     public void sendConfirm(Client client, long step, LinkedList<Message> messages) {
         if (!client.isDisconnected()) {
             String packet = new ConfirmMessage(step, messages).toJSON();
@@ -199,6 +234,11 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         }
     }
 
+    /**
+     * Отправляет клиенту сообщение.
+     * @param client клиент
+     * @param message сообщение
+     */
     public void sendMessage(Client client, Message message) {
         if (!client.isDisconnected()) {
             String packet = message.toJSON();
