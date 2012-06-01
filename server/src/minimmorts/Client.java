@@ -4,21 +4,17 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.logging.Logger;
 import minimmorts.messages.Message;
-import minimmorts.units.Unit;
 import org.jboss.netty.channel.Channel;
 
 /**
  *
  * @author Sorc
  */
-
 public class Client {
     private static final Logger logger = Logger.getLogger(Client.class.getName());
     
     private long Id;
     private final LinkedList<Message> outbox = new LinkedList<>();
-    private final LinkedList<Unit> units = new LinkedList<>();
-    private final LinkedList<Message> requestedActions = new LinkedList<>();
 
     /**
      * Номер последнего шага, за который отчитался клиент.
@@ -40,11 +36,6 @@ public class Client {
      */
     private boolean disconnected;
 
-    Client() {
-        this.Id = IdGenerator.generateId();
-        this.channel = null;
-    }
-
     Client(Channel channel) {
         this.Id = IdGenerator.generateId();
         this.channel = channel;
@@ -54,28 +45,12 @@ public class Client {
         return Id;
     }
 
-    LinkedList<Message> getOutbox() {
-        return outbox;
-    }
-
-    LinkedList<Unit> getUnits() {
-        return units;
-    }
-
-    LinkedList<Message> getRequestedActions() {
-        return requestedActions;
-    }
-
     void addToOubox(Message m) {
         outbox.add(m);
     }
 
     void addAllToOubox(Collection<Message> m) {
         outbox.addAll(m);
-    }
-
-    LinkedList<Message> getFromOutbox() {
-        return (LinkedList<Message>) outbox.clone();
     }
 
     LinkedList<Message> takeFromOutbox() {

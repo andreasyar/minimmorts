@@ -11,10 +11,7 @@ import minimmorts.Client;
 import minimmorts.Server;
 import minimmorts.movement.Movement;
 import minimmorts.units.Unit;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 /**
@@ -162,9 +159,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     }
                     break;
                 case "STATE":
-                    if (!gameServer.isClientExists(ctx.getChannel())) {
+                    /*if (!gameServer.isClientExists(ctx.getChannel())) {
                         break;
-                    }
+                    }*/
                     
                     long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
                     JsonArray units = messageFields.get(2).getAsJsonArray();
@@ -236,32 +233,24 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
     /**
      * Отправляет клиенту подтверждение хода.
-     * @param client клиент
+     * 
      * @param step номер хода
      * @param messages уведомления о событиях за подтверждаемый ход
      */
-    public void sendConfirm(Client client, long step, LinkedList<Message> messages) {
-        if (!client.isDisconnected()) {
-            String jsonMessage = new ConfirmMessage(step, messages).toJSON();
-            //logger.log(Level.INFO, "Attempt to send confirm: {0}", jsonMessage);
-            client.getChannel().write(new TextWebSocketFrame(jsonMessage));
-        } else {
-            logger.log(Level.WARNING, "Can't send message to disconnected client.");
-        }
+    public void sendConfirm(Channel channel, long step, LinkedList<Message> messages) {
+        String jsonMessage = new ConfirmMessage(step, messages).toJSON();
+        //logger.log(Level.INFO, "Attempt to send confirm: {0}", jsonMessage);
+        channel.write(new TextWebSocketFrame(jsonMessage));
     }
 
     /**
      * Отправляет клиенту сообщение.
-     * @param client клиент
+     * 
      * @param message сообщение
      */
-    public void sendMessage(Client client, Message message) {
-        if (!client.isDisconnected()) {
-            String jsonMessage = message.toJSON();
-            //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
-            client.getChannel().write(new TextWebSocketFrame(jsonMessage));
-        } else {
-            logger.log(Level.WARNING, "Can't send message to disconnected client.");
-        }
+    public void sendMessage(Channel channel, Message message) {
+        String jsonMessage = message.toJSON();
+        //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
+        channel.write(new TextWebSocketFrame(jsonMessage));
     }
 }

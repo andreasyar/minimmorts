@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
+import minimmorts.client.ClientManager;
 import minimmorts.db.DBWorker;
 import minimmorts.messages.MessageManager;
 import minimmorts.websocketserver.WebSocketServerPipelineFactory;
@@ -50,7 +51,8 @@ public class ServerLauncher {
         // Create game server.
         
         MessageManager messageManager = new MessageManager();
-        gameServer = new Server();
+        ClientManager clientManager = new ClientManager();
+        gameServer = new Server(clientManager);
         messageManager.setGameServer(gameServer);
         gameServer.setMessageManager(messageManager);
         logger.log(Level.INFO, "Game server created.");
