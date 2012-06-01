@@ -216,6 +216,11 @@ public class Server {
 
                         messageManager.sendConfirm(client, step, client.takeFromOutbox());
                     }
+                    
+                    /*
+                     * Удалим юнитов, помеченных на удаление.
+                     */
+                    unitManager.removeMarkedUnits();
 
                     /*
                      * После всех действий можно обработать новых клиентов.

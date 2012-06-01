@@ -11,6 +11,7 @@ public class Unit {
     private long id;
     private int j;
     private int i;
+    private transient boolean deleted = false;
 
     public Unit(long ownerId, long id, int j, int i) {
         this.ownerId = ownerId;
@@ -41,6 +42,14 @@ public class Unit {
 
     public void setI(int i) {
         this.i = i;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void markDeleted() {
+        this.deleted = true;
     }
     
     public String toJSON() {

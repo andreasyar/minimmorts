@@ -63,14 +63,6 @@ public class UnitManager {
         return true;
     }
 
-    public void removeUnits(LinkedList<Unit> units) {
-        synchronized (allUnits) {
-            for (Unit u : units) {
-                allUnits.remove(u);
-            }
-        }
-    }
-
     public LinkedList<Unit> removeUnitsByOwnerId(long ownerId) {
         LinkedList<Unit> removedUnits = new LinkedList<>();
         
@@ -81,18 +73,31 @@ public class UnitManager {
                 u = (Unit) i.next();
                 if (u.getOwnerId() == ownerId) {
                     removedUnits.add(u);
-                    i.remove();
+                    u.markDeleted();
                 }
             }
         }
         
         return removedUnits;
     }
+    
+    public void removeMarkedUnits() {
+        synchronized (allUnits) {
+            Iterator i = allUnits.iterator();
+            Unit u;
+            while (i.hasNext()) {
+                u = (Unit) i.next();
+                if (u.isDeleted()) {
+                    i.remove();
+                }
+            }
+        }
+    }
 
     public Unit getById(Long unitId) {
         synchronized (allUnits) {
             for (Unit u : allUnits) {
-                if (u.getId() == unitId) {
+                if (u.getId() == unitId && !u.isDeleted()) {
                     return u;
                 }
             }
@@ -101,38 +106,14 @@ public class UnitManager {
         return null;
     }
 
-    public LinkedList<Unit> getMissedUnits(LinkedList<Unit> units) {
-        LinkedList<Unit> newUnits = new LinkedList<>();
-
+    public LinkedList<Unit> getAllUnits() {
+        LinkedList<Unit> clone = new LinkedList<>();
         synchronized (allUnits) {
             for (Unit u : allUnits) {
-                if (!units.contains(u)) {
-                    newUnits.add(u);
+                if (!u.isDeleted()) {
+                    clone.add(u);
                 }
             }
-        }
-
-        return newUnits;
-    }
-
-    public LinkedList<Unit> getExcessUnits(LinkedList<Unit> units) {
-        LinkedList<Unit> excessUnits = new LinkedList<>();
-
-        synchronized (allUnits) {
-            for (Unit u : units) {
-                if (!allUnits.contains(u)) {
-                    excessUnits.add(u);
-                }
-            }
-        }
-
-        return excessUnits;
-    }
-
-    public LinkedList<Unit> getAllUnits() {
-        LinkedList<Unit> clone;
-        synchronized (allUnits) {
-            clone = (LinkedList<Unit>) allUnits.clone();
         }
         return clone;
     }
