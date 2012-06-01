@@ -7,14 +7,18 @@ package minimmorts.messages;
 public class MoveMessage implements Message {
     private long begStep;
     private long unitId;
-    private int j;
-    private int i;
+    private int begJ;
+    private int begI;
+    private int endJ;
+    private int endI;
 
-    public MoveMessage(long begStep, long unitId, int j, int i) {
+    public MoveMessage(long begStep, long unitId, int begJ, int begI, int endJ, int endI) {
         this.begStep = begStep;
         this.unitId = unitId;
-        this.j = j;
-        this.i = i;
+        this.begJ = begJ;
+        this.begI = begI;
+        this.endJ = endJ;
+        this.endI = endI;
     }
 
     public long getBegStep() {
@@ -25,16 +29,29 @@ public class MoveMessage implements Message {
         return unitId;
     }
 
-    public int getJ() {
-        return j;
+    public int getBegJ() {
+        return begJ;
     }
 
-    public int getI() {
-        return i;
+    public int getBegI() {
+        return begI;
+    }
+
+    public int getEndJ() {
+        return endJ;
+    }
+
+    public int getEndI() {
+        return endI;
     }
 
     @Override
     public String toJSON() {
-        return "[\"MOVE\",{\"begStep\":" + begStep + ",\"unitId\":" + unitId + ",\"j\":" + j + ",\"i\":" + i + "}]";
+        return "[\"MOVE\",{\"begStep\":" + begStep
+                       + ",\"unitId\":" + unitId
+                       + ",\"begJ\":" + begJ
+                       + ",\"begI\":" + begI
+                       + ",\"endJ\":" + endJ
+                       + ",\"endI\":" + endI + "}]";
     }
 }

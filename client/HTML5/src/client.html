@@ -237,7 +237,16 @@ function scrOnMouseup(e) {
             neighbourCells = getNeighboursCells(neighbourCells);
         }
         for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
-            actions.push(new MoveMessage(selected_units[i].getId(), neighbourCells[i].j, neighbourCells[i].i));
+            actions.push(
+                new MoveMessage(
+                    step,
+                    selected_units[i].getId(),
+                    selected_units[i].getJ(),
+                    selected_units[i].getI(),
+                    neighbourCells[i].j,
+                    neighbourCells[i].i
+                )
+            );
         }
     }
 }
@@ -269,7 +278,14 @@ function syncLoop() {
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
-                movementManager.startMovement(step, getUnitById(stored_actions[i].unitId), stored_actions[i].j, stored_actions[i].i);
+                movementManager.startMovement(
+                    step,
+                    getUnitById(stored_actions[i].unitId),
+                    stored_actions[i].begJ,
+                    stored_actions[i].begI,
+                    stored_actions[i].endJ,
+                    stored_actions[i].endI
+                );
                 console.log("Movement created on step ", step);
                 break;
         }

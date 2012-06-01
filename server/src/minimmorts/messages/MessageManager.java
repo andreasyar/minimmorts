@@ -70,7 +70,16 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public static LinkedList<Message> createAllMoveMessage(LinkedList<Movement> movements) {
         LinkedList<Message> moveMessages = new LinkedList<>();
         for (Movement movement : movements) {
-            moveMessages.add(new MoveMessage(movement.getBegStep(), movement.getUnit().getId(), movement.getJ(), movement.getI()));
+            moveMessages.add(
+                new MoveMessage(
+                    movement.getBegStep(),
+                    movement.getUnit().getId(),
+                    movement.getBegJ(),
+                    movement.getBegI(),
+                    movement.getEndJ(),
+                    movement.getEndI()
+                )
+            );
         }
         return moveMessages;
     }
@@ -94,7 +103,14 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      * @return Сообщение о движении.
      */
     public static MoveMessage createMoveMessage(Movement m) {
-        return new MoveMessage(m.getBegStep(), m.getUnit().getId(), m.getJ(), m.getI());
+        return new MoveMessage(
+            m.getBegStep(),
+            m.getUnit().getId(),
+            m.getBegJ(),
+            m.getBegI(),
+            m.getEndJ(),
+            m.getEndI()
+        );
     }
 
     /**
@@ -226,9 +242,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     public void sendConfirm(Client client, long step, LinkedList<Message> messages) {
         if (!client.isDisconnected()) {
-            String packet = new ConfirmMessage(step, messages).toJSON();
-            logger.log(Level.INFO, "Attempt to send confirm: {0}", packet);
-            client.getChannel().write(new TextWebSocketFrame(packet));
+            String jsonMessage = new ConfirmMessage(step, messages).toJSON();
+            //logger.log(Level.INFO, "Attempt to send confirm: {0}", jsonMessage);
+            client.getChannel().write(new TextWebSocketFrame(jsonMessage));
         } else {
             logger.log(Level.WARNING, "Can't send message to disconnected client.");
         }
@@ -241,9 +257,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     public void sendMessage(Client client, Message message) {
         if (!client.isDisconnected()) {
-            String packet = message.toJSON();
-            logger.log(Level.INFO, "Attempt to send packet: {0}", packet);
-            client.getChannel().write(new TextWebSocketFrame(packet));
+            String jsonMessage = message.toJSON();
+            //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
+            client.getChannel().write(new TextWebSocketFrame(jsonMessage));
         } else {
             logger.log(Level.WARNING, "Can't send message to disconnected client.");
         }

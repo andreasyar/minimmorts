@@ -64,7 +64,7 @@ function LogoutMessage() {
 /**
  * Требование хода.
  */
-function MoveMessage(unitId, j, i) {
+function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -77,25 +77,40 @@ function MoveMessage(unitId, j, i) {
     this.type = "MOVE";
 
     /**
+     * Номер шага начала движения (игнорируется сервером).
+     */
+    this.begStep = begStep;
+
+    /**
      * Идентификатор движущегося юнита.
      */
     this.unitId = unitId;
 
     /**
+     * j-индекс клетки отправления (игнорируется сервером).
+     */
+    this.begJ = begJ;
+
+    /**
+     * i-индекс клетки отправления (игнорируется сервером).
+     */
+    this.begI = begI;
+
+    /**
      * j-индекс клетки назначения.
      */
-    this.j = j;
+    this.endJ = endJ;
 
     /**
      * i-индекс клетки назначения.
      */
-    this.i = i;
+    this.endI = endI;
 
     /**
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {unitId: this.unitId, j: this.j, i: this.i});
+        return new Array(this.type, {unitId: this.unitId, begJ: this.begJ, begI: this.begI, endJ: this.endJ, endI: this.endI});
     }
 
     return this;
@@ -220,19 +235,28 @@ var MESSAGE_HANDLERS = {
         disconnect();
     },
     "WELCOME": function (msg) {
+        // Format:
+        // ["WELCOME",clientId,step,[units],[actions]]
+        
+        var i;
+        
         clientId = msg[1];
         step  = msg[2];
+        camera = new Camera();
+        map = new Map(100, 100);
         
         for (var i in msg[3]) {
             MESSAGE_HANDLERS[msg[3][i][0]](msg[3][i]);
+        }
+        
+        for (i in msg[4]) {
+            MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
         
         setTimeout("drawLoop();", 1000 / FPS);
         setTimeout("syncLoop();", 100);
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);
-        camera = new Camera();
-        map = new Map(100, 100);
         hideLoginForm();
     },
     "CONFIRM": function (msg) {
@@ -306,12 +330,19 @@ var MESSAGE_HANDLERS = {
 
         delUnitById(msg[1]);
     },
-    "MOVE": function (msg) {
-        // Example: ["MOVE",{"begStep":237,"unitId":5,"j":13,"i":10}]
+    "MOVE": function (message) {
+        // Example: ["MOVE",{"begStep":237,"unitId":5,"begJ":0,"begI":1,"endJ":13,"endI":10}]
 
-        var move_message = msg[1];
+        var moveMessage = message[1];
 
-        movementManager.startMovement(move_message.begStep, getUnitById(move_message.unitId), move_message.j, move_message.i);
+        movementManager.startMovement(
+            moveMessage.begStep,
+            getUnitById(moveMessage.unitId),
+            moveMessage.begJ,
+            moveMessage.begI,
+            moveMessage.endJ,
+            moveMessage.endI
+        );
     }
 }
 

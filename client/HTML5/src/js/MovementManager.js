@@ -11,14 +11,25 @@ function MovementManager() {
     
     this.movements = new Array();
     
-    this.startMovement = function(step, unit, j, i) {
+    this.startMovement = function(step, unit, begJ, begI, endJ, endI) {
         for (var n in this.movements) {
             if (this.movements[n].getUnit().getId() == unit.getId()) {
                 this.movements.splice(n, 1);
                 break;
             }
         }
-        this.movements.push(new Movement(unit, j, i, 0.4, getPath(new Cell(unit.getI(), unit.getJ(), 0, 0, null), new Cell(i, j, 0, 0, null)), step));
+        this.movements.push(
+            new Movement(
+                unit,
+                begJ,
+                begI,
+                endJ,
+                endI,
+                0.4,
+                getPath(new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null)),
+                step
+            )
+        );
     }
     
     this.updatePositions = function(step) {

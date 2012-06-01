@@ -172,7 +172,7 @@ public class Server {
 
                         if (action instanceof MoveMessage) {
                             moveMessage = (MoveMessage) action;
-                            movement = movementManager.startMovement(step, map, unitManager.getById(moveMessage.getUnitId()), moveMessage.getJ(), moveMessage.getI());
+                            movement = movementManager.startMovement(step, map, unitManager.getById(moveMessage.getUnitId()), moveMessage.getEndJ(), moveMessage.getEndI());
                             if (movement != null) {
                                 notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
                             }
@@ -269,7 +269,10 @@ public class Server {
         * Здесь мы не заходим в блок синхронизации, потому что должны
         * немедленно пометить клиента как отключившегося.
         */
-        clientChannelMaps.getClients().get(channel).setDisconnected(true);
+        Client client = clientChannelMaps.getClients().get(channel);
+        if (client != null) {
+            client.setDisconnected(true);
+        }
     }
 
     public MessageManager getMessageManager() {

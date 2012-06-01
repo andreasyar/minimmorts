@@ -1,7 +1,7 @@
 
 // Движение.
 
-function Movement (unit, j, i, speed, path, beg_step) {
+function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -9,8 +9,10 @@ function Movement (unit, j, i, speed, path, beg_step) {
     }
     
     this.unit = unit;
-    this.j = j;
-    this.i = i;
+    this.begJ = begJ;
+    this.begI = begI;
+    this.endJ = endJ;
+    this.endI = endI;
     this.speed = speed;
     var path_array = new Array();
     var cur_path_point = path;
@@ -39,6 +41,15 @@ function Movement (unit, j, i, speed, path, beg_step) {
             this.unit.j = this.path[n].j
             this.unit.i = this.path[n].i
         }
+        console.log(
+            "On step ",
+            step,
+            " is ",
+            (step - this.beg_step),
+            " steps left, so we are at ",
+            n,
+            " cell in the path."
+        )
     }
     
     this.getUnit = function () {

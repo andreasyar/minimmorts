@@ -51,14 +51,14 @@ public class MovementManager {
         }
     }
 
-    private Movement createMovement(long step, Map map, Unit unit, int j, int i, float speed) {
+    private Movement createMovement(long step, Map map, Unit unit, int endJ, int endI, float speed) {
         //Movement m = new Movement(unit, j, i, speed, createPath(unit.getI(), unit.getJ(), i, j, map), step);
-        LinkedList<Point> path = getPath(map, new Cell(unit.getI(), unit.getJ(), 0, 0, null), new Cell(i, j, 0, 0, null));
+        LinkedList<Point> path = getPath(map, new Cell(unit.getI(), unit.getJ(), 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         if (path == null) {
             logger.log(Level.SEVERE, "Path not found!");
             return null;
         }
-        Movement m = new Movement(unit, j, i, speed, path, step);
+        Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
         System.err.print("Path for " + unit.getId() + " ");
         for (Point p : m.getPath()) {
             System.err.print(p + " ");

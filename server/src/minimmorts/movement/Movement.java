@@ -12,8 +12,10 @@ public class Movement {
     private static final Logger logger = Logger.getLogger(MovementManager.class.getName());
 
     private Unit unit;
-    private int j;
-    private int i;
+    private int begJ;
+    private int begI;
+    private int endJ;
+    private int endI;
 
     /**
      * Скорость движения в клетках за шаг.
@@ -24,10 +26,12 @@ public class Movement {
     private long begStep;
     private boolean stopped;
 
-    public Movement(Unit unit, int j, int i, float speed, LinkedList<Point> path, long begStep) {
+    public Movement(Unit unit, int begJ, int begI, int endJ, int endI, float speed, LinkedList<Point> path, long begStep) {
         this.unit = unit;
-        this.j = j;
-        this.i = i;
+        this.begJ = begJ;
+        this.begI = begI;
+        this.endJ = endJ;
+        this.endI = endI;
         this.speed = speed;
         this.path = path;
         this.begStep = begStep;
@@ -38,12 +42,20 @@ public class Movement {
         return unit;
     }
 
-    public int getJ() {
-        return j;
+    public int getBegJ() {
+        return begJ;
     }
 
-    public int getI() {
-        return i;
+    public int getBegI() {
+        return begI;
+    }
+
+    public int getEndJ() {
+        return endJ;
+    }
+
+    public int getEndI() {
+        return endI;
     }
 
     public boolean isStopped() {
