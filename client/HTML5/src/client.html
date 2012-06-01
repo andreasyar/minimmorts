@@ -241,8 +241,8 @@ function scrOnMouseup(e) {
                 new MoveMessage(
                     step,
                     selected_units[i].getId(),
-                    selected_units[i].getJ(),
-                    selected_units[i].getI(),
+                    -1,
+                    -1,
                     neighbourCells[i].j,
                     neighbourCells[i].i
                 )
@@ -273,16 +273,17 @@ function syncLoop() {
     if (awaiting_confirm) {
         return;
     }
-    var i;
+    var i, unit;
     
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
+                unit = getUnitById(stored_actions[i].unitId);
                 movementManager.startMovement(
                     step,
-                    getUnitById(stored_actions[i].unitId),
-                    stored_actions[i].begJ,
-                    stored_actions[i].begI,
+                    unit,
+                    unit.getJ(),
+                    unit.getI(),
                     stored_actions[i].endJ,
                     stored_actions[i].endI
                 );

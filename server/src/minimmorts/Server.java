@@ -385,6 +385,10 @@ public class Server {
                 client = (Client) pair.getValue();
                 if (client.getLastReportedStep() != step) {
                     i.remove();
+                    messageManager.sendMessage(
+                        client,
+                        MessageManager.createErrorMessage("You has been disconnected because report timeout.")
+                    );
                     cleanupClient(client);
                     //client.getChannel().close();    // TODO Наверное это надо сделать где-то в другом месте.
                 }

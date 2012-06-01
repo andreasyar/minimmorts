@@ -27,12 +27,6 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
     
     this.updatePosition = function(step, stopMovementCallback) {
         var n = Math.floor((step - this.beg_step) * this.speed);
-        /*console.log(
-            (step - this.beg_step),
-            (step - this.beg_step) * this.speed,
-            Math.floor((step - this.beg_step) * this.speed),
-            n
-        )*/
         if (n >= this.path.length - 1) {
             this.unit.j = this.path[this.path.length - 1].j
             this.unit.i = this.path[this.path.length - 1].i
@@ -41,15 +35,6 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             this.unit.j = this.path[n].j
             this.unit.i = this.path[n].i
         }
-        console.log(
-            "On step ",
-            step,
-            " is ",
-            (step - this.beg_step),
-            " steps left, so we are at ",
-            n,
-            " cell in the path."
-        )
     }
     
     this.getUnit = function () {
