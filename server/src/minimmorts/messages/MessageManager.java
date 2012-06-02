@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import minimmorts.Server;
 import minimmorts.client.ClientManager;
 import minimmorts.movement.Movement;
 import minimmorts.units.Unit;
@@ -26,8 +25,6 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      * Список входящих сообщений от клиентов.
      */
     private final LinkedList<InboxMessage> commonInbox = new LinkedList<>();
-
-    private Server gameServer;
 
     private final ClientManager clientManager;
     
@@ -251,5 +248,16 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         String jsonMessage = message.toJSON();
         //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
         channel.write(new TextWebSocketFrame(jsonMessage));
+    }
+
+    /**
+     * Отправляет клиенту сообщение об ошибке и отключает клиента от сервера.
+     * @param channel канал
+     * @param message сообщение
+     */
+    public void sendErrorMessage(Channel channel, ErrorMessage message) {
+        String jsonMessage = message.toJSON();
+        //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
+        channel.write(new TextWebSocketFrame(jsonMessage)).addListener(new ChannelTerminator(channel));
     }
 }

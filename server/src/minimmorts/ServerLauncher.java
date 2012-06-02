@@ -4,12 +4,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.SQLException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import minimmorts.client.ClientManager;
 import minimmorts.db.DBWorker;
 import minimmorts.messages.MessageManager;
+import minimmorts.movement.MovementManager;
+import minimmorts.server.ServerMainLoop;
+import minimmorts.units.UnitManager;
 import minimmorts.websocketserver.WebSocketServerPipelineFactory;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -25,9 +31,11 @@ public class ServerLauncher {
     public static void main(String[] args) {
         ServerConfig config;
         DBWorker dbworker;
-        Server gameServer;
         ClientManager clientManager;
         MessageManager messageManager;
+        MovementManager movementManager;
+        UnitManager unitManager;
+        ServerMainLoop serverMainLoop;
 
         // Read config.
         
@@ -54,7 +62,9 @@ public class ServerLauncher {
         
         clientManager = new ClientManager();
         messageManager = new MessageManager(clientManager);
-        gameServer = new Server(clientManager, messageManager);
+        movementManager = new MovementManager();
+        unitManager = new UnitManager();
+        serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
         logger.log(Level.INFO, "Game server created.");
         
         // Starts web server.
@@ -62,12 +72,14 @@ public class ServerLauncher {
         ServerBootstrap bootstrap = new ServerBootstrap(
             new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
         );
-        bootstrap.setPipelineFactory(new WebSocketServerPipelineFactory(gameServer));
+        bootstrap.setPipelineFactory(new WebSocketServerPipelineFactory(messageManager));
         bootstrap.bind(new InetSocketAddress(Integer.parseInt(config.getWebPort())));
         logger.log(Level.INFO, "Web server bind port {0}.", Integer.parseInt(config.getWebPort()));
         
         // Start game server main loop.
         
-        gameServer.start();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
+        logger.log(Level.INFO, "Game server main loop scheduled.");
     }
 }

@@ -144,7 +144,6 @@ public class ClientManager {
         if ( (client = clientsById.get(clientId)) != null) {
             clientsById.remove(clientId);
             clientsByChannel.remove(client.getChannel());
-            client.getChannel().close();
             return true;
         } else {
             return false;

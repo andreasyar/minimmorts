@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.IdGenerator;
-import minimmorts.SimpleErrorService;
+import minimmorts.ErrnoErrorService;
 import minimmorts.messages.Message;
 import minimmorts.messages.UnitMessage;
 
@@ -47,13 +47,13 @@ public class UnitManager {
                         String errorText = "State invalid. Unit id:" + u.getId() +
                             " Server: ownerId:" + u.getOwnerId() + ",j:" + u.getJ() + ",i:" + u.getI() +
                             " Client: ownerId:" + m.getOwnerId() + ",j:" + m.getJ() + ",i:" + m.getI();
-                        SimpleErrorService.setLastError(errorText);
+                        ErrnoErrorService.setErrno(errorText);
                         logger.log(Level.INFO, errorText);
                         return false;
                     }
                 } else {
                     String errorText = "State invalid. Unit id:" + m.getId() + " not found.";
-                    SimpleErrorService.setLastError(errorText);
+                    ErrnoErrorService.setErrno(errorText);
                     logger.log(Level.INFO, errorText);
                     return false;
                 }
