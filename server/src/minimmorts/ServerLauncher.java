@@ -26,6 +26,8 @@ public class ServerLauncher {
         ServerConfig config;
         DBWorker dbworker;
         Server gameServer;
+        ClientManager clientManager;
+        MessageManager messageManager;
 
         // Read config.
         
@@ -50,11 +52,9 @@ public class ServerLauncher {
         
         // Create game server.
         
-        MessageManager messageManager = new MessageManager();
-        ClientManager clientManager = new ClientManager();
-        gameServer = new Server(clientManager);
-        messageManager.setGameServer(gameServer);
-        gameServer.setMessageManager(messageManager);
+        clientManager = new ClientManager();
+        messageManager = new MessageManager(clientManager);
+        gameServer = new Server(clientManager, messageManager);
         logger.log(Level.INFO, "Game server created.");
         
         // Starts web server.
@@ -66,7 +66,7 @@ public class ServerLauncher {
         bootstrap.bind(new InetSocketAddress(Integer.parseInt(config.getWebPort())));
         logger.log(Level.INFO, "Web server bind port {0}.", Integer.parseInt(config.getWebPort()));
         
-        // Start server main loop.
+        // Start game server main loop.
         
         gameServer.start();
     }

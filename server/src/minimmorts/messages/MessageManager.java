@@ -7,8 +7,8 @@ import com.google.gson.JsonParser;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import minimmorts.Client;
 import minimmorts.Server;
+import minimmorts.client.ClientManager;
 import minimmorts.movement.Movement;
 import minimmorts.units.Unit;
 import org.jboss.netty.channel.*;
@@ -27,15 +27,18 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     private final LinkedList<InboxMessage> commonInbox = new LinkedList<>();
 
-    /**
-     * Игровой сервер.
-     */
     private Server gameServer;
+
+    private final ClientManager clientManager;
     
     /**
      * Кодировщик и декодировщик сообщений в JSON.
      */
     private final Gson gson = new Gson();
+
+    public MessageManager(ClientManager clientManager) {
+        this.clientManager = clientManager;
+    }
 
     /**
      * Создаёт сообщения об удалении юнитов.
@@ -124,7 +127,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-        gameServer.clientDisconnected(ctx.getChannel());
+        clientManager.markDisconnected(ctx.getChannel());
     }
 
     /**
@@ -206,14 +209,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     synchronized (commonInbox) {
                         commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
                     }
-                    gameServer.clientReported(ctx.getChannel(), step);
+                    clientManager.setLastReportedStep(ctx.getChannel(), step);
                     break;
             }
         }
-    }
-
-    public void setGameServer(Server gameServer) {
-        this.gameServer = gameServer;
     }
 
     /**
