@@ -78,12 +78,12 @@ public class Movement {
         );*/
         //logger.log(Level.INFO, "n = {0}, path.size() = {1}", new Object[] {n, path.size()});
         if (n >= path.size()) {
-            unit.setJ(path.get(path.size() - 1).getX());
-            unit.setI(path.get(path.size() - 1).getY());
+            unit.setJ(path.get(path.size() - 1).getJ());
+            unit.setI(path.get(path.size() - 1).getI());
             stopped = true;
         } else {
-            unit.setJ(path.get(n).getX());
-            unit.setI(path.get(n).getY());
+            unit.setJ(path.get(n).getJ());
+            unit.setI(path.get(n).getI());
         }
     }
 
