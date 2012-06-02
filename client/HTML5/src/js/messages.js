@@ -254,7 +254,7 @@ var MESSAGE_HANDLERS = {
         }
         
         setTimeout("drawLoop();", 1000 / FPS);
-        setTimeout("syncLoop();", 100);
+        syncLoop();
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);
         hideLoginForm();
@@ -265,8 +265,7 @@ var MESSAGE_HANDLERS = {
                 MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);
             }
             
-            awaiting_confirm = false;
-            setTimeout("syncLoop();", 0);
+            syncLoop();
         } else {
             console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
         }
@@ -335,11 +334,23 @@ var MESSAGE_HANDLERS = {
 
         var moveMessage = message[1];
 
-        movementManager.startMovement(
+        movementManager.startNewMovement(
             moveMessage.begStep,
             getUnitById(moveMessage.unitId),
             moveMessage.begJ,
             moveMessage.begI,
+            moveMessage.endJ,
+            moveMessage.endI
+        );
+    },
+    "MOVEUPDATE": function (message) {
+        // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
+
+        var moveMessage = message[1];
+
+        movementManager.updateMovement(
+            moveMessage.begStep,
+            getUnitById(moveMessage.unitId),
             moveMessage.endJ,
             moveMessage.endI
         );

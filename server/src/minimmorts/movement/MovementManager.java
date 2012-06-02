@@ -1,9 +1,6 @@
 package minimmorts.movement;
 
-import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.map.Map;
@@ -17,14 +14,18 @@ public class MovementManager {
     private static final Logger logger = Logger.getLogger(MovementManager.class.getName());
 
     private final LinkedList<Movement> movements = new LinkedList<>();
-
-    public Movement startMovement(long step, Map map, Unit unit, int j, int i) {
+    
+    public boolean isUnitMove(Unit unit) {
         for (Movement m : movements) {
             if (m.getUnit().equals(unit)) {
-                movements.remove(m);
-                break;
+                return true;
             }
         }
+        
+        return false;
+    }
+
+    public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) {
         Movement movement = createMovement(step, map, unit, j, i, 0.4f);
         if (movement == null) {
             logger.log(Level.SEVERE, "Cant create movement!");
@@ -32,6 +33,44 @@ public class MovementManager {
         }
         movements.add(movement);
         return movement;
+    }
+
+    public Movement updateMovement(long step, Map map, Unit unit, int j, int i) {
+        Movement existedMovement = null;
+        Point nextPoint;
+        Movement updatedMovement;
+        
+        for (Movement m : movements) {
+            if (m.getUnit().equals(unit)) {
+                existedMovement = m;
+                break;
+            }
+        }
+        if (existedMovement == null) {
+            logger.log(Level.SEVERE, "Movement not found.");
+            return null;
+        }
+        if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
+            logger.log(Level.SEVERE, "Next path point not found.");
+            return null;
+        }
+        updatedMovement = createMovement(
+            step,
+            map,
+            existedMovement.getUnit(),
+            nextPoint.getJ(),
+            nextPoint.getI(),
+            j,
+            i,
+            0.4f
+        );
+        if (updatedMovement == null) {
+            logger.log(Level.SEVERE, "Cant create movement!");
+            return null;
+        }
+        movements.set(movements.indexOf(existedMovement), updatedMovement);
+        
+        return updatedMovement;
     }
 
     public void updatePositions(long step) {
@@ -42,6 +81,7 @@ public class MovementManager {
                 if (m.isStopped()) {
                     found = true;
                     movements.remove(m);
+                    logger.log(Level.INFO, "Movement of unit {0} removed on step {1}", new Object[] {m.getUnit().getId(), step});
                     break;
                 }
             }
@@ -52,14 +92,17 @@ public class MovementManager {
     }
 
     private Movement createMovement(long step, Map map, Unit unit, int endJ, int endI, float speed) {
-        //Movement m = new Movement(unit, j, i, speed, createPath(unit.getI(), unit.getJ(), i, j, map), step);
-        LinkedList<Point> path = getPath(map, new Cell(unit.getI(), unit.getJ(), 0, 0, null), new Cell(endI, endJ, 0, 0, null));
+        return createMovement(step, map, unit, unit.getJ(), unit.getI(), endJ, endI, speed);
+    }
+
+    private Movement createMovement(long step, Map map, Unit unit, int begJ, int begI, int endJ, int endI, float speed) {
+        LinkedList<Point> path = getPath(map, new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         if (path == null) {
             logger.log(Level.SEVERE, "Path not found!");
             return null;
         }
         Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
-        System.err.print("Path for " + unit.getId() + " ");
+        System.err.print("Path for " + unit.getId() + " created on step " + step + " ");
         for (Point p : m.getPath()) {
             System.err.print(p + " ");
         }

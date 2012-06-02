@@ -109,6 +109,22 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
             m.getEndI()
         );
     }
+    
+    /**
+     * Создаёт сообщение об обновлении пути движения.
+     * @param m обновлённое движение
+     * @return Сообщение об обновлении пути движения.
+     */
+    public static MoveUpdateMessage createMoveUpdateMessage(Movement m) {
+        return new MoveUpdateMessage(
+            m.getBegStep(),
+            m.getUnit().getId(),
+            m.getBegJ(),
+            m.getBegI(),
+            m.getEndJ(),
+            m.getEndI()
+        );
+    }
 
     /**
      * Создаёт сообщение о появлении нового юнита.

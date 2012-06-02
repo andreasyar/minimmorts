@@ -1,6 +1,8 @@
 package minimmorts.movement;
 
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.units.Unit;
 
@@ -9,7 +11,7 @@ import minimmorts.units.Unit;
  * @author Sorc
  */
 public class Movement {
-    private static final Logger logger = Logger.getLogger(MovementManager.class.getName());
+    private static final Logger logger = Logger.getLogger(Movement.class.getName());
 
     private Unit unit;
     private int begJ;
@@ -68,26 +70,36 @@ public class Movement {
 
     void updatePosition(long step) {
         int n = (int) Math.floor(((double) step - (double) begStep) * (double) speed);
-        /*logger.log(Level.INFO, "{0} {1} {2} {3}",
-            new Object[] {
-                ((double) step - (double) begStep),
-                ((double) step - (double) begStep) * (double) speed,
-                Math.floor(((double) step - (double) begStep) * (double) speed),
-                n
-            }
-        );*/
-        //logger.log(Level.INFO, "n = {0}, path.size() = {1}", new Object[] {n, path.size()});
-        if (n >= path.size()) {
+        if (n >= path.size() - 1) {
             unit.setJ(path.get(path.size() - 1).getJ());
             unit.setI(path.get(path.size() - 1).getI());
+            //logger.log(Level.INFO, "Unit {0} comes to [{1}, {2}] on step {3} Final", new Object[] {unit.getId(), unit.getJ(), unit.getI(), step});
             stopped = true;
         } else {
             unit.setJ(path.get(n).getJ());
             unit.setI(path.get(n).getI());
+            //logger.log(Level.INFO, "Unit {0} comes to [{1}, {2}] on step {3}", new Object[] {unit.getId(), unit.getJ(), unit.getI(), step});
         }
     }
 
     public LinkedList<Point> getPath() {
         return path;
+    }
+
+    Point getNextPathPoint(int j, int i) {
+        Iterator pathIterator = path.iterator();
+        Point p;
+        while (pathIterator.hasNext()) {
+            p = (Point) pathIterator.next();
+            if (p.getJ() == j && p.getI() == i) {
+                if (pathIterator.hasNext()) {
+                    return (Point) pathIterator.next();
+                } else {
+                    return p;
+                }
+            }
+        }
+        
+        return null;
     }
 }

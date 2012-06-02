@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import minimmorts.IdGenerator;
 import minimmorts.ErrnoErrorService;
+import minimmorts.IdGenerator;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.map.Map;
@@ -168,9 +168,32 @@ public class ServerMainLoop implements Runnable {
             action = actionRequest.getRequest();
             if (action instanceof MoveMessage) {
                 moveMessage = (MoveMessage) action;
-                movement = movementManager.startMovement(step, map, unitManager.getById(moveMessage.getUnitId()), moveMessage.getEndJ(), moveMessage.getEndI());
-                if (movement != null) {
-                    clientManager.notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
+                if (movementManager.isUnitMove(unitManager.getById(moveMessage.getUnitId()))) {
+                    movement = movementManager.updateMovement(
+                        step,
+                        map,
+                        unitManager.getById(moveMessage.getUnitId()),
+                        moveMessage.getEndJ(),
+                        moveMessage.getEndI()
+                    );
+                    if (movement != null) {
+                        clientManager.notifyAllOtherClients(client, MessageManager.createMoveUpdateMessage(movement));
+                    } else {
+                        logger.log(Level.SEVERE, "Movement not created.");
+                    }
+                } else {
+                    movement = movementManager.startNewMovement(
+                        step,
+                        map,
+                        unitManager.getById(moveMessage.getUnitId()),
+                        moveMessage.getEndJ(),
+                        moveMessage.getEndI()
+                    );
+                    if (movement != null) {
+                        clientManager.notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
+                    } else {
+                        logger.log(Level.SEVERE, "Movement not created.");
+                    }
                 }
             }
             actionRequestsIterator.remove();

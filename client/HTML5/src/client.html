@@ -99,9 +99,6 @@ var step;
 // Id этого клиента.
 var clientId;
 
-// Клиента находится в ожидании подтверждения от сервера.
-var awaiting_confirm = false;
-
 // Выделенные юниты.
 var selected_units = new Array();
 
@@ -268,26 +265,30 @@ function scrOnMousemove(e) {
 }
 
 function syncLoop() {
-
-    // Ждем ответа подтверждения сервера. Останавливаем этот "тред".
-    if (awaiting_confirm) {
-        return;
-    }
     var i, unit;
     
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
                 unit = getUnitById(stored_actions[i].unitId);
-                movementManager.startMovement(
-                    step,
-                    unit,
-                    unit.getJ(),
-                    unit.getI(),
-                    stored_actions[i].endJ,
-                    stored_actions[i].endI
-                );
-                console.log("Movement created on step ", step);
+                if (movementManager.isUnitMove(unit)) {
+                    movementManager.updateMovement(
+                        step,
+                        unit,
+                        stored_actions[i].endJ,
+                        stored_actions[i].endI
+                    );
+                } else {
+                    movementManager.startNewMovement(
+                        step,
+                        unit,
+                        unit.getJ(),
+                        unit.getI(),
+                        stored_actions[i].endJ,
+                        stored_actions[i].endI
+                    );
+                    //console.log("Movement created on step ", step);
+                }
                 break;
         }
     }
@@ -306,9 +307,6 @@ function syncLoop() {
     server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
     stored_actions = actions;
     actions = new Array();
-    awaiting_confirm = true;
-
-    setTimeout("syncLoop();", 100);
 }
 
 </script>
