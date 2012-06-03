@@ -16,6 +16,8 @@
     <script type="text/javascript" src="js/messages.js"></script>
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
     <script type="text/javascript" src="js/Sprite.js"></script>
+    <script type="text/javascript" src="js/SpriteMovement.js"></script>
+    <script type="text/javascript" src="js/SpriteMovementWayPoint.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -160,6 +162,9 @@ function drawLoop() {
 
     // Нарисуем карту.
     map.draw(map_context, camera);
+    
+    // Обновим позиции спрайтов юнитов.
+    movementManager.updateSpritePositions();
 
     // Нарисуем юнитов, принадлежащих клиенту.
     for (i in self_units_list) {

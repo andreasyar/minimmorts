@@ -32,7 +32,7 @@ public class ServerMainLoop implements Runnable {
     /**
      * Максимальное количество итераций, которые главный цикл сервера ждет отчётов от клиентов.
      */
-    private final int maxWaitIterations = 5;
+    private final int maxWaitIterations = 30;
 
     private final UnitManager unitManager;
     private final MovementManager movementManager;

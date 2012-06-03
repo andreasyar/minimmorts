@@ -28,7 +28,7 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
     //console.log("Path for", unit.getId(), pathToString(this.path));
     //console.log(this.path);
     
-    this.smoothMovementPath = new Array();
+    /*this.smoothMovementPath = new Array();
     this.smoothMovementPath.push(
         new SmoothMovementWayPoint(
             this.path[0].j,
@@ -73,9 +73,9 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             ),
             true
         )
-    );
+    );*/
     //console.log(this.smoothMovementPath);
-    this.unit.smoothMovementWay = this.smoothMovementPath;
+    //this.unit.smoothMovementWay = this.smoothMovementPath;
     
     this.beg_step = beg_step;
     
