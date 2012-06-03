@@ -248,6 +248,9 @@ function scrOnMouseup(e) {
             neighbourCells = getNeighboursCells(neighbourCells);
         }
         for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
+            if (selected_units[i].getJ() == neighbourCells[i].j && selected_units[i].getI() == neighbourCells[i].i) {
+                continue;
+            }
             actions.push(
                 new MoveMessage(
                     step,
