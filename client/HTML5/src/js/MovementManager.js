@@ -79,12 +79,12 @@ function MovementManager() {
             if (!this.movements[i].isStopped()) {
                 fuckJS.push(this.movements[i]);
             } else {
-                console.log("Movement of unit", this.movements[i].getUnit().getId(), "removed on step", step);
+                //console.log("Movement of unit", this.movements[i].getUnit().getId(), "removed on step", step);
             }
         }
         this.movements = fuckJS;
         for (var i in this.movements) {
-            this.movements[i].updatePosition(step, this.stopMovement);
+            this.movements[i].updatePosition(step);
         }
     }
     
@@ -95,6 +95,42 @@ function MovementManager() {
                 this.movements.splice(i, 1);
                 console.log("Movements", this.movements);
             }
+        }
+    }
+    
+    this.getNextPathPointOrientation = function(unitId) {
+        for (var i in this.movements) {
+            if (this.movements[i].getUnit().getId() == unitId) {
+                var u = this.movements[i].getUnit();
+                return this.movements[i].getNextPathPointOrientation(u.getJ(), u.getI());
+            }
+        }
+        
+        return null;
+    }
+    
+    this.getMovementOrientation = function(begJ, begI, endJ, endI) {
+        var jDiff = endJ - begJ;
+        var iDiff = endI - begI;
+        
+        if (jDiff == 0 && iDiff == -1) {
+            return "N";
+        } else if (jDiff == 1 && iDiff == -1) {
+            return "NE";
+        } else if (jDiff == 1 && iDiff == 0) {
+            return "E";
+        } else if (jDiff == 1 && iDiff == 1) {
+            return "SE";
+        } else if (jDiff == 0 && iDiff == 1) {
+            return "S";
+        } else if (jDiff == -1 && iDiff == 1) {
+            return "SW";
+        } else if (jDiff == -1 && iDiff == 0) {
+            return "W";
+        } else if (jDiff == -1 && iDiff == -1) {
+            return "NW";
+        } else {
+            return null;
         }
     }
     

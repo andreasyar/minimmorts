@@ -32,7 +32,7 @@ function Map(width, height) {
     for (var i = 0; i < this.h; i++) {
         this.spriteMap[i] = new Array(this.w)
         for (var j = 0; j < this.w; j++) {
-            this.spriteMap[i][j] = {ground: this.sloader.getSpriteByName("grass")}
+            this.spriteMap[i][j] = {ground: this.sloader.getSpriteByName("grass").getImage()}
         }
     }
 
@@ -94,8 +94,9 @@ function Map(width, height) {
         // Нарисуем клетки вычисленного региона карты.
         for (i = i_from; i <= i_to; i++) {
             for (j = j_from; j <= j_to; j++) {
-                tAxis = camera.translateAxis(Map.getCellXOnMap(j), Map.getCellYOnMap(i))
-                context.drawImage(this.spriteMap[i][j].ground, tAxis.x, tAxis.y)
+                tAxis = camera.translateAxis(Map.getCellXOnMap(j), Map.getCellYOnMap(i));
+                context.drawImage(this.spriteMap[i][j].ground, tAxis.x, tAxis.y);
+                context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), tAxis.x, tAxis.y);
             }
         }
     }

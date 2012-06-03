@@ -49,14 +49,14 @@ public class ServerLauncher {
         
         // Connect to database.
 
-        dbworker = new DBWorker(config.getDbHost(), config.getDbPort(), config.getDatabaseName(), config.getDbUser(), config.getDbPassword());
-        try {
-            dbworker.connect();
-        } catch (SQLException ex) {
-            logger.log(Level.SEVERE, null, ex);
-            return;
-        }
-        logger.log(Level.INFO, "DB connected.");
+        //dbworker = new DBWorker(config.getDbHost(), config.getDbPort(), config.getDatabaseName(), config.getDbUser(), config.getDbPassword());
+        //try {
+        //    dbworker.connect();
+        //} catch (SQLException ex) {
+        //    logger.log(Level.SEVERE, null, ex);
+        //    return;
+        //}
+        //logger.log(Level.INFO, "DB connected.");
         
         // Create game server.
         

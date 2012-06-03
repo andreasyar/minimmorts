@@ -39,12 +39,19 @@ function SpriteLoader(sprites) {
     this.getSpriteByName = function(name) {
         for (var i in this.sprites) {
             if (this.sprites[i].name == name) {
-                if (this.sprites[i].image == null) {
+                if (this.sprites[i].sprite == null) {
                     this.sprites[i].image = new Image();
                     this.sprites[i].image.src = this.sprites[i].src;
                     this.sprites[i].image.oncontextmenu = "return false;"
+                    this.sprites[i].sprite = new Sprite(
+                        this.sprites[i].image,
+                        this.sprites[i].w,
+                        this.sprites[i].h,
+                        this.sprites[i].base.x,
+                        this.sprites[i].base.y
+                    );
                 }
-                return this.sprites[i].image;
+                return this.sprites[i].sprite;
             }
         }
         

@@ -564,3 +564,19 @@ function delUnitById(id) {
     }
     console.log("Unit ", id, "not found.");
 }
+
+function getFramesPerStep() {
+    if (steps >= 10) {
+        framesPerStep = frames / steps;
+        frames = 0;
+        steps = 0;
+    }
+    return framesPerStep;
+}
+
+function getPxIncrement(speed) {
+    var pixPerStep = CELL_W * speed;
+    //var framesPerStep = frames / steps;//Math.floor(frames / step);
+    //console.log(pixPerStep, frames, steps, framesPerStep, framesPerStep / pixPerStep);
+    return pixPerStep / framesPerStep;
+}

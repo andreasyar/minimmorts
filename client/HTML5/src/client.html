@@ -15,6 +15,7 @@
     <script type="text/javascript" src="js/MovementManager.js"></script>
     <script type="text/javascript" src="js/messages.js"></script>
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
+    <script type="text/javascript" src="js/Sprite.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -67,7 +68,7 @@ units_buffer.height = SCR_H;
  *************************/
 
 // debug
-var DEBUG = true;
+var DEBUG = false;
 
 // Список юнитов, принадлежащих клиенту.
 var self_units_list = new Array();
@@ -114,6 +115,10 @@ var movementManager = new MovementManager();
 // Получено ли начальное состояние.
 var is_initial_state_received = false;
 
+var frames = 0;
+var steps = 0;
+var framesPerStep = 3.9;
+
 /************
  * Функции. *
  ************/
@@ -142,6 +147,8 @@ function drawLoop() {
     var units_context = units_buffer.getContext('2d');
     var map_context = map_buffer.getContext('2d');
     var i;
+    
+    frames++;
 
     // Фон.
     scr_context.fillStyle = "#FFFFEE";
@@ -173,6 +180,8 @@ function drawLoop() {
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
     scr_context.drawImage(units_buffer, 0, 0);
+    scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
+    scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
 
     setTimeout("drawLoop();", 1000 / FPS);
 }
@@ -266,6 +275,8 @@ function scrOnMousemove(e) {
 
 function syncLoop() {
     var i, unit;
+    
+    steps++;
     
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
