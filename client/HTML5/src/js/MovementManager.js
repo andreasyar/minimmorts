@@ -32,23 +32,14 @@ function MovementManager() {
 
     this.startNewMovement = function(step, unit, begJ, begI, endJ, endI) {
         var path = getPath(new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
+        var movement = new Movement(unit, begJ, begI, endJ, endI, DEFAULT_SPEED, path, step);
 
-        this.movements.push(
-            new Movement(
-                unit,
-                begJ,
-                begI,
-                endJ,
-                endI,
-                DEFAULT_SPEED,
-                path,
-                step
-            )
-        );
+        this.movements.push(movement);
         this.spriteMovements.push(
             new SpriteMovement(
                 unit,
-                path
+                path,
+                movement.getPosition(step)
             )
         );
     }
@@ -102,7 +93,8 @@ function MovementManager() {
         }
         updatedSpriteMovement = new SpriteMovement(
             existedSpriteMovement.getUnit(),
-            path
+            path,
+            updatedMovement.getPosition(step)
         );
         if (updatedSpriteMovement == null) {
             console.log("Cant create sprite movement!");

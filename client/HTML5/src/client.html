@@ -121,6 +121,8 @@ var frames = 0;
 var steps = 0;
 var framesPerStep = 3.9;
 
+var smoothMovementEnabled = true;
+
 /************
  * Функции. *
  ************/
@@ -328,6 +330,11 @@ function syncLoop() {
     actions = new Array();
 }
 
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    setTimeout("pingLoop();", 100);
+}
+
 </script>
 
 <!-- Форма логина. -->
@@ -338,11 +345,16 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <input type="button" id="connect_button" value="Connect" onclick="connect(); return false;">
 </div>
 
+<br>
+<input type="checkbox" id="toggleSmoothMovement" onclick="toggleSmoothMovement();" checked>
+Включить плавное движение (если выключено, юнит отображается в том месте, где на самом деле находится и передвигается по клеткам, при этом возможна не правильная ориентация спрайта в случае лагов).<br>
+
 <script type="text/javascript">
 //map = new Map(100, 100);
 //new Movement(null, 0, 0, 0.4, getPath(new Cell(5, 5, 0, 0, null), new Cell(8, 11, 0, 0, null)), 0);
 //console.log(gCollection);
 showLoginForm();
+document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
     
 document.onkeydown = function(event) {
     var events = event || window.event

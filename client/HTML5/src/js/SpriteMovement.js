@@ -2,7 +2,7 @@
 /**
  * Плавное движение спрайта юнита по клеткам.
  */
-function SpriteMovement(unit, path) {
+function SpriteMovement(unit, path, curUnitPos) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -26,9 +26,15 @@ function SpriteMovement(unit, path) {
         cur_path_point = cur_path_point.parent;
     } while (cur_path_point != null)
     path_array.reverse();
+    for (var l in path_array) {
+        if (path_array[l].j == curUnitPos.j && path_array[l].i == curUnitPos.i) {
+            break;
+        }
+    }
     var wayPointPath = new Array();
-    wayPointPath.push(new SpriteMovementWayPoint(path_array[0].j, path_array[0].i, (new Date()).getTime(), null, null));
-    for (var k = 1; k < path_array.length - 1; k++) {
+    l = parseInt(l);
+    wayPointPath.push(new SpriteMovementWayPoint(path_array[l].j, path_array[l].i, (new Date()).getTime(), null, null));
+    for (var k = l + 1; k < path_array.length - 1; k++) {
         wayPointPath.push(
             new SpriteMovementWayPoint(
                 path_array[k].j,

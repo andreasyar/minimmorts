@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.movement.Movement;
 import minimmorts.units.Unit;
@@ -223,6 +224,16 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
                     }
                     clientManager.setLastReportedStep(ctx.getChannel(), step);
+                    break;
+                case "PING":
+                    PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
+                    Client client = clientManager.getClient(ctx.getChannel());
+                    if (client.getClientPingTime() != 0) {
+                        if (pm.getTime() - client.getClientPingTime() > 200) {
+                            logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
+                        }
+                    }
+                    clientManager.setClientPingTime(client.getId(), pm.getTime());
                     break;
             }
         }

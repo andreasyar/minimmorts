@@ -42,6 +42,8 @@ public class Client {
     private boolean disconnected = false;
     
     private boolean awaitingInitializing = true;
+    
+    private long clientPingTime = 0;
 
     Client(long id, Channel channel) {
         this.id = id;
@@ -100,5 +102,13 @@ public class Client {
 
     void setInitialized() {
         this.awaitingInitializing = false;
+    }
+
+    public long getClientPingTime() {
+        return clientPingTime;
+    }
+
+    void setClientPingTime(long clientPingTime) {
+        this.clientPingTime = clientPingTime;
     }
 }

@@ -275,4 +275,15 @@ public class ClientManager {
             }
         }
     }
+
+    public boolean setClientPingTime(long clientId, long time) {
+        Client client;
+        
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.setClientPingTime(time);
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

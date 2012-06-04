@@ -24,59 +24,7 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
     } while (cur_path_point != null)
     path_array.reverse();
 
-    this.path = path_array;
-    //console.log("Path for", unit.getId(), pathToString(this.path));
-    //console.log(this.path);
-    
-    /*this.smoothMovementPath = new Array();
-    this.smoothMovementPath.push(
-        new SmoothMovementWayPoint(
-            this.path[0].j,
-            this.path[0].i,
-            (new Date()).getTime() - ((1 / 0.4) * 100),
-            null,
-            null,
-            null,
-            false
-        )
-    );
-    for (var k = 1; k < this.path.length - 1; k++) {
-        this.smoothMovementPath.push(
-            new SmoothMovementWayPoint(
-                this.path[k].j,
-                this.path[k].i,
-                ((1 / 0.4) * 100) + this.smoothMovementPath[this.smoothMovementPath.length - 1].arrivalTime,
-                this.smoothMovementPath[this.smoothMovementPath.length - 1].arrivalTime,
-                32 / ((1 / 0.4) * 100),
-                movementManager.getMovementOrientation(
-                    this.smoothMovementPath[this.smoothMovementPath.length - 1].j,
-                    this.smoothMovementPath[this.smoothMovementPath.length - 1].i,
-                    this.path[k].j,
-                    this.path[k].i
-                ),
-                false
-            )
-        );
-    }
-    this.smoothMovementPath.push(
-        new SmoothMovementWayPoint(
-            this.path[this.path.length - 1].j,
-            this.path[this.path.length - 1].i,
-            ((1 / 0.4) * 100) + this.smoothMovementPath[this.smoothMovementPath.length - 1].arrivalTime,
-            this.smoothMovementPath[this.smoothMovementPath.length - 1].arrivalTime,
-            32 / ((1 / 0.4) * 100),
-            movementManager.getMovementOrientation(
-                this.smoothMovementPath[this.smoothMovementPath.length - 1].j,
-                this.smoothMovementPath[this.smoothMovementPath.length - 1].i,
-                this.path[this.path.length - 1].j,
-                this.path[this.path.length - 1].i
-            ),
-            true
-        )
-    );*/
-    //console.log(this.smoothMovementPath);
-    //this.unit.smoothMovementWay = this.smoothMovementPath;
-    
+    this.path = path_array;    
     this.beg_step = beg_step;
     
     this.updatePosition = function(step) {
@@ -92,46 +40,15 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             this.unit.i = this.path[n].i;
             //console.log("Unit", unit.getId(), "comes to [", this.unit.j, ",", this.unit.i, "] on step " + step);
         }
-        /*if (this.unit.smoothMovementWay.length > 0) {
-            if (this.unit.j != this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].j
-                    || this.unit.i != this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].i) {
-                
-                var curTime = (new Date()).getTime();
-                console.log(
-                    curTime,
-                    this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].arrivalTime,
-                    curTime - this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].arrivalTime
-                );
-                this.unit.smoothMovementWay.push(
-                    new SmoothMovementWayPoint(
-                        this.unit.j,
-                        this.unit.i,
-                        ((1 / 0.4) * 100) + this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].arrivalTime, //curTime,
-                        this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].arrivalTime,
-                        32 / ((1 / 0.4) * 100), //32 / (curTime - this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].arrivalTime),
-                        movementManager.getMovementOrientation(
-                            this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].j,
-                            this.unit.smoothMovementWay[this.unit.smoothMovementWay.length - 1].i,
-                            this.unit.j,
-                            this.unit.i
-                        ),
-                        n >= this.path.length - 1
-                    )
-                );
-            }
+    }
+    
+    this.getPosition = function(step) {
+        var n = Math.floor((step - this.beg_step) * this.speed);
+        if (n >= this.path.length - 1) {
+            return this.path[this.path.length - 1];
         } else {
-            this.unit.smoothMovementWay.push(
-                new SmoothMovementWayPoint(
-                    this.unit.j,
-                    this.unit.i,
-                    (new Date()).getTime(),
-                    null,
-                    null,
-                    null,
-                    n >= this.path.length - 1
-                )
-            );
-        }*/
+            return this.path[n];
+        }
     }
     
     this.getUnit = function() {

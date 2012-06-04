@@ -226,6 +226,37 @@ function MessagePacket(messages) {
     return this;
 }
 
+/**
+ * Диагностическое сообщение.
+ * @param time текущее время клиента
+ */
+function PingMessage(time) {
+
+    // Эту функцию можно вызвать только как конструктор (с new).
+    if (this.constructor !== arguments.callee) {
+        throw new Error("Constructor called like a simple function!");
+    }
+
+    /**
+     * Тип сообщения.
+     */
+    this.type = "PING";
+
+    /**
+     * Текущее время клиента.
+     */
+    this.time = time;
+
+    /**
+     * Преобразование в JSON.
+     */
+    this.toJSON = function() {
+        return new Array(this.type, {time: this.time});
+    }
+
+    return this;
+}
+
 // Обработчики сообщений.
 var MESSAGE_HANDLERS = {
     "ERROR": function (msg) {
@@ -254,6 +285,7 @@ var MESSAGE_HANDLERS = {
         }
         
         setTimeout("drawLoop();", 1000 / FPS);
+        setTimeout("pingLoop();", 100);
         syncLoop();
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);

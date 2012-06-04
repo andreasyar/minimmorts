@@ -36,7 +36,12 @@ function Unit(ownerId, id, j, i) {
     }
     this.draw = function(context, camera) {
         var sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
-        var drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
+        var drawCoordinates;
+        if (smoothMovementEnabled) {
+            drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
+        } else {
+            drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
+        }
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
         if (this.selected) {
             sprite = this.sloader.getSpriteByName("peasant_selection");

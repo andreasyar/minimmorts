@@ -580,3 +580,8 @@ function getPxIncrement(speed) {
     //console.log(pixPerStep, frames, steps, framesPerStep, framesPerStep / pixPerStep);
     return pixPerStep / framesPerStep;
 }
+
+function toggleSmoothMovement() {
+    smoothMovementEnabled = smoothMovementEnabled ? false : true;
+    document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
+}
