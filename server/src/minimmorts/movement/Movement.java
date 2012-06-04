@@ -45,11 +45,11 @@ public class Movement {
     }
 
     public int getBegJ() {
-        return begJ;
+        return path.get(0).getJ();
     }
 
     public int getBegI() {
-        return begI;
+        return path.get(0).getI();
     }
 
     public int getEndJ() {
@@ -70,15 +70,29 @@ public class Movement {
 
     void updatePosition(long step) {
         int n = (int) Math.floor(((double) step - (double) begStep) * (double) speed);
+        int i;
+        int j;
         if (n >= path.size() - 1) {
-            unit.setJ(path.get(path.size() - 1).getJ());
-            unit.setI(path.get(path.size() - 1).getI());
-            //logger.log(Level.INFO, "Unit {0} comes to [{1}, {2}] on step {3} Final", new Object[] {unit.getId(), unit.getJ(), unit.getI(), step});
+            j = path.get(path.size() - 1).getJ();
+            i = path.get(path.size() - 1).getI();
+            logger.log(
+                Level.INFO,
+                "Unit id={0} [{1},{2}]->[{3},{4}] on step {5} Movement complete.",
+                new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
+            );
+            unit.setJ(j);
+            unit.setI(i);
             stopped = true;
         } else {
-            unit.setJ(path.get(n).getJ());
-            unit.setI(path.get(n).getI());
-            //logger.log(Level.INFO, "Unit {0} comes to [{1}, {2}] on step {3}", new Object[] {unit.getId(), unit.getJ(), unit.getI(), step});
+            j = path.get(n).getJ();
+            i = path.get(n).getI();
+            logger.log(
+                Level.INFO,
+                "Unit id={0} [{1},{2}]->[{3},{4}] on step {5}",
+                new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
+            );
+            unit.setJ(j);
+            unit.setI(i);
         }
     }
 

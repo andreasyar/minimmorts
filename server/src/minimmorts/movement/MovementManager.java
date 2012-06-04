@@ -54,6 +54,7 @@ public class MovementManager {
             logger.log(Level.SEVERE, "Next path point not found.");
             return null;
         }
+        logger.log(Level.INFO, "Next point is " + nextPoint);
         updatedMovement = createMovement(
             step,
             map,
@@ -68,6 +69,14 @@ public class MovementManager {
             logger.log(Level.SEVERE, "Cant create movement!");
             return null;
         }
+        
+        logger.log(Level.INFO, "Update movement.");
+        System.err.print("Path for " + unit.getId() + " updated on step " + step + " ");
+        for (Point p : updatedMovement.getPath()) {
+            System.err.print(p + " ");
+        }
+        System.err.println();
+        
         movements.set(movements.indexOf(existedMovement), updatedMovement);
         
         return updatedMovement;

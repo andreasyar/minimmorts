@@ -23,6 +23,7 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
         cur_path_point = cur_path_point.parent;
     } while (cur_path_point != null)
     path_array.reverse();
+    console.log(this.unit.getId(), step, path_array);
 
     this.path = path_array;    
     this.beg_step = beg_step;
@@ -30,15 +31,14 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
     this.updatePosition = function(step) {
         var n = Math.floor((step - this.beg_step) * this.speed);
         if (n >= this.path.length - 1) {
+            console.log("Unit id=", unit.getId(), "[", this.unit.j, ",", this.unit.i, "]->[", this.path[this.path.length - 1].j, ",", this.path[this.path.length - 1].i, "] on step", step, "Movement complete.");
             this.unit.j = this.path[this.path.length - 1].j;
             this.unit.i = this.path[this.path.length - 1].i;
-            //console.log("Unit", unit.getId(), "comes to [", this.unit.j, ",", this.unit.i, "] on step " + step + " Final");
-            //console.log(PrintSmoothMovementWay(this.unit.smoothMovementWay));
             this.stopped = true;
         } else {
+            console.log("Unit id=", unit.getId(), "[", this.unit.j, ",", this.unit.i, "]->[", this.path[n].j, ",", this.path[n].i, "] on step", step);
             this.unit.j = this.path[n].j;
             this.unit.i = this.path[n].i;
-            //console.log("Unit", unit.getId(), "comes to [", this.unit.j, ",", this.unit.i, "] on step " + step);
         }
     }
     
@@ -120,8 +120,8 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
 function Point(j, i) {
     this.j = j;
     this.i = i;
-    this.toString = function () {
+    /*this.toString = function () {
         return "[" + this.j + "," + this.i + "]";
-    }
+    }*/
     return this;
 }

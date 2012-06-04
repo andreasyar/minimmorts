@@ -76,6 +76,7 @@ function MovementManager() {
             console.log("Next path point not found.");
             return;
         }
+        console.log("Next point is", nextPoint);
         path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         updatedMovement = new Movement(
             existedMovement.getUnit(),
