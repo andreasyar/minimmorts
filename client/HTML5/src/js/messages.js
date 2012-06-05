@@ -388,7 +388,7 @@ var MESSAGE_HANDLERS = {
                 moveMessage.endI
             );
         } else {
-            console.log("Событие не за текущий шаг будет проигнорировано: " + JSON.stringify(moveMessage));
+            console.log("Получен запрос изменения не за текущий шаг! Текущий шаг " + step + " шаг изменения пути " + moveMessage.begStep + " Запрос проигнорирован.");
         }
     }
 }

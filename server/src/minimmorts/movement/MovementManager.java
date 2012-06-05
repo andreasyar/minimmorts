@@ -31,6 +31,11 @@ public class MovementManager {
             logger.log(Level.SEVERE, "Cant create movement!");
             return null;
         }
+        System.err.print("New path for unit id=" + unit.getId() + " created on step " + step + " ");
+        for (Point p : movement.getPath()) {
+            System.err.print(p + " ");
+        }
+        System.err.println();
         movements.add(movement);
         return movement;
     }
@@ -54,7 +59,7 @@ public class MovementManager {
             logger.log(Level.SEVERE, "Next path point not found.");
             return null;
         }
-        logger.log(Level.INFO, "Next point is " + nextPoint);
+        logger.log(Level.INFO, "Next path point for unit id=" + unit.getId() + " is " + nextPoint);
         updatedMovement = createMovement(
             step,
             map,
@@ -70,8 +75,7 @@ public class MovementManager {
             return null;
         }
         
-        logger.log(Level.INFO, "Update movement.");
-        System.err.print("Path for " + unit.getId() + " updated on step " + step + " ");
+        System.err.print("Path for unit id=" + unit.getId() + " updated on step " + step + " ");
         for (Point p : updatedMovement.getPath()) {
             System.err.print(p + " ");
         }
@@ -111,11 +115,6 @@ public class MovementManager {
             return null;
         }
         Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
-        System.err.print("Path for " + unit.getId() + " created on step " + step + " ");
-        for (Point p : m.getPath()) {
-            System.err.print(p + " ");
-        }
-        System.err.println();
         return m;
     }
 
