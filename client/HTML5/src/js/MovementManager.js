@@ -32,6 +32,10 @@ function MovementManager() {
 
     this.startNewMovement = function(step, unit, begJ, begI, endJ, endI) {
         var path = getPath(new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
+        if (path == false) {
+            console.log("Путь [" + begJ + ", " + begI + "]->[" + endJ + ", " + endI + "] не может быть построен. Новое движение не может быть создано.");
+            return;
+        }
         var movement = new Movement(unit, begJ, begI, endJ, endI, DEFAULT_SPEED, path, step);
 
         this.movements.push(movement);
@@ -78,6 +82,10 @@ function MovementManager() {
         }
         console.log("Next point is", nextPoint);
         path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
+        if (path == false) {
+            console.log("Путь [" + nextPoint.j + ", " + nextPoint.i + "]->[" + endJ + ", " + endI + "] не может быть построен. Движение не может быть обновлено.");
+            return;
+        }
         updatedMovement = new Movement(
             existedMovement.getUnit(),
             nextPoint.j,

@@ -39,8 +39,8 @@ function SpriteMovement(unit, path, curUnitPos) {
             new SpriteMovementWayPoint(
                 path_array[k].j,
                 path_array[k].i,
-                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / 0.4) * 100),
-                32 / ((1 / 0.4) * 100),
+                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * 100),
+                32 / ((1 / DEFAULT_SPEED) * 100),
                 movementManager.getMovementOrientation(
                     wayPointPath[wayPointPath.length - 1].j,
                     wayPointPath[wayPointPath.length - 1].i,
@@ -54,8 +54,8 @@ function SpriteMovement(unit, path, curUnitPos) {
         new SpriteMovementWayPoint(
             path_array[path_array.length - 1].j,
             path_array[path_array.length - 1].i,
-            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / 0.4) * 100),
-            32 / ((1 / 0.4) * 100),
+            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * 100),
+            32 / ((1 / DEFAULT_SPEED) * 100),
             movementManager.getMovementOrientation(
                 wayPointPath[wayPointPath.length - 1].j,
                 wayPointPath[wayPointPath.length - 1].i,
@@ -70,11 +70,19 @@ function SpriteMovement(unit, path, curUnitPos) {
      */
     this.path = wayPointPath;
     
+    this.begTime = wayPointPath[0].arrivalTime;
+    
+    this.endTime = wayPointPath[wayPointPath.length - 1].arrivalTime;
+    
+    this.spriteInterval = 150;
+    
     /**
      * Обновляет координаты спрайта юнита.
      */
     this.updatePosition = function() {
         var curTime = (new Date()).getTime();
+        var curPos;
+        var derp;
         
         for (var i = 0; i < this.path.length; i++) {
             if (this.path[i].arrivalTime > curTime) {
@@ -83,13 +91,35 @@ function SpriteMovement(unit, path, curUnitPos) {
                     return;
                 }
                 
-                var curPos = this.path[i].getPosOnTheWayFrom(this.path[i - 1]);
+                curPos = this.path[i].getPosOnTheWayFrom(this.path[i - 1]);
                 if (curPos == null) {
                     console.log("Невозможно двигаться из точки " + this.path[i - 1] + " в точку " + this.path[i]);
                     return;
                 }
+                if (!curPos.arrived) {
+                    derp = Math.ceil((curTime - this.begTime) / this.spriteInterval);
+                    curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
+                } else {
+                    curPos.spriteName = "peasant_" + curPos.orientation + "_walk_0";
+                }
                 this.unit.spritePos = curPos;
+                return;
             }
+        }
+        
+        if (!this.unit.spritePos.arrival) {
+            curPos = this.path[this.path.length - 1].getPosOnTheWayFrom(this.path[this.path.length - 2]);
+            if (curPos == null) {
+                console.log("Невозможно двигаться из точки " + this.path[this.path.length - 2] + " в точку " + this.path[this.path.length - 1]);
+                return;
+            }
+            if (!curPos.arrived) {
+                derp = Math.ceil((curTime - this.begTime) / this.spriteInterval);
+                curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
+            } else {
+                curPos.spriteName = "peasant_" + curPos.orientation + "_walk_0";
+            }
+            this.unit.spritePos = curPos;
         }
     }
     

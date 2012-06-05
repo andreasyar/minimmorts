@@ -55,6 +55,7 @@ function SpriteLoader(sprites) {
             }
         }
         
+        console.log("Sprite name=" + name + " not found.");
         return null;
     }
 

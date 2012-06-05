@@ -70,7 +70,7 @@ units_buffer.height = SCR_H;
  *************************/
 
 // debug
-var DEBUG = true;
+var DEBUG = false;
 
 // Список юнитов, принадлежащих клиенту.
 var self_units_list = new Array();
@@ -122,6 +122,8 @@ var steps = 0;
 var framesPerStep = 3.9;
 
 var smoothMovementEnabled = true;
+
+var prevDrawTime = null;
 
 /************
  * Функции. *
@@ -187,8 +189,8 @@ function drawLoop() {
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
     scr_context.drawImage(units_buffer, 0, 0);
-    scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
-    scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
+    //scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
+    //scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
 
     setTimeout("drawLoop();", 1000 / FPS);
 }
@@ -350,9 +352,6 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 Включить плавное движение (если выключено, юнит отображается в том месте, где на самом деле находится и передвигается по клеткам, при этом возможна не правильная ориентация спрайта в случае лагов).<br>
 
 <script type="text/javascript">
-//map = new Map(100, 100);
-//new Movement(null, 0, 0, 0.4, getPath(new Cell(5, 5, 0, 0, null), new Cell(8, 11, 0, 0, null)), 0);
-//console.log(gCollection);
 showLoginForm();
 document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
     

@@ -157,6 +157,11 @@ function getPath(beg, end) {
         close: 0,
         corner: 0
     }
+    
+    if (beg.j == end.j && beg.i == end.i) {
+        console.log("Нет смысла строить путь, когда клетка отправления и клетка назначения равны.");
+        return false;
+    }
 
     if (!map.isOnMap(end.j, end.i) || /*accessMap[end.i][end.j] == NOTPASSABLE*/ false) {
         return false

@@ -263,6 +263,7 @@ public class ServerMainLoop implements Runnable {
                 logger.log(Level.SEVERE, "Client id={0} not found. Can't mark client as initialized.", client.getId());
             }
             newClientsIterator.remove();
+            clientManager.takeFromOutbox(client.getId());
         }
 
         step++;

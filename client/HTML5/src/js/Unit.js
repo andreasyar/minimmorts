@@ -16,7 +16,8 @@ function Unit(ownerId, id, j, i) {
         x: Map.getCellXOnMap(this.j),
         y: Map.getCellYOnMap(this.i),
         arrived: true,
-        orientation: "S"
+        orientation: "S",
+        spriteName: "peasant_S_walk_0"
     };
     
     //this.smoothMovement = new SmoothMovement(this.j, this.i, this.j, this.i, this.spriteOrientation);
@@ -35,11 +36,13 @@ function Unit(ownerId, id, j, i) {
         return this.i;
     }
     this.draw = function(context, camera) {
-        var sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
+        var sprite;
         var drawCoordinates;
         if (smoothMovementEnabled) {
+            sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
+            sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
             drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
         }
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
