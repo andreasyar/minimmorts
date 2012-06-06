@@ -36,6 +36,11 @@ function Map(width, height) {
         }
     }
 
+    var tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = width;
+    tmpCanvas.height = height;
+    this.miniMap = (tmpCanvas.getContext("2d")).createImageData(tmpCanvas.width, tmpCanvas.height);
+
     /**
      * Метод рисования карты.
      */
@@ -108,6 +113,44 @@ function Map(width, height) {
      */
     this.isOnMap = function(j, i) {
         return i >= 0 && j >= 0 && i < this.h && j < this.w
+    }
+    
+    /**
+     * Перерисовывает миникарту.
+     */
+    this.updateMinimap = function() {
+        var i, j, k;
+        for (i = 0; i < this.h; i++) {
+            for (j = 0; j < this.w; j++) {
+                if (i == 0 || j == 0 || i == this.h - 1 || j == this.w - 1) {
+                    // Черная рамка по краям.
+                    setPixel(this.miniMap, j, i, 0, 0, 0, 255);
+                } else {
+                    // Остальное зелёное.
+                    setPixel(this.miniMap, j, i, 0, 255, 0, 255);
+                }
+            }
+        }
+        for (k in self_units_list) {
+            setPixel(this.miniMap, self_units_list[k].j, self_units_list[k].i, 0, 0, 255, 255);
+        }
+        for (k in units_list) {
+            setPixel(this.miniMap, units_list[k].j, units_list[k].i, 255, 0, 0, 255);
+        }
+        var camJ = Math.max(0, Map.getCellJOnMap(camera.x));
+        var camI = Math.max(0, Map.getCellIOnMap(camera.y));
+        //var camW = Math.min(map.w, Math.ceil(SCR_W / CELL_W));
+        //var camH = Math.min(map.h, Math.ceil(SCR_H / CELL_H));
+        var camW = Math.ceil(SCR_W / CELL_W);
+        var camH = Math.ceil(SCR_H / CELL_H);
+        for (i = camI; i < map.h; i++) {
+            for (j = camJ; j < map.w; j++) {
+                if ( ((i == camI || i == camI + camH - 1) && j <= camJ + camW - 1) || (j == camJ || j == camJ + camW - 1) && i <= camI + camH - 1) {
+                    // Серая рамка камеры.
+                    setPixel(this.miniMap, j, i, 128, 128, 128, 255);
+                }
+            }
+        }
     }
 
     return this

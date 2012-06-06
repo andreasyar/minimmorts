@@ -3,6 +3,7 @@ package minimmorts.server;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.ErrnoErrorService;
@@ -32,7 +33,7 @@ public class ServerMainLoop implements Runnable {
     /**
      * Максимальное количество итераций, которые главный цикл сервера ждет отчётов от клиентов.
      */
-    private final int maxWaitIterations = 30;
+    private final int maxWaitIterations = 3;
 
     private final UnitManager unitManager;
     private final MovementManager movementManager;
@@ -42,6 +43,8 @@ public class ServerMainLoop implements Runnable {
     private final Map map;
     
     private long step = 1;
+        
+    private final Random randomGenerator = new Random();
 
     /**
      * Список запросов действий от всех клиентов на текущем шаге.
@@ -77,6 +80,8 @@ public class ServerMainLoop implements Runnable {
         ActionRequest actionRequest;
 
         Movement movement;
+        
+        int randJ, randI;
 
         if (!clientManager.isAllClientsReported(step) && waitIterations < maxWaitIterations) {
             logger.log(Level.INFO, "Wait for clients report for step {0}", step);
@@ -84,7 +89,8 @@ public class ServerMainLoop implements Runnable {
             return;
         } else if (!clientManager.isAllClientsReported(step)) {
             waitIterations = 0;
-            disconnectUnreportedClients(step);
+            //disconnectUnreportedClients(step);
+            reinitializeUnreportedClients(step);
         } else {
             waitIterations = 0;
         }
@@ -124,7 +130,9 @@ public class ServerMainLoop implements Runnable {
                         messageManager.sendErrorMessage(channel, MessageManager.createErrorMessage(ErrnoErrorService.getErrno()));
                     }
                 } else {
-                    if (!clientManager.markDisconnected(client.getId())) {
+                    // Just ignore
+                    
+                    /*if (!clientManager.markDisconnected(client.getId())) {
                         logger.log(Level.SEVERE, "Client id={0} not found. Can't mark client as disconnected.", client.getId());
                     }
                     messageManager.sendErrorMessage(
@@ -132,7 +140,7 @@ public class ServerMainLoop implements Runnable {
                         MessageManager.createErrorMessage(
                             "Reported step not equal current step! " + stateReportMessage.getStep() + "!=" + step
                         )
-                    );
+                    );*/
                 }
             } else if (message instanceof LoginMessage) {
                 loginMessage = (LoginMessage) message;
@@ -207,16 +215,18 @@ public class ServerMainLoop implements Runnable {
         newClientsIterator = clientManager.getAwaitingInitializingClients().iterator();
         while (newClientsIterator.hasNext()) {
             client = (Client) newClientsIterator.next();
+            randJ = randomGenerator.nextInt(map.getWidth() - 1);
+            randI = randomGenerator.nextInt(map.getWidth() - 1);
             clientManager.notifyAllOtherClients(
                 client,
                 MessageManager.createNewUnitMessage(
-                    unitManager.createUnit(client, 4, 4)
+                    unitManager.createUnit(client, randJ, randI)
                 )
             );
             clientManager.notifyAllOtherClients(
                 client,
                 MessageManager.createNewUnitMessage(
-                    unitManager.createUnit(client, 5, 5)
+                    unitManager.createUnit(client, randJ + 1, randI + 1)
                 )
             );
         }
@@ -305,6 +315,26 @@ public class ServerMainLoop implements Runnable {
                     clientManager.getClientChannel(client.getId()),
                     MessageManager.createErrorMessage("You has been disconnected because report timeout.")
                 );
+            }
+        }
+    }
+
+    /**
+     * Помечает все не отчитавшихся за шаг step клиентов, как не инициализированных. Они будут
+     * переинициализированы.
+     * @param step шаг
+     */
+    private void reinitializeUnreportedClients(long step) {
+        Client client;
+        
+        Iterator i = clientManager.getClients().iterator();
+        while (i.hasNext()) {
+            client = (Client) i.next();
+            if (client.getLastReportedStep() != step) {
+                // TODO if-ы @ проверки
+                clientManager.setUninitialized(client.getId());
+                logger.log(Level.INFO, "Client id=" + client.getId() + " marked uninitialized. derp=" + client.isAwaitingInitializing());
+                cleanupClient(client);
             }
         }
     }

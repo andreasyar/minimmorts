@@ -3,6 +3,8 @@ package minimmorts.client;
 import java.awt.Color;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import minimmorts.messages.Message;
 import org.jboss.netty.channel.Channel;
 
@@ -11,6 +13,7 @@ import org.jboss.netty.channel.Channel;
  * @author Sorc
  */
 public class Client {
+    private static final Logger logger = Logger.getLogger(Client.class.getName());
     
     /**
      * Идентификатор клиента.
@@ -118,5 +121,9 @@ public class Client {
 
     public Color getColor() {
         return color;
+    }
+
+    void setUninitialized() {
+        this.awaitingInitializing = true;
     }
 }

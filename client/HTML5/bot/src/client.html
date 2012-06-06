@@ -1,0 +1,169 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>MINIMMORTS HTML5 bot</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="js/constants.js"></script>
+    <script type="text/javascript" src="js/resources.js"></script>
+    <script type="text/javascript" src="js/routines.js"></script>
+    
+    <script type="text/javascript" src="js/Camera.js"></script>
+    <script type="text/javascript" src="js/Unit.js"></script>
+    <script type="text/javascript" src="js/SpriteLoader.js"></script>
+    <script type="text/javascript" src="js/Map.js"></script>
+    <script type="text/javascript" src="js/Movement.js"></script>
+    <script type="text/javascript" src="js/MovementManager.js"></script>
+    <script type="text/javascript" src="js/messages.js"></script>
+    <script type="text/javascript" src="js/ServerInteraction.js"></script>
+    <script type="text/javascript" src="js/Sprite.js"></script>
+    <script type="text/javascript" src="js/SpriteMovement.js"></script>
+    <script type="text/javascript" src="js/SpriteMovementWayPoint.js"></script>
+    <script type="text/javascript" src="js/ActionManager.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+
+/*************************
+ * Служебные переменные. *
+ *************************/
+
+// debug
+var DEBUG = true;
+
+var DEBUG_PROTOCOL = true;
+
+// Список юнитов, принадлежащих клиенту.
+var self_units_list = new Array();
+
+// Список юнитов.
+var units_list = new Array();
+
+// Карта.
+var map;
+
+// Сервер.
+var server;
+
+// Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+var camera;
+
+// Камера свободна или привязана к своему игроку.
+var is_camera_free = false;
+
+// Буфер действий.
+var actions = new Array();
+
+// Действия, которые должны быть выполнены после получения подтверждения.
+var stored_actions;
+
+// Номер текущего хода.
+var step;
+
+// Id этого клиента.
+var clientId;
+
+// Выделенные юниты.
+var selected_units = new Array();
+
+// Клетка начала выделения.
+var selections_beg;
+
+// Прямоугольник выделения.
+var selection_rect = null;
+
+// Менеджер движения.
+var movementManager = new MovementManager();
+
+// Менеджер действий.
+var actionManager = new ActionManager();
+
+// Получено ли начальное состояние.
+var is_initial_state_received = false;
+
+var frames = 0;
+var steps = 0;
+var framesPerStep = 3.9;
+
+var smoothMovementEnabled = true;
+
+var prevDrawTime = null;
+
+/************
+ * Функции. *
+ ************/
+
+function disconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close()
+    } else {
+        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
+    }
+}
+
+function aiLoop() {
+    actionManager.createRandomMovementRequests();
+    setTimeout("aiLoop();", 2000);
+}
+
+function syncLoop() {
+    var i, unit, actions;
+    
+    steps++;
+    
+    for (i in stored_actions) {
+        switch (stored_actions[i].type) {
+            case "MOVE":
+                unit = getUnitById(stored_actions[i].unitId);
+                if (movementManager.isUnitMove(unit)) {
+                    movementManager.updateMovement(
+                        step,
+                        unit,
+                        stored_actions[i].endJ,
+                        stored_actions[i].endI
+                    );
+                } else {
+                    movementManager.startNewMovement(
+                        step,
+                        unit,
+                        unit.getJ(),
+                        unit.getI(),
+                        stored_actions[i].endJ,
+                        stored_actions[i].endI
+                    );
+                    //console.log("Movement created on step ", step);
+                }
+                break;
+        }
+    }
+    
+    step++;
+    
+    movementManager.updatePositions(step);
+
+    var unitMessages = new Array();
+    for (i in self_units_list) {
+        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    }
+    for (i in units_list) {
+        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    }
+    actions = actionManager.takeMovementRequests();
+    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+    stored_actions = actions;
+}
+
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    setTimeout("pingLoop();", 100);
+}
+
+</script>
+
+<script type="text/javascript">
+server = new ServerInteraction();
+server.connect("ws://localhost:8015/");
+</script>
+
+</body>
+</html>

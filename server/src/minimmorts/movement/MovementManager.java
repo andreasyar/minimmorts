@@ -1,6 +1,8 @@
 package minimmorts.movement;
 
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.map.Map;
@@ -14,6 +16,18 @@ public class MovementManager {
     private static final Logger logger = Logger.getLogger(MovementManager.class.getName());
 
     private final LinkedList<Movement> movements = new LinkedList<>();
+    
+    public static void initLogging() {
+        try {
+            FileHandler fh = new FileHandler(MovementManager.class.getName() + ".txt");
+            logger.addHandler(fh);
+            logger.setLevel(Level.ALL);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        } catch (SecurityException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+    }
     
     public boolean isUnitMove(Unit unit) {
         for (Movement m : movements) {

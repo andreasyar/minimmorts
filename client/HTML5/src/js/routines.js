@@ -550,7 +550,7 @@ function getUnitById(id) {
             return units_list[i];
         }
     }
-    console.log("Unit ", id, "not found.")
+    console.log("Unit", id, "not found.")
     return null;
 }
 
@@ -589,4 +589,12 @@ function getPxIncrement(speed) {
 function toggleSmoothMovement() {
     smoothMovementEnabled = smoothMovementEnabled ? false : true;
     document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
+}
+
+function setPixel(imageData, x, y, r, g, b, a) {
+    var index = (x + y * imageData.width) * 4;
+    imageData.data[index+0] = r;
+    imageData.data[index+1] = g;
+    imageData.data[index+2] = b;
+    imageData.data[index+3] = a;
 }

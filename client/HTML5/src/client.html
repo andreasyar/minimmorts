@@ -185,6 +185,12 @@ function drawLoop() {
     if (selection_rect != null) {
         selection_rect.draw(units_context, camera);
     }
+    
+    units_context.putImageData(
+        map.miniMap,
+        10,
+        10
+    );
 
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
@@ -319,6 +325,7 @@ function syncLoop() {
     step++;
     
     movementManager.updatePositions(step);
+    map.updateMinimap();
 
     var unitMessages = new Array();
     for (i in self_units_list) {

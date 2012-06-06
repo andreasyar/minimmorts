@@ -1,7 +1,9 @@
 package minimmorts.movement;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.units.Unit;
@@ -27,6 +29,18 @@ public class Movement {
     LinkedList<Point> path;
     private long begStep;
     private boolean stopped;
+    
+    public static void initLogging() {
+        try {
+            FileHandler fh = new FileHandler(Movement.class.getName() + ".txt");
+            logger.addHandler(fh);
+            logger.setLevel(Level.ALL);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        } catch (SecurityException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+    }
 
     public Movement(Unit unit, int begJ, int begI, int endJ, int endI, float speed, LinkedList<Point> path, long begStep) {
         this.unit = unit;

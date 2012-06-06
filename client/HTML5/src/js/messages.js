@@ -257,7 +257,9 @@ function PingMessage(time) {
     return this;
 }
 
-// Обработчики сообщений.
+/**
+ * Обработчики сообщений.
+ */
 var MESSAGE_HANDLERS = {
     "ERROR": function (msg) {
         // ["ERROR", "Some text"]
@@ -276,7 +278,17 @@ var MESSAGE_HANDLERS = {
         camera = new Camera();
         map = new Map(100, 100);
         
-        for (var i in msg[3]) {
+        self_units_list = new Array();
+        units_list = new Array();
+        actions = new Array();
+        stored_actions = new Array();
+        selected_units = new Array();
+        movementManager = new MovementManager();
+        
+        /*
+         * Создание юнитов.
+         */
+        for (i in msg[3]) {
             MESSAGE_HANDLERS[msg[3][i][0]](msg[3][i]);
         }
         
@@ -351,6 +363,8 @@ var MESSAGE_HANDLERS = {
 
         if (clientId == unit.ownerId) {
             cur_units_list = self_units_list;
+            camera.x = Map.getCellXOnMap(unit.j - (SCR_W / CELL_W) / 2);
+            camera.y = Map.getCellYOnMap(unit.i - (SCR_H / CELL_H) / 2);
         } else {
             cur_units_list = units_list;
         }
@@ -365,10 +379,16 @@ var MESSAGE_HANDLERS = {
         // Example: ["MOVE",{"begStep":237,"unitId":5,"begJ":0,"begI":1,"endJ":13,"endI":10}]
 
         var moveMessage = message[1];
+        var unit = getUnitById(moveMessage.unitId);
+        
+        if (unit == null) {
+            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть создано.");
+            return;
+        }
 
         movementManager.startNewMovement(
             moveMessage.begStep,
-            getUnitById(moveMessage.unitId),
+            unit,
             moveMessage.begJ,
             moveMessage.begI,
             moveMessage.endJ,
@@ -379,11 +399,17 @@ var MESSAGE_HANDLERS = {
         // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
 
         var moveMessage = message[1];
+        var unit = getUnitById(moveMessage.unitId);
+        
+        if (unit == null) {
+            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть обновлено.");
+            return;
+        }
 
         if (moveMessage.begStep == step) {
             movementManager.updateMovement(
                 moveMessage.begStep,
-                getUnitById(moveMessage.unitId),
+                unit,
                 moveMessage.endJ,
                 moveMessage.endI
             );

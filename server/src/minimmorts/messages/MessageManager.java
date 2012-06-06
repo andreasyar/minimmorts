@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import minimmorts.client.Client;
@@ -33,6 +35,18 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      * Кодировщик и декодировщик сообщений в JSON.
      */
     private final Gson gson = new Gson();
+    
+    public static void initLogging() {
+        try {
+            FileHandler fh = new FileHandler(MessageManager.class.getName() + ".txt");
+            logger.addHandler(fh);
+            logger.setLevel(Level.ALL);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        } catch (SecurityException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
+    }
 
     public MessageManager(ClientManager clientManager) {
         this.clientManager = clientManager;
@@ -230,7 +244,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     Client client = clientManager.getClient(ctx.getChannel());
                     if (client.getClientPingTime() != 0) {
                         if (pm.getTime() - client.getClientPingTime() > 200) {
-                            logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
+                            //logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
                         }
                     }
                     clientManager.setClientPingTime(client.getId(), pm.getTime());

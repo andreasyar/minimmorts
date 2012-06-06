@@ -80,7 +80,7 @@ function MovementManager() {
             console.log("Next path point not found.");
             return;
         }
-        console.log("Next point is", nextPoint);
+        //console.log("Next point is", nextPoint);
         path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         if (path == false) {
             console.log("Путь [" + nextPoint.j + ", " + nextPoint.i + "]->[" + endJ + ", " + endI + "] не может быть построен. Движение не может быть обновлено.");
@@ -131,6 +131,10 @@ function MovementManager() {
         for (i in this.movements) {
             found = false;
             for (j in this.spriteMovements) {
+                if (!(this.spriteMovements[j] instanceof SpriteMovement)) {
+                    console.log(this.spriteMovements[j], "is not sprite movement. Ignore.");
+                    continue;
+                }
                 if (this.movements[i].getUnit() == this.spriteMovements[j].getUnit()) {
                     spriteMovementsInProgress.push(this.spriteMovements[j]);
                     found = true;
@@ -150,6 +154,10 @@ function MovementManager() {
 
     this.updateSpritePositions = function() {
         for (var i in this.spriteMovements) {
+            if (!(this.spriteMovements[i] instanceof SpriteMovement)) {
+                console.log(this.spriteMovements[i], "is not sprite movement. Ignore.");
+                continue;
+            }
             this.spriteMovements[i].updatePosition();
         }
     }

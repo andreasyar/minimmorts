@@ -140,6 +140,17 @@ public class ClientManager {
             return false;
         }
     }
+
+    public boolean setUninitialized(long id) {
+        Client client;
+        
+        if ( (client = clientsById.get(id)) != null) {
+            client.setUninitialized();
+            return true;
+        } else {
+            return false;
+        }
+    }
     
     public boolean disconnectClient(long clientId) {
         Client client;

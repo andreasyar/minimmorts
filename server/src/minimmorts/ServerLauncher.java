@@ -13,6 +13,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import minimmorts.client.ClientManager;
 import minimmorts.db.DBWorker;
 import minimmorts.messages.MessageManager;
+import minimmorts.movement.Movement;
 import minimmorts.movement.MovementManager;
 import minimmorts.server.ServerMainLoop;
 import minimmorts.units.UnitManager;
@@ -59,6 +60,10 @@ public class ServerLauncher {
         //logger.log(Level.INFO, "DB connected.");
         
         // Create game server.
+        
+        MessageManager.initLogging();
+        Movement.initLogging();
+        MovementManager.initLogging();
         
         clientManager = new ClientManager();
         messageManager = new MessageManager(clientManager);
