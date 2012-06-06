@@ -303,7 +303,7 @@ var MESSAGE_HANDLERS = {
         }
     },
     "STATE": function (msg) {
-        // [["STATE",3349,[["UNIT",{"ownerId":13,"id":14,"j":4,"i":4}],["UNIT",{"ownerId":13,"id":15,"j":5,"i":5}]],[["MOVE",{"unitId":14,"j":6,"i":9}],["MOVE",{"unitId":15,"j":7,"i":9}]]]]
+        // [["STATE",3349,[["UNIT",{"ownerId":13,"id":14,"j":4,"i":4,"r":128,"g":0,"b":0}],["UNIT",{"ownerId":13,"id":15,"j":5,"i":5,"r":128,"g":0,"b":0}]],[["MOVE",{"unitId":14,"j":6,"i":9}],["MOVE",{"unitId":15,"j":7,"i":9}]]]]
         
         if (!is_initial_state_received) {
             is_initial_state_received = true;
@@ -331,7 +331,7 @@ var MESSAGE_HANDLERS = {
             } else {
                 cur_units_list = units_list;
             }
-            cur_units_list.push(new Unit(units[i][1].ownerId, units[i][1].id, units[i][1].j, units[i][1].i));
+            cur_units_list.push(new Unit(units[i][1].ownerId, units[i][1].id, units[i][1].j, units[i][1].i, {r:units[i][1].r,g:units[i][1].g,b:units[i][1].b}));
         }
 
         for (i in recv_actions) {
@@ -344,7 +344,7 @@ var MESSAGE_HANDLERS = {
         }
     },
     "NEWUNIT": function (msg) {
-        // ["NEWUNIT",{"ownerId":10,"id":11,"j":4,"i":4}]
+        // ["NEWUNIT",{"ownerId":10,"id":11,"j":4,"i":4,"r":128,"g":0,"b":0}]
 
         var unit = msg[1];
         var cur_units_list;
@@ -354,7 +354,7 @@ var MESSAGE_HANDLERS = {
         } else {
             cur_units_list = units_list;
         }
-        cur_units_list.push(new Unit(unit.ownerId, unit.id, unit.j, unit.i));
+        cur_units_list.push(new Unit(unit.ownerId, unit.id, unit.j, unit.i, {r:unit.r,g:unit.g,b:unit.b}));
     },
     "DELUNIT": function (msg) {
         // ["DELUNIT",11]

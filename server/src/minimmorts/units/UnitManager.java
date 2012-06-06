@@ -4,8 +4,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import minimmorts.IdGenerator;
 import minimmorts.ErrnoErrorService;
+import minimmorts.IdGenerator;
+import minimmorts.client.Client;
 import minimmorts.messages.Message;
 import minimmorts.messages.UnitMessage;
 
@@ -18,8 +19,8 @@ public class UnitManager {
 
     private final LinkedList<Unit> allUnits = new LinkedList<>();
 
-    public Unit createUnit(long ownerId, int j, int i) {
-        Unit unit = new Unit(ownerId, IdGenerator.generateId(), j, i);
+    public Unit createUnit(Client owner, int j, int i) {
+        Unit unit = new Unit(owner.getId(), IdGenerator.generateId(), j, i, owner.getColor());
         synchronized (allUnits) {
             allUnits.add(unit);
         }

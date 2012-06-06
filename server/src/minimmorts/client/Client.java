@@ -1,5 +1,6 @@
 package minimmorts.client;
 
+import java.awt.Color;
 import java.util.Collection;
 import java.util.LinkedList;
 import minimmorts.messages.Message;
@@ -44,10 +45,13 @@ public class Client {
     private boolean awaitingInitializing = true;
     
     private long clientPingTime = 0;
+    
+    private Color color;
 
-    Client(long id, Channel channel) {
+    Client(long id, Channel channel, Color color) {
         this.id = id;
         this.channel = channel;
+        this.color = color;
     }
 
     public long getId() {
@@ -110,5 +114,9 @@ public class Client {
 
     void setClientPingTime(long clientPingTime) {
         this.clientPingTime = clientPingTime;
+    }
+
+    public Color getColor() {
+        return color;
     }
 }

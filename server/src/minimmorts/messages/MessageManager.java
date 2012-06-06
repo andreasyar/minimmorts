@@ -90,7 +90,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public static LinkedList<Message> createAllNewUnitMessage(LinkedList<Unit> units) {
         LinkedList<Message> newUnitMessages = new LinkedList<>();
         for (Unit unit : units) {
-            newUnitMessages.add(new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI()));
+            newUnitMessages.add(new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI(), unit.getColor().getRed(), unit.getColor().getGreen(), unit.getColor().getBlue()));
         }
         return newUnitMessages;
     }
@@ -133,7 +133,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      * @return Сообщение о появлении нового юнита.
      */
     public static NewUnitMessage createNewUnitMessage(Unit unit) {
-        return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI());
+        return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI(), unit.getColor().getRed(), unit.getColor().getGreen(), unit.getColor().getBlue());
     }
     
     /**

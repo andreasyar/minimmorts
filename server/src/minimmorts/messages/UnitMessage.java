@@ -11,12 +11,18 @@ public class UnitMessage implements Message {
     private long id;
     private int j;
     private int i;
+    private int r;
+    private int g;
+    private int b;
 
-    public UnitMessage(long ownerId, long id, int j, int i) {
+    public UnitMessage(long ownerId, long id, int j, int i, int r, int g, int b) {
         this.ownerId = ownerId;
         this.id = id;
         this.j = j;
         this.i = i;
+        this.r = r;
+        this.g = g;
+        this.b = b;
     }
 
     public long getOwnerId() {
@@ -51,6 +57,6 @@ public class UnitMessage implements Message {
 
     @Override
     public String toJSON() {
-        return "[\"UNIT\",{\"ownerId\":" + ownerId + ",\"id\":" + id + ",\"j\":" + j + ",\"i\":" + i + "}]";
+        return "[\"UNIT\",{\"ownerId\":" + ownerId + ",\"id\":" + id + ",\"j\":" + j + ",\"i\":" + i + ",\"r\":" + r + ",\"g\":" + g + ",\"b\":" + b + "}]";
     }
 }

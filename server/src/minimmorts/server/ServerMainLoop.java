@@ -210,13 +210,13 @@ public class ServerMainLoop implements Runnable {
             clientManager.notifyAllOtherClients(
                 client,
                 MessageManager.createNewUnitMessage(
-                    unitManager.createUnit(client.getId(), 4, 4)
+                    unitManager.createUnit(client, 4, 4)
                 )
             );
             clientManager.notifyAllOtherClients(
                 client,
                 MessageManager.createNewUnitMessage(
-                    unitManager.createUnit(client.getId(), 5, 5)
+                    unitManager.createUnit(client, 5, 5)
                 )
             );
         }

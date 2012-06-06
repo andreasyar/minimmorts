@@ -1,9 +1,11 @@
 package minimmorts.client;
 
+import java.awt.Color;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import minimmorts.messages.Message;
 import org.jboss.netty.channel.Channel;
@@ -29,7 +31,8 @@ public class ClientManager {
         Client newClient;
         
         if (!clientsById.containsKey(newClientId) && !clientsByChannel.containsKey(channel)) {
-            newClient = new Client(newClientId, channel);
+            Random generator = new Random();
+            newClient = new Client(newClientId, channel, new Color(generator.nextInt(256), generator.nextInt(256), generator.nextInt(256)));
             clientsById.put(newClientId, newClient);
             clientsByChannel.put(channel, newClient);
             return true;

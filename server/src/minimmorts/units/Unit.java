@@ -1,5 +1,6 @@
 package minimmorts.units;
 
+import java.awt.Color;
 import minimmorts.messages.UnitMessage;
 
 /**
@@ -12,12 +13,14 @@ public class Unit {
     private int j;
     private int i;
     private transient boolean deleted = false;
+    private transient Color color;
 
-    public Unit(long ownerId, long id, int j, int i) {
+    public Unit(long ownerId, long id, int j, int i, Color color) {
         this.ownerId = ownerId;
         this.id = id;
         this.j = j;
         this.i = i;
+        this.color = color;
     }
 
     public long getOwnerId() {
@@ -50,6 +53,10 @@ public class Unit {
 
     public void markDeleted() {
         this.deleted = true;
+    }
+
+    public Color getColor() {
+        return color;
     }
     
     public String toJSON() {
