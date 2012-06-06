@@ -89,8 +89,8 @@ public class ServerMainLoop implements Runnable {
             return;
         } else if (!clientManager.isAllClientsReported(step)) {
             waitIterations = 0;
-            //disconnectUnreportedClients(step);
-            reinitializeUnreportedClients(step);
+            disconnectUnreportedClients(step);
+            //reinitializeUnreportedClients(step);
         } else {
             waitIterations = 0;
         }

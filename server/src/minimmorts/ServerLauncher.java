@@ -32,7 +32,7 @@ public class ServerLauncher {
     public static void main(String[] args) {
         ServerConfig config;
         DBWorker dbworker;
-        ClientManager clientManager;
+        ClientManager clientManager = null;
         MessageManager messageManager;
         MovementManager movementManager;
         UnitManager unitManager;
@@ -64,8 +64,12 @@ public class ServerLauncher {
         MessageManager.initLogging();
         Movement.initLogging();
         MovementManager.initLogging();
-        
-        clientManager = new ClientManager();
+        try {
+            clientManager = new ClientManager();
+            ClientManager.enableLogging();
+        } catch (IOException ex) {
+            Logger.getLogger(ServerLauncher.class.getName()).log(Level.SEVERE, null, ex);
+        }
         messageManager = new MessageManager(clientManager);
         movementManager = new MovementManager();
         unitManager = new UnitManager();

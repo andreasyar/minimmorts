@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.movement.Movement;
@@ -39,6 +40,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public static void initLogging() {
         try {
             FileHandler fh = new FileHandler(MessageManager.class.getName() + ".txt");
+            fh.setFormatter(new SimpleFormatter());
             logger.addHandler(fh);
             logger.setLevel(Level.ALL);
         } catch (IOException ex) {

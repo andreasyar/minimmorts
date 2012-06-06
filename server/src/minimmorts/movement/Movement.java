@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import minimmorts.GlobalLogFile;
 import minimmorts.units.Unit;
 
 /**
@@ -33,7 +35,9 @@ public class Movement {
     public static void initLogging() {
         try {
             FileHandler fh = new FileHandler(Movement.class.getName() + ".txt");
+            fh.setFormatter(new SimpleFormatter());
             logger.addHandler(fh);
+            logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
             logger.setLevel(Level.ALL);
         } catch (IOException ex) {
             logger.log(Level.SEVERE, null, ex);

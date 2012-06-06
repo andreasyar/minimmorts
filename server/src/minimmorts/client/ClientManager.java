@@ -1,12 +1,18 @@
 package minimmorts.client;
 
 import java.awt.Color;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import minimmorts.GlobalLogFile;
 import minimmorts.messages.Message;
 import org.jboss.netty.channel.Channel;
 
@@ -16,6 +22,16 @@ import org.jboss.netty.channel.Channel;
  * @author Sorc
  */
 public class ClientManager {
+    
+    /**
+     *
+     */
+    private static Logger logger = null;
+    
+    /**
+     *
+     */
+    private static boolean loggingEnabled = false;
 
     /**
      * Хеш клиентов. id -> Клиент.
@@ -26,6 +42,25 @@ public class ClientManager {
      * Хеш клиентов. Канал -> Клиент.
      */
     private final ConcurrentHashMap<Channel, Client> clientsByChannel = new ConcurrentHashMap();
+
+    public static void enableLogging() {
+        ClientManager.loggingEnabled = true;
+    }
+
+    public static void disableLogging() {
+        ClientManager.loggingEnabled = false;
+    }
+
+    public ClientManager() throws IOException {
+        if (ClientManager.logger == null) {
+            ClientManager.logger = Logger.getLogger(ClientManager.class.getName());
+            FileHandler h = new FileHandler(ClientManager.class.getName() + ".txt");
+            h.setFormatter(new SimpleFormatter());
+            logger.addHandler(h);
+            logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
+            logger.setLevel(Level.ALL);
+        }
+    }
     
     public boolean createClient(long newClientId, Channel channel) {
         Client newClient;
@@ -35,30 +70,14 @@ public class ClientManager {
             newClient = new Client(newClientId, channel, new Color(generator.nextInt(256), generator.nextInt(256), generator.nextInt(256)));
             clientsById.put(newClientId, newClient);
             clientsByChannel.put(channel, newClient);
+            if (ClientManager.loggingEnabled) {
+                logger.info("Создан новый клиент id=" + newClientId);
+            }
             return true;
         } else {
-            return false;
-        }
-    }
-    
-    public boolean addToOubox(long clientId, Message message) {
-        Client client;
-        
-        if ( (client = clientsById.get(clientId)) != null) {
-            client.addToOubox(message);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    public boolean addAllToOubox(long clientId, Collection<Message> messages) {
-        Client client;
-        
-        if ( (client = clientsById.get(clientId)) != null) {
-            client.addAllToOubox(messages);
-            return true;
-        } else {
+            if (ClientManager.loggingEnabled) {
+                logger.info("Клиент id=" + newClientId + " не может быть создан, так как клиент с таким id уже существует.");
+            }
             return false;
         }
     }
@@ -108,10 +127,10 @@ public class ClientManager {
         }
     }
     
-    public boolean markDisconnected(long id) {
+    public boolean markDisconnected(long clientId) {
         Client client;
         
-        if ( (client = clientsById.get(id)) != null) {
+        if ( (client = clientsById.get(clientId)) != null) {
             client.markDisconnected();
             return true;
         } else {
@@ -130,10 +149,10 @@ public class ClientManager {
         }
     }
     
-    public boolean setInitialized(long id) {
+    public boolean setInitialized(long clientId) {
         Client client;
         
-        if ( (client = clientsById.get(id)) != null) {
+        if ( (client = clientsById.get(clientId)) != null) {
             client.setInitialized();
             return true;
         } else {
@@ -141,10 +160,10 @@ public class ClientManager {
         }
     }
 
-    public boolean setUninitialized(long id) {
+    public boolean setUninitialized(long clientId) {
         Client client;
         
-        if ( (client = clientsById.get(id)) != null) {
+        if ( (client = clientsById.get(clientId)) != null) {
             client.setUninitialized();
             return true;
         } else {
@@ -164,18 +183,18 @@ public class ClientManager {
         }
     }
     
-    public Client getClient(long id) {
-        return clientsById.get(id);
+    public Client getClient(long clientId) {
+        return clientsById.get(clientId);
     }
     
     public Client getClient(Channel channel) {
         return clientsByChannel.get(channel);
     }
     
-    public Channel getClientChannel(long id) {
+    public Channel getClientChannel(long clientId) {
         Client client;
         
-        if ( (client = clientsById.get(id)) != null) {
+        if ( (client = clientsById.get(clientId)) != null) {
             return client.getChannel();
         } else {
             return null;
