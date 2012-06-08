@@ -1,10 +1,14 @@
 package minimmorts.units;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import minimmorts.ErrnoErrorService;
+import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
 import minimmorts.client.Client;
 import minimmorts.messages.Message;
@@ -15,11 +19,56 @@ import minimmorts.messages.UnitMessage;
  * @author Sorc
  */
 public class UnitManager {
-    private static final Logger logger = Logger.getLogger(UnitManager.class.getName());
+
+    /**
+     * 
+     */
+    private static Logger logger = null;
+
+    /**
+     * Флаг включения логирования.
+     */
+    private static boolean loggingEnabled = false;
 
     private final LinkedList<Unit> allUnits = new LinkedList<>();
 
-    public Unit createUnit(Client owner, int j, int i) {
+    public static void enableLogging() {
+        UnitManager.loggingEnabled = true;
+    }
+
+    public static void disableLogging() {
+        UnitManager.loggingEnabled = false;
+    }
+
+    public static boolean isLoggingEnabled() {
+        return UnitManager.loggingEnabled;
+    }
+
+    public UnitManager() throws IOException {
+        if (UnitManager.logger == null) {
+            UnitManager.logger = Logger.getLogger(UnitManager.class.getName());
+            FileHandler h = new FileHandler(UnitManager.class.getName() + ".txt");
+            h.setFormatter(new SimpleFormatter());
+            logger.addHandler(h);
+            logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
+            logger.setLevel(Level.ALL);
+        }
+    }
+
+    /**
+     * Создаёт юнита.
+     * @param owner клиент владелец юнита
+     * @param j местоположение юнита на карте по ширине
+     * @param i местоположение юнита на карте по высоте
+     * @throws NullPointerException если вместо клиента владельца
+     * юнита получен null
+     * @return новый юнит
+     */
+    public Unit createUnit(Client owner, int j, int i) throws NullPointerException {
+        if (owner == null) {
+            throw new NullPointerException("Владелец юнита - null.");
+        }
+        
         Unit unit = new Unit(owner.getId(), IdGenerator.generateId(), j, i, owner.getColor());
         synchronized (allUnits) {
             allUnits.add(unit);
@@ -29,7 +78,6 @@ public class UnitManager {
 
     public boolean isStateValid(LinkedList<Message> unitMessages) {
         UnitMessage m;
-        //boolean found;
         int i;
         Unit u;
 
@@ -49,13 +97,13 @@ public class UnitManager {
                             " Server: ownerId:" + u.getOwnerId() + ",j:" + u.getJ() + ",i:" + u.getI() +
                             " Client: ownerId:" + m.getOwnerId() + ",j:" + m.getJ() + ",i:" + m.getI();
                         ErrnoErrorService.setErrno(errorText);
-                        logger.log(Level.INFO, errorText);
+                        //logger.log(Level.INFO, errorText);
                         return false;
                     }
                 } else {
                     String errorText = "State invalid. Unit id:" + m.getId() + " not found.";
                     ErrnoErrorService.setErrno(errorText);
-                    logger.log(Level.INFO, errorText);
+                    //logger.log(Level.INFO, errorText);
                     return false;
                 }
             }
@@ -64,7 +112,13 @@ public class UnitManager {
         return true;
     }
 
-    public LinkedList<Unit> removeUnitsByOwnerId(long ownerId) {
+    /**
+     * Помечает юнитов на удаление по идентификатору владельца и возвращает
+     * помеченных юнитов.
+     * @param ownerId идентификатор владельца
+     * @return список помеченных юнитов
+     */
+    public LinkedList<Unit> markUnitsDeletedByOwnerId(long ownerId) {
         LinkedList<Unit> removedUnits = new LinkedList<>();
         
         synchronized (allUnits) {
@@ -82,7 +136,10 @@ public class UnitManager {
         return removedUnits;
     }
     
-    public void removeMarkedUnits() {
+    /**
+     * Удаляет помеченных на удаление юнитов.
+     */
+    public void deleteMarkedUnits() {
         synchronized (allUnits) {
             Iterator i = allUnits.iterator();
             Unit u;
@@ -95,6 +152,12 @@ public class UnitManager {
         }
     }
 
+    /**
+     * Возвращает юнита по его идентификатору.
+     * @param идентификатор юнита
+     * @param юнит или <b>null</b> если юнит не найден по его идентификатору или
+     * юнит помечен на удаление.
+     */
     public Unit getById(Long unitId) {
         synchronized (allUnits) {
             for (Unit u : allUnits) {
@@ -107,8 +170,13 @@ public class UnitManager {
         return null;
     }
 
+    /**
+     * Возвращает всех юнитов, не помеченных на удаление.
+     * @return копия списока юнитов
+     */
     public LinkedList<Unit> getAllUnits() {
         LinkedList<Unit> clone = new LinkedList<>();
+        
         synchronized (allUnits) {
             for (Unit u : allUnits) {
                 if (!u.isDeleted()) {
@@ -116,6 +184,7 @@ public class UnitManager {
                 }
             }
         }
+        
         return clone;
     }
 }

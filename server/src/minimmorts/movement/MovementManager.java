@@ -46,14 +46,14 @@ public class MovementManager {
     public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) {
         Movement movement = createMovement(step, map, unit, j, i, 0.4f);
         if (movement == null) {
-            logger.log(Level.SEVERE, "Cant create movement!");
+            //logger.log(Level.SEVERE, "Cant create movement!");
             return null;
         }
-        System.err.print("New path for unit id=" + unit.getId() + " created on step " + step + " ");
+        /*System.err.print("New path for unit id=" + unit.getId() + " created on step " + step + " ");
         for (Point p : movement.getPath()) {
             System.err.print(p + " ");
         }
-        System.err.println();
+        System.err.println();*/
         movements.add(movement);
         return movement;
     }
@@ -70,14 +70,14 @@ public class MovementManager {
             }
         }
         if (existedMovement == null) {
-            logger.log(Level.SEVERE, "Movement not found.");
+            //logger.log(Level.SEVERE, "Movement not found.");
             return null;
         }
         if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            logger.log(Level.SEVERE, "Next path point not found.");
+            //logger.log(Level.SEVERE, "Next path point not found.");
             return null;
         }
-        logger.log(Level.INFO, "Next path point for unit id=" + unit.getId() + " is " + nextPoint);
+        //logger.log(Level.INFO, "Next path point for unit id=" + unit.getId() + " is " + nextPoint);
         updatedMovement = createMovement(
             step,
             map,
@@ -89,15 +89,15 @@ public class MovementManager {
             0.4f
         );
         if (updatedMovement == null) {
-            logger.log(Level.SEVERE, "Cant create movement!");
+            //logger.log(Level.SEVERE, "Cant create movement!");
             return null;
         }
         
-        System.err.print("Path for unit id=" + unit.getId() + " updated on step " + step + " ");
+        /*System.err.print("Path for unit id=" + unit.getId() + " updated on step " + step + " ");
         for (Point p : updatedMovement.getPath()) {
             System.err.print(p + " ");
         }
-        System.err.println();
+        System.err.println();*/
         
         movements.set(movements.indexOf(existedMovement), updatedMovement);
         
@@ -112,7 +112,7 @@ public class MovementManager {
                 if (m.isStopped()) {
                     found = true;
                     movements.remove(m);
-                    logger.log(Level.INFO, "Movement of unit {0} removed on step {1}", new Object[] {m.getUnit().getId(), step});
+                    //logger.log(Level.INFO, "Movement of unit {0} removed on step {1}", new Object[] {m.getUnit().getId(), step});
                     break;
                 }
             }
@@ -129,7 +129,7 @@ public class MovementManager {
     private Movement createMovement(long step, Map map, Unit unit, int begJ, int begI, int endJ, int endI, float speed) {
         LinkedList<Point> path = getPath(map, new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         if (path == null) {
-            logger.log(Level.SEVERE, "Path not found!");
+            //logger.log(Level.SEVERE, "Path not found!");
             return null;
         }
         Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
@@ -339,7 +339,7 @@ public class MovementManager {
         }
 
         if (limit <= 0) {
-            logger.log(Level.SEVERE, "Path from {0} to {1} not found!", new Object[] {beg.toString(), end.toString()});
+            //logger.log(Level.SEVERE, "Path from {0} to {1} not found!", new Object[] {beg.toString(), end.toString()});
             return null;
         }
 

@@ -13,6 +13,9 @@ import org.jboss.netty.channel.Channel;
  * @author Sorc
  */
 public class Client {
+    /**
+     * 
+     */
     private static final Logger logger = Logger.getLogger(Client.class.getName());
     
     /**
@@ -45,7 +48,7 @@ public class Client {
      */
     private boolean disconnected = false;
     
-    private boolean awaitingInitializing = true;
+    private boolean initialized = false;
     
     private long clientPingTime = 0;
     
@@ -103,12 +106,12 @@ public class Client {
         this.disconnected = true;
     }
 
-    public boolean isAwaitingInitializing() {
-        return awaitingInitializing;
+    public boolean isInitialized() {
+        return initialized;
     }
 
     void setInitialized() {
-        this.awaitingInitializing = false;
+        this.initialized = true;
     }
 
     public long getClientPingTime() {
@@ -124,6 +127,6 @@ public class Client {
     }
 
     void setUninitialized() {
-        this.awaitingInitializing = true;
+        this.initialized = false;
     }
 }

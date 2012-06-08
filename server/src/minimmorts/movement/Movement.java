@@ -93,22 +93,22 @@ public class Movement {
         if (n >= path.size() - 1) {
             j = path.get(path.size() - 1).getJ();
             i = path.get(path.size() - 1).getI();
-            logger.log(
+            /*logger.log(
                 Level.INFO,
                 "Unit id={0} [{1},{2}]->[{3},{4}] on step {5} Movement complete.",
                 new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
-            );
+            );*/
             unit.setJ(j);
             unit.setI(i);
             stopped = true;
         } else {
             j = path.get(n).getJ();
             i = path.get(n).getI();
-            logger.log(
+            /*logger.log(
                 Level.INFO,
                 "Unit id={0} [{1},{2}]->[{3},{4}] on step {5}",
                 new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
-            );
+            );*/
             unit.setJ(j);
             unit.setI(i);
         }

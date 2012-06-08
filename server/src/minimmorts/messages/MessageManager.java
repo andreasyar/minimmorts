@@ -10,9 +10,11 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import minimmorts.GlobalLogFile;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.movement.Movement;
+import minimmorts.server.ServerMainLoop;
 import minimmorts.units.Unit;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -23,7 +25,16 @@ import org.jboss.netty.handler.codec.http.websocketx.TextWebSocketFrame;
  * @author Sorc
  */
 public class MessageManager extends SimpleChannelUpstreamHandler {
-    private static final Logger logger = Logger.getLogger(MessageManager.class.getName());
+    
+    /**
+     *
+     */
+    private static Logger logger = null;
+    
+    /**
+     *
+     */
+    private static boolean loggingEnabled = false;
 
     /**
      * Список входящих сообщений от клиентов.
@@ -36,21 +47,25 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      * Кодировщик и декодировщик сообщений в JSON.
      */
     private final Gson gson = new Gson();
-    
-    public static void initLogging() {
-        try {
-            FileHandler fh = new FileHandler(MessageManager.class.getName() + ".txt");
-            fh.setFormatter(new SimpleFormatter());
-            logger.addHandler(fh);
-            logger.setLevel(Level.ALL);
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        } catch (SecurityException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        }
+
+    public static void enableLogging() {
+        MessageManager.loggingEnabled = true;
     }
 
-    public MessageManager(ClientManager clientManager) {
+    public static void disableLogging() {
+        MessageManager.loggingEnabled = false;
+    }
+
+    public MessageManager(ClientManager clientManager) throws IOException {
+        if (MessageManager.logger == null) {
+            MessageManager.logger = Logger.getLogger(MessageManager.class.getName());
+            FileHandler h = new FileHandler(MessageManager.class.getName() + ".txt");
+            h.setFormatter(new SimpleFormatter());
+            logger.addHandler(h);
+            logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
+            logger.setLevel(Level.ALL);
+        }
+        
         this.clientManager = clientManager;
     }
 
@@ -157,7 +172,14 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-        clientManager.markDisconnected(ctx.getChannel());
+        boolean res = clientManager.markDisconnected(ctx.getChannel());
+        if (ClientManager.isLoggingEnabled()) {
+            if (res) {
+                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " помечен как отключенный.");
+            } else {
+                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " не найден, поэтому не может быть помечен как отключенный.");
+            }
+        }
     }
 
     /**
@@ -192,10 +214,6 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     }
                     break;
                 case "STATE":
-                    /*if (!gameServer.isClientExists(ctx.getChannel())) {
-                        break;
-                    }*/
-                    
                     long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
                     JsonArray units = messageFields.get(2).getAsJsonArray();
                     JsonArray actions = messageFields.get(3).getAsJsonArray();
@@ -207,6 +225,8 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     UnitMessage unitMessage;
                     MoveMessage moveMessage;
                     String subType;
+                    
+                    boolean res;
 
                     for (JsonElement elem : units) {
                         unit = elem.getAsJsonArray();
@@ -217,7 +237,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                                 unitsList.add(unitMessage);
                                 break;
                             default:
-                                logger.log(Level.SEVERE, "Unknown message type {0}", subType);
+                                //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
                                 break;
                         }
                     }
@@ -231,19 +251,30 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                                 actionsList.add(moveMessage);
                                 break;
                             default:
-                                logger.log(Level.SEVERE, "Unknown message type {0}", subType);
+                                //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
                                 break;
                         }
                     }
-
-                    synchronized (commonInbox) {
-                        commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
+                    
+                    res = clientManager.setLastReportedStep(ctx.getChannel(), step);
+                    if (res) {
+                        synchronized (commonInbox) {
+                            commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
+                        }
+                    } else if (ClientManager.isLoggingEnabled()) {
+                        logger.info(ServerMainLoop.getStep() + ": Не удалось установить последний шаг клиента, за который он отчитался. Клиент channel=" + ctx.getChannel() + " не найден.");
                     }
-                    clientManager.setLastReportedStep(ctx.getChannel(), step);
+
                     break;
                 case "PING":
                     PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
-                    Client client = clientManager.getClient(ctx.getChannel());
+                    Client client;
+                    if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
+                        if (ClientManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Сообщение PING не может быть обработано. Клиент channel=" + ctx.getChannel() + " не найден.");
+                        }
+                        break;  // Не обрабатываем дальше это сообщение.
+                    }
                     if (client.getClientPingTime() != 0) {
                         if (pm.getTime() - client.getClientPingTime() > 200) {
                             //logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});

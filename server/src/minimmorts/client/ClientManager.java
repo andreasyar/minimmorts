@@ -2,7 +2,6 @@ package minimmorts.client;
 
 import java.awt.Color;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
@@ -22,14 +21,14 @@ import org.jboss.netty.channel.Channel;
  * @author Sorc
  */
 public class ClientManager {
-    
+
     /**
-     *
+     * 
      */
     private static Logger logger = null;
-    
+
     /**
-     *
+     * Флаг включения логирования.
      */
     private static boolean loggingEnabled = false;
 
@@ -51,6 +50,10 @@ public class ClientManager {
         ClientManager.loggingEnabled = false;
     }
 
+    public static boolean isLoggingEnabled() {
+        return loggingEnabled;
+    }
+
     public ClientManager() throws IOException {
         if (ClientManager.logger == null) {
             ClientManager.logger = Logger.getLogger(ClientManager.class.getName());
@@ -61,31 +64,40 @@ public class ClientManager {
             logger.setLevel(Level.ALL);
         }
     }
-    
+
+    /**
+     * Создаёт нового клиента и помещает его в хеши клиентов и каналов.
+     * @param newClientId идентификатор нового клиента
+     * @param channel канал нового клиента
+     * @return возвращает <b>true</b>, если клиент был успешно создан или
+     * <b>false</b>, если клиент с таким идентификатором или с таким каналом
+     * уже существует
+     */
     public boolean createClient(long newClientId, Channel channel) {
         Client newClient;
-        
+
         if (!clientsById.containsKey(newClientId) && !clientsByChannel.containsKey(channel)) {
             Random generator = new Random();
             newClient = new Client(newClientId, channel, new Color(generator.nextInt(256), generator.nextInt(256), generator.nextInt(256)));
             clientsById.put(newClientId, newClient);
             clientsByChannel.put(channel, newClient);
-            if (ClientManager.loggingEnabled) {
-                logger.info("Создан новый клиент id=" + newClientId);
-            }
             return true;
         } else {
-            if (ClientManager.loggingEnabled) {
-                logger.info("Клиент id=" + newClientId + " не может быть создан, так как клиент с таким id уже существует.");
-            }
             return false;
         }
     }
-    
+
+    /**
+     * Возвращает исходящие сообщения клиента, при этом очищая его "ящик"
+     * исходящих сообщений.
+     * @param clientId идентификатор клиента
+     * @return возвращает список исходящих сообщений клиента или <b>null</b>,
+     * если клиент не был найден по его идентификатору с хеше клиентов
+     */
     public LinkedList<Message> takeFromOutbox(long clientId) {
         Client client;
         LinkedList<Message> clone;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             clone = client.takeFromOutbox();
             return clone;
@@ -93,21 +105,18 @@ public class ClientManager {
             return null;
         }
     }
-    
-    public boolean setLastReportedStep(long clientId, long step) {
-        Client client;
-        
-        if ( (client = clientsById.get(clientId)) != null) {
-            client.setLastReportedStep(step);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
+
+    /**
+     * Устанавливает последний шаг клиента, за который он отчитался.
+     * @param channel канал клиента
+     * @param step шаг
+     * @return возвращает <b>true</b>, если последний шаг, за которой клиент
+     * отчитался был успешно установлен или <b>false</b>, если клиент не был
+     * найден по своему каналу в хеше каналов
+     */
     public boolean setLastReportedStep(Channel channel, long step) {
         Client client;
-        
+
         if ( (client = clientsByChannel.get(channel)) != null) {
             client.setLastReportedStep(step);
             return true;
@@ -115,10 +124,18 @@ public class ClientManager {
             return false;
         }
     }
-    
+
+    /**
+     * Устанавливает последний подтверждённый шаг клиента.
+     * @param clientId идентификатор клиента
+     * @param step шаг
+     * @return возвращает <b>true</b>, если последний подтверждённый шаг клиента
+     * был успешно установлен или <b>false</b>, если клиент не был найден по
+     * своему идентификатору в хеше клиентов
+     */
     public boolean setLastConfirmedStep(long clientId, long step) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             client.setLastConfirmedStep(step);
             return true;
@@ -126,10 +143,16 @@ public class ClientManager {
             return false;
         }
     }
-    
+
+    /**
+     * Помечает клиент как отключенного.
+     * @param clientId идентификатор клиента
+     * @return возвращает <b>true</b>, если клиент был успешно помечен как отключенный
+     * или <b>false</b>, если клиент не был найден по своему идентификатору в хеше клиентов
+     */
     public boolean markDisconnected(long clientId) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             client.markDisconnected();
             return true;
@@ -137,10 +160,16 @@ public class ClientManager {
             return false;
         }
     }
-    
+
+    /**
+     * Помечает клиент как отключенного.
+     * @param channel канал клиента
+     * @return возвращает <b>true</b>, если клиент был успешно помечен как отключенный
+     * или <b>false</b>, если клиент не был найден по своему каналу в хеше каналов
+     */
     public boolean markDisconnected(Channel channel) {
         Client client;
-        
+
         if ( (client = clientsByChannel.get(channel)) != null) {
             client.markDisconnected();
             return true;
@@ -148,10 +177,17 @@ public class ClientManager {
             return false;
         }
     }
-    
+
+    /**
+     * Помечает клиента как инициализированного. С этого момента от клиента требуется
+     * отправка отчётов на сервер.
+     * @param clientId идентификатор клиента
+     * @return возвращает <b>true</b>, если клиент был успешно помечен как инициализированный
+     * или <b>false</b>, если клиент не был найден по своему идентификатору с хеше клиентов
+     */
     public boolean setInitialized(long clientId) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             client.setInitialized();
             return true;
@@ -160,9 +196,15 @@ public class ClientManager {
         }
     }
 
+    /**
+     * Помечает клиента как неинициализированного.
+     * @param clientId идентификатор клиента
+     * @return возвращает <b>true</b>, если клиент был успешно помечен как неинициализированный
+     * или <b>false</b>, если клиент не был найден по своему идентификатору с хеше клиентов
+     */
     public boolean setUninitialized(long clientId) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             client.setUninitialized();
             return true;
@@ -170,10 +212,17 @@ public class ClientManager {
             return false;
         }
     }
-    
-    public boolean disconnectClient(long clientId) {
+
+    /**
+     * Удаляет клиента из хеша клиентов и каналов, тем самым останавливая
+     * обслуживание клиента.
+     * @param clientId идентификатор удаляемого клиента
+     * @return возвращает <b>true</b> если клиент был успешно удалён и <b>false</b>
+     * если клиент не был найден по своему идентификатору с хеше клиентов
+     */
+    public boolean removeClient(long clientId) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             clientsById.remove(clientId);
             clientsByChannel.remove(client.getChannel());
@@ -182,40 +231,42 @@ public class ClientManager {
             return false;
         }
     }
-    
-    public Client getClient(long clientId) {
-        return clientsById.get(clientId);
-    }
-    
+
+    /**
+     * Возвращает клиента по каналу.
+     * @param channel канал клиента
+     * @return возвращает клиента или <b>null</b>, если клиент не найден по
+     * своему каналу в хеше каналов
+     */
     public Client getClient(Channel channel) {
         return clientsByChannel.get(channel);
     }
-    
+
+    /**
+     * Возвращает канал клиента по идентификатору клиента.
+     * @param clientId идентификатор клиента
+     * @return возвращает канал клиента или <b>null</b>, если клиент не найден по
+     * своему идентификатору в хеше клиентов
+     */
     public Channel getClientChannel(long clientId) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             return client.getChannel();
         } else {
             return null;
         }
     }
-    
-    public Channel getClientChannel(Channel channel) {
-        Client client;
-        
-        if ( (client = clientsByChannel.get(channel)) != null) {
-            return client.getChannel();
-        } else {
-            return null;
-        }
-    }
-    
+
+    /**
+     * Возвращает клиентов, которые помеченны как отключенные.
+     * @return список отключенных клиентов
+     */
     public LinkedList<Client> getDisconnectedClients() {
         LinkedList<Client> disconnectedClients = new LinkedList<>();
         Entry pair;
         Client client;
-        
+
         Iterator i = clientsById.entrySet().iterator();
         while (i.hasNext()) {
             pair = (Entry) i.next();
@@ -224,47 +275,53 @@ public class ClientManager {
                 disconnectedClients.add(client);
             }
         }
-        
+
         return disconnectedClients;
     }
-    
-    public LinkedList<Client> getAwaitingInitializingClients() {
-        LinkedList<Client> awaitingInitializing = new LinkedList<>();
+
+    /**
+     * Возвращает клиентов, которые помеченны как неинициализированные.
+     * @return список неинициализированных клиентов
+     */
+    public LinkedList<Client> getUninitializedClients() {
+        LinkedList<Client> uninitializedClients = new LinkedList<>();
         Entry pair;
         Client client;
-        
+
         Iterator i = clientsById.entrySet().iterator();
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (client.isAwaitingInitializing()) {
-                awaitingInitializing.add(client);
+            if (!client.isInitialized()) {
+                uninitializedClients.add(client);
             }
         }
-        
-        return awaitingInitializing;
+
+        return uninitializedClients;
     }
-    
+
     /**
-     * Этот метод не возвращает отключенных и ожидающих инициализации клиентов!
+     * Возвращает активных клиентов, которые не помеченны как отключенные и
+     * как неинициализированные.
+     * @return список активных клиентов
      */
     public LinkedList<Client> getClients() {
         LinkedList<Client> clients = new LinkedList<>();
         Entry pair;
         Client client;
-        
+
         Iterator i = clientsById.entrySet().iterator();
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (!client.isDisconnected() && !client.isAwaitingInitializing()) {
+            if (!client.isDisconnected() && client.isInitialized()) {
                 clients.add(client);
             }
         }
-        
+
         return clients;
     }
-    
+
     public boolean isAllClientsReported(long step) {
         Entry pair;
         Client client;
@@ -273,14 +330,14 @@ public class ClientManager {
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (!client.isDisconnected() && !client.isAwaitingInitializing() && client.getLastReportedStep() != step) {
+            if (!client.isDisconnected() && client.isInitialized() && client.getLastReportedStep() != step) {
                 return false;
             }
         }
 
         return true;
     }
-    
+
     public void notifyAllOtherClients(Client client, Message action) {
         Entry pair;
         Client curClient;
@@ -294,7 +351,7 @@ public class ClientManager {
             }
         }
     }
-    
+
     public void notifyAllOtherClients(Client client, LinkedList<Message> actions) {
         Entry pair;
         Client curClient;
@@ -311,7 +368,7 @@ public class ClientManager {
 
     public boolean setClientPingTime(long clientId, long time) {
         Client client;
-        
+
         if ( (client = clientsById.get(clientId)) != null) {
             client.setClientPingTime(time);
             return true;

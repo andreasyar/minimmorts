@@ -30,13 +30,13 @@ public class ServerLauncher {
     private static final Logger logger = Logger.getLogger(ServerLauncher.class.getName());
 
     public static void main(String[] args) {
-        ServerConfig config;
-        DBWorker dbworker;
+        ServerConfig config = null;
+        DBWorker dbworker = null;
         ClientManager clientManager = null;
-        MessageManager messageManager;
-        MovementManager movementManager;
-        UnitManager unitManager;
-        ServerMainLoop serverMainLoop;
+        MessageManager messageManager = null;
+        MovementManager movementManager = null;
+        UnitManager unitManager = null;
+        ServerMainLoop serverMainLoop = null;
 
         // Read config.
         
@@ -61,20 +61,23 @@ public class ServerLauncher {
         
         // Create game server.
         
-        MessageManager.initLogging();
-        Movement.initLogging();
-        MovementManager.initLogging();
         try {
             clientManager = new ClientManager();
             ClientManager.enableLogging();
+            
+            messageManager = new MessageManager(clientManager);
+            movementManager = new MovementManager();
+            
+            unitManager = new UnitManager();
+            UnitManager.enableLogging();
+            
+            serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
+            ServerMainLoop.enableLogging();
+            
+            logger.log(Level.INFO, "Game server created.");
         } catch (IOException ex) {
-            Logger.getLogger(ServerLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            logger.log(Level.SEVERE, null, ex);
         }
-        messageManager = new MessageManager(clientManager);
-        movementManager = new MovementManager();
-        unitManager = new UnitManager();
-        serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
-        logger.log(Level.INFO, "Game server created.");
         
         // Starts web server.
         
