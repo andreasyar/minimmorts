@@ -147,7 +147,7 @@ public class ServerMainLoop implements Runnable {
             if (message instanceof StateReportMessage) {
                 if ( (client = clientManager.getClient(channel)) == null) {
                     if (loggingEnabled) {
-                        logger.warning(getStep() + ": Сообщение не может быть обработано. Клиент channel=" + client.getId() + " не найден.");
+                        logger.warning(getStep() + ": Сообщение не может быть обработано. Клиент channel=" + channel + " не найден.");
                     }
                     continue;   // Обработаем следующее сообщение.
                 }

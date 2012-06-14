@@ -30,9 +30,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      *
      */
     private static Logger logger = null;
-    
+
     /**
-     *
+     * Флаг включения логирования.
      */
     private static boolean loggingEnabled = false;
 
@@ -54,6 +54,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
     public static void disableLogging() {
         MessageManager.loggingEnabled = false;
+    }
+
+    public static boolean isLoggingEnabled() {
+        return MessageManager.loggingEnabled;
     }
 
     public MessageManager(ClientManager clientManager) throws IOException {
@@ -309,8 +313,11 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     public void sendConfirm(Channel channel, long step, LinkedList<Message> messages) {
         String jsonMessage = new ConfirmMessage(step, messages).toJSON();
-        //logger.log(Level.INFO, "Attempt to send confirm: {0}", jsonMessage);
-        channel.write(new TextWebSocketFrame(jsonMessage));
+        if (channel.isWritable()) {
+            channel.write(new TextWebSocketFrame(jsonMessage));
+        } else if (isLoggingEnabled()) {
+            logger.warning(step + ": Невозможно отправить подтверждение хода. Channel=" + channel + " is not writable.");
+        }
     }
 
     /**
@@ -320,8 +327,11 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     public void sendMessage(Channel channel, Message message) {
         String jsonMessage = message.toJSON();
-        //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
-        channel.write(new TextWebSocketFrame(jsonMessage));
+        if (channel.isWritable()) {
+            channel.write(new TextWebSocketFrame(jsonMessage));
+        } else if (isLoggingEnabled()) {
+            logger.warning("Невозможно отправить сообщение. Channel=" + channel + " is not writable.");
+        }
     }
 
     /**
@@ -331,7 +341,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     public void sendErrorMessage(Channel channel, ErrorMessage message) {
         String jsonMessage = message.toJSON();
-        //logger.log(Level.INFO, "Attempt to send message: {0}", jsonMessage);
-        channel.write(new TextWebSocketFrame(jsonMessage)).addListener(new ChannelTerminator(channel));
+        if (channel.isWritable()) {
+            channel.write(new TextWebSocketFrame(jsonMessage)).addListener(new ChannelTerminator(channel));
+        } else if (isLoggingEnabled()) {
+            logger.warning("Невозможно отправить сообщение об ошибке. Channel=" + channel + " is not writable.");
+        }
     }
 }

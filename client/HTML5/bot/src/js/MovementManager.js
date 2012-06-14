@@ -110,15 +110,16 @@ function MovementManager() {
             return;
         }
 
-        this.movements[i] = updatedMovement;
-        this.spriteMovements[j] = updatedSpriteMovement;
+        this.movements.splice(i, 1);
+        this.movements.push(updatedMovement);
+        this.spriteMovements.splice(j, 1);
+        this.spriteMovements.push(updatedSpriteMovement);
     }
 
     this.updatePositions = function(step) {
         var movementsInProgress = new Array();
         var spriteMovementsInProgress = new Array();
         var i, j;
-        var found;
 
         for (i in this.movements) {
             if (!this.movements[i].isStopped()) {
@@ -128,17 +129,20 @@ function MovementManager() {
             }
         }
         this.movements = movementsInProgress;
-        for (i in this.movements) {
-            found = false;
-            for (j in this.spriteMovements) {
-                if (this.movements[i].getUnit() == this.spriteMovements[j].getUnit()) {
-                    spriteMovementsInProgress.push(this.spriteMovements[j]);
-                    found = true;
-                    break;
+        
+        // TODO Движение спрайта каким-то образом может развершится позже движения самого юнита. Видимо не правильно вычисляется время движения.
+        for (j in this.spriteMovements) {
+            if (!(this.spriteMovements[j] instanceof SpriteMovement)) {
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": " + this.spriteMovements[j] + " не является движением спрайта юнита и будет проигнорировано.");
                 }
+                continue;
             }
-            if (!found) {
-                //console.log("Sprite movement of unit", this.spriteMovements[j].getUnit().getId(), "removed on step", step);
+            if (!this.spriteMovements[j].finished) {
+                spriteMovementsInProgress.push(this.spriteMovements[j]);
+                continue;
+            } else if (DEBUG_MOVEMENTS) {
+                console.log(step + ": Движение спрайта юнита id=" + this.spriteMovements[j].getUnit().getId() + " удалено.");
             }
         }
         this.spriteMovements = spriteMovementsInProgress;
@@ -160,12 +164,18 @@ function MovementManager() {
         for (i in this.movements) {
             if (this.movements[i].getUnit().getId() == id) {
                 this.movements.splice(i, 1);
+                if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
+                    console.log("Удалено движение юнита id=" + id);
+                }
                 break;
             }
         }
         for (i in this.spriteMovements) {
             if (this.spriteMovements[i].getUnit().getId() == id) {
                 this.spriteMovements.splice(i, 1);
+                if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
+                    console.log("Удалено движение спрайта юнита id=" + id);
+                }
                 break;
             }
         }

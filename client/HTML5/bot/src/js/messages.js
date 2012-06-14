@@ -279,7 +279,15 @@ var MESSAGE_HANDLERS = {
         map = new Map(100, 100);
         
         self_units_list = new Array();
+        if (DEBUG_UNITS) {
+            console.log("Все свои юниты удалены.");
+        }
+        
         units_list = new Array();
+        if (DEBUG_UNITS) {
+            console.log("Все чужие юниты удалены.");
+        }
+        
         actions = new Array();
         stored_actions = new Array();
         selected_units = new Array();
@@ -292,6 +300,9 @@ var MESSAGE_HANDLERS = {
             MESSAGE_HANDLERS[msg[3][i][0]](msg[3][i]);
         }
         
+        /*
+         * Выполнение действий.
+         */
         for (i in msg[4]) {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
@@ -312,6 +323,7 @@ var MESSAGE_HANDLERS = {
         }
     },
     "NEWUNIT": function (msg) {
+        // Example:
         // ["NEWUNIT",{"ownerId":10,"id":11,"j":4,"i":4,"r":128,"g":0,"b":0}]
 
         var unit = msg[1];
@@ -319,17 +331,29 @@ var MESSAGE_HANDLERS = {
 
         if (clientId == unit.ownerId) {
             cur_units_list = self_units_list;
+            
+            /*
+             * Камера будет смотреть на последнего добавленного юнита игрока.
+             */
             camera.x = Map.getCellXOnMap(unit.j - (SCR_W / CELL_W) / 2);
             camera.y = Map.getCellYOnMap(unit.i - (SCR_H / CELL_H) / 2);
         } else {
             cur_units_list = units_list;
         }
         cur_units_list.push(new Unit(unit.ownerId, unit.id, unit.j, unit.i, {r:unit.r,g:unit.g,b:unit.b}));
+        if (DEBUG_UNITS) {
+            console.log("Создан юнит id=" + unit.id);
+        }
     },
     "DELUNIT": function (msg) {
+        // Example:
         // ["DELUNIT",11]
 
-        delUnitById(msg[1]);
+        if (!delUnitById(msg[1]) && DEBUG_UNITS) {
+            console.log("Юнит не может быть удалён. Юнит id=" + msg[1] + " не найден.");
+        } else if (DEBUG_UNITS) {
+            console.log("Удалён юнит id=" + msg[1]);
+        }
     },
     "MOVE": function (message) {
         // Example: ["MOVE",{"begStep":237,"unitId":5,"begJ":0,"begI":1,"endJ":13,"endI":10}]

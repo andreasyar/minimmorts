@@ -550,7 +550,8 @@ function getUnitById(id) {
             return units_list[i];
         }
     }
-    console.log("Unit ", id, "not found.")
+    
+    console.log("Unit", id, "not found.")
     return null;
 }
 
@@ -559,15 +560,18 @@ function delUnitById(id) {
         if (self_units_list[i].getId() == id) {
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            return true;
         }
     }
     for (i in units_list) {
         if (units_list[i].getId() == id) {
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            return true;
         }
     }
-    console.log("Unit ", id, "not found.");
+    
+    return false;
 }
 
 function getFramesPerStep() {

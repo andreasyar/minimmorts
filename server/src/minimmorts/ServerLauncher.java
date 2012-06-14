@@ -63,16 +63,16 @@ public class ServerLauncher {
         
         try {
             clientManager = new ClientManager();
-            ClientManager.enableLogging();
+            //ClientManager.enableLogging();
             
             messageManager = new MessageManager(clientManager);
             movementManager = new MovementManager();
             
             unitManager = new UnitManager();
-            UnitManager.enableLogging();
+            //UnitManager.enableLogging();
             
             serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
-            ServerMainLoop.enableLogging();
+            //ServerMainLoop.enableLogging();
             
             logger.log(Level.INFO, "Game server created.");
         } catch (IOException ex) {

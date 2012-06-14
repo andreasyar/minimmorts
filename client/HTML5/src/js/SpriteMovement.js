@@ -76,6 +76,8 @@ function SpriteMovement(unit, path, curUnitPos) {
     
     this.spriteInterval = 150;
     
+    this.finished = false;
+    
     /**
      * Обновляет координаты спрайта юнита.
      */
@@ -96,7 +98,8 @@ function SpriteMovement(unit, path, curUnitPos) {
                     console.log("Невозможно двигаться из точки " + this.path[i - 1] + " в точку " + this.path[i]);
                     return;
                 }
-                if (!curPos.arrived) {
+                this.finished = curPos.arrived;
+                if (!this.finished) {
                     derp = Math.ceil((curTime - this.begTime) / this.spriteInterval);
                     curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
                 } else {
@@ -107,7 +110,7 @@ function SpriteMovement(unit, path, curUnitPos) {
             }
         }
         
-        if (!this.unit.spritePos.arrival) {
+        if (!this.finished) {
             curPos = this.path[this.path.length - 1].getPosOnTheWayFrom(this.path[this.path.length - 2]);
             if (curPos == null) {
                 console.log("Невозможно двигаться из точки " + this.path[this.path.length - 2] + " в точку " + this.path[this.path.length - 1]);
