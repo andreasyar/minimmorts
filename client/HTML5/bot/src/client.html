@@ -97,6 +97,11 @@ var prevDrawTime = null;
  * Функции. *
  ************/
 
+function connect() {
+    server = new ServerInteraction();
+    server.connect("ws://localhost:8015/");
+}
+
 function disconnect() {
     if (server != undefined && server.socket != null) {
         server.socket.close()
@@ -105,9 +110,22 @@ function disconnect() {
     }
 }
 
+function reconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close()
+    } else {
+        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
+    }
+    setTimeout("connect();", 2000);
+}
+
 function aiLoop() {
     actionManager.createRandomMovementRequests();
-    setTimeout("aiLoop();", 2000);
+    if (Math.floor(Math.random() * 10) == 0) {
+        setTimeout("reconnect();", 2000);
+    } else {
+        setTimeout("aiLoop();", 2000);
+    }
 }
 
 function syncLoop() {
@@ -157,16 +175,10 @@ function syncLoop() {
     stored_actions = actions;
 }
 
-function pingLoop() {
-    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
-    setTimeout("pingLoop();", 100);
-}
-
 </script>
 
 <script type="text/javascript">
-server = new ServerInteraction();
-server.connect("ws://localhost:8015/");
+connect();
 </script>
 
 </body>

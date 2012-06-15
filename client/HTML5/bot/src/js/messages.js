@@ -309,7 +309,6 @@ var MESSAGE_HANDLERS = {
         
         setTimeout("aiLoop();", 2000);
         syncLoop();
-        setTimeout("pingLoop();", 100);
     },
     "CONFIRM": function (msg) {
         if (step == msg[1]) {
