@@ -72,7 +72,7 @@ public class ServerLauncher {
             //UnitManager.enableLogging();
             
             serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
-            //ServerMainLoop.enableLogging();
+            ServerMainLoop.enableLogging();
             
             logger.log(Level.INFO, "Game server created.");
         } catch (IOException ex) {

@@ -311,6 +311,10 @@ var MESSAGE_HANDLERS = {
         syncLoop();
     },
     "CONFIRM": function (msg) {
+        if (Math.floor(Math.random() * 20) == 0) {
+            return;
+        }
+        
         if (step == msg[1]) {
             for (var i in msg[2]) {
                 MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);

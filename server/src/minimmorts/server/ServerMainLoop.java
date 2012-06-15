@@ -46,7 +46,7 @@ public class ServerMainLoop implements Runnable {
     /**
      * Максимальное количество итераций, которые главный цикл сервера ждет отчётов от клиентов.
      */
-    private final int maxWaitIterations = 30;
+    private final int maxWaitIterations = 3;
 
     private final UnitManager unitManager;
     private final MovementManager movementManager;
@@ -70,6 +70,10 @@ public class ServerMainLoop implements Runnable {
 
     public static void disableLogging() {
         ServerMainLoop.loggingEnabled = false;
+    }
+
+    public static boolean isLoggingEnabled() {
+        return ServerMainLoop.loggingEnabled;
     }
 
     public static long getStep() {
@@ -123,14 +127,14 @@ public class ServerMainLoop implements Runnable {
 
         if (!clientManager.isAllClientsReported(step) && waitIterations < maxWaitIterations) {
             if (loggingEnabled) {
-                logger.info(getStep() + ": Ожидание отчётов от клиентов.");
+                //logger.info(getStep() + ": Ожидание отчётов от клиентов.");
             }
             waitIterations++;
             return;
         } else if (!clientManager.isAllClientsReported(step)) {
             waitIterations = 0;
-            disconnectUnreportedClients(step);
-            //reinitializeUnreportedClients(step);
+            //disconnectUnreportedClients(step);
+            resetUnreportedClients(getStep());
         } else {
             waitIterations = 0;
         }
@@ -148,6 +152,12 @@ public class ServerMainLoop implements Runnable {
                 if ( (client = clientManager.getClient(channel)) == null) {
                     if (loggingEnabled) {
                         logger.warning(getStep() + ": Сообщение не может быть обработано. Клиент channel=" + channel + " не найден.");
+                    }
+                    continue;   // Обработаем следующее сообщение.
+                }
+                if (!client.isInitialized()) {
+                    if (isLoggingEnabled()) {
+                        logger.warning(getStep() + ": Сообщение будет проигнорировано. Клиент id=" + client.getId() + " не инициализирован.");
                     }
                     continue;   // Обработаем следующее сообщение.
                 }
@@ -205,7 +215,7 @@ public class ServerMainLoop implements Runnable {
             client = (Client) clientsIterator.next();
             cleanupClient(client);
             res = clientManager.removeClient(client.getId());
-            if (ClientManager.isLoggingEnabled()) {
+            if (ClientManager.isLoggingEnabled() || isLoggingEnabled()) {
                 if (res) {
                     logger.info(getStep() + ": Удаление отключенного клиента. Клиент id=" + client.getId() + " был успешно удалён.");
                 } else {
@@ -387,7 +397,6 @@ public class ServerMainLoop implements Runnable {
         while (i.hasNext()) {
             client = (Client) i.next();
             if (client.getLastReportedStep() != step) {
-                // TODO if-ы @ проверки
                 res = clientManager.markDisconnected(client.getId());
                 if (ClientManager.isLoggingEnabled()) {
                     if (res) {
@@ -409,11 +418,11 @@ public class ServerMainLoop implements Runnable {
     }
 
     /**
-     * Помечает все не отчитавшихся за шаг step клиентов, как не инициализированных. Они будут
-     * переинициализированы.
+     * Помечает всех не отчитавшихся клиентов, как не инициализированных и
+     * производит их очистку.
      * @param step шаг
      */
-    private void reinitializeUnreportedClients(long step) {
+    private void resetUnreportedClients(long step) {
         Client client;
         boolean res;
         
@@ -421,17 +430,28 @@ public class ServerMainLoop implements Runnable {
         while (i.hasNext()) {
             client = (Client) i.next();
             if (client.getLastReportedStep() != step) {
-                // TODO if-ы @ проверки
-                res = clientManager.setUninitialized(client.getId());
-                if (ClientManager.isLoggingEnabled()) {
-                    if (res) {
-                        logger.info(getStep() + ": Клиент id=" + client.getId() + " был успешно помечен как неинициализированный.");
-                    } else {
-                        logger.info(getStep() + ": Клиент id=" + client.getId() + " не найден, поэтому не может быть помечен как неинициализированный.");
+                // TODO: Add reinitialized flag to client.
+                if (client.isInitialized() && client.getLastConfirmedStep() != -1 && client.getLastReportedStep() != -1) {
+                    res = clientManager.setUninitialized(client.getId());
+                    if (ClientManager.isLoggingEnabled()) {
+                        if (res) {
+                            logger.info(getStep() + ": Клиент id=" + client.getId() + " был успешно помечен как неинициализированный.");
+                        } else {
+                            logger.info(getStep() + ": Клиент id=" + client.getId() + " не найден, поэтому не может быть помечен как неинициализированный.");
+                        }
+                    }
+                    cleanupClient(client);
+                } else {
+                    if (clientManager.markDisconnected(client.getId()) && ClientManager.isLoggingEnabled()) {
+                        logger.info(getStep() + ": Клиент id=" + client.getId() + " был успешно помечен как отключенный.");
+                    } else if (ClientManager.isLoggingEnabled()) {
+                        logger.info(getStep() + ": Клиент id=" + client.getId() + " не найден, поэтому не может быть помечен как отключенный.");
                     }
                 }
-                cleanupClient(client);
             }
+        }
+        if (isLoggingEnabled()) {
+            logger.info(getStep() + ": Некоторые клиенты были переинициализированы.");
         }
     }
 
@@ -455,5 +475,10 @@ public class ServerMainLoop implements Runnable {
                 actionsRequestsIterator.remove();
             }
         }
+        
+        // Очистим список исходящих сообщений.
+        clientManager.takeFromOutbox(client.getId());
+        clientManager.setLastConfirmedStep(client.getId(), -1);
+        clientManager.setLastReportedStep(clientManager.getClientChannel(client.getId()), -1);
     }
 }
