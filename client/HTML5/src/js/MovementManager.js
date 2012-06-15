@@ -73,8 +73,7 @@ function MovementManager() {
             }
         }
         if (existedSpriteMovement == null) {
-            console.log("Sprite movement not found.");
-            return;
+            console.log("Sprite movement not found. It's ok.");
         }
         if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
             console.log("Next path point not found.");
@@ -101,7 +100,7 @@ function MovementManager() {
             return;
         }
         updatedSpriteMovement = new SpriteMovement(
-            existedSpriteMovement.getUnit(),
+            existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
             path,
             updatedMovement.getPosition(step)
         );
@@ -112,7 +111,9 @@ function MovementManager() {
 
         this.movements.splice(i, 1);
         this.movements.push(updatedMovement);
-        this.spriteMovements.splice(j, 1);
+        if (existedSpriteMovement != null) {
+            this.spriteMovements.splice(j, 1);
+        }
         this.spriteMovements.push(updatedSpriteMovement);
     }
 
