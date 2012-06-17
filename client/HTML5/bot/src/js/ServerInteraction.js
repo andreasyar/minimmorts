@@ -65,6 +65,14 @@ function ServerInteraction() {
          */
         this.socket.onclose = function(event) {
             console.log("Web Socket closed.");
+            if (autoReconnect) {
+                clearTimeouts();
+                var ms = 3000 + 1000 * getRandomInt(17);
+                connectTimer = setTimeout(connect, ms);
+                if (DEBUG) {
+                    console.log("Переподключение через " + ms + " милисекунд.");
+                }
+            }
         };
     };
 

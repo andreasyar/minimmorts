@@ -1,6 +1,7 @@
 package minimmorts.movement;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -134,6 +135,17 @@ public class MovementManager {
         }
         Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
         return m;
+    }
+
+    public void removeByUnits(LinkedList<Unit> removedUnits) {
+        for (Unit u : removedUnits) {
+            for (Movement m : movements) {
+                if (m.getUnit().equals(u)) {
+                    movements.remove(m);
+                    break;
+                }
+            }
+        }
     }
 
     private class Cell {

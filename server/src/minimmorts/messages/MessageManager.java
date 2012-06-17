@@ -176,14 +176,8 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-        boolean res = clientManager.markDisconnected(ctx.getChannel());
-        if (ClientManager.isLoggingEnabled()) {
-            if (res) {
-                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " помечен как отключенный.");
-            } else {
-                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " не найден, поэтому не может быть помечен как отключенный.");
-            }
-        }
+        clientManager.addDisctonnectedClient(ctx.getChannel());
+        logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " возможно будет помечен как отключенный.");
     }
 
     /**
@@ -271,7 +265,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
                     break;
                 case "PING":
-                    PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
+                    /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
                     Client client;
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (ClientManager.isLoggingEnabled()) {
@@ -284,7 +278,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                             //logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
                         }
                     }
-                    clientManager.setClientPingTime(client.getId(), pm.getTime());
+                    clientManager.setClientPingTime(client.getId(), pm.getTime());*/
                     break;
             }
         }

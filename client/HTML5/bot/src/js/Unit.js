@@ -28,6 +28,12 @@ function Unit(ownerId, id, j, i, color) {
             setPixel(this.unitMarkBackground, l, k, color.r, color.g, color.b, 128);
         }
     }
+    
+    this.history = new Array();
+    
+    if (saveUnitHistory) {
+        this.history.push(step + ": Создан.");
+    }
 
     this.getOwnerId = function() {
         return this.ownerId;

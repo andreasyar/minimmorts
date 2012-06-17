@@ -551,13 +551,15 @@ function getUnitById(id) {
         }
     }
     
-    console.log("Unit", id, "not found.")
     return null;
 }
 
 function delUnitById(id) {
     for (var i in self_units_list) {
         if (self_units_list[i].getId() == id) {
+            if (saveUnitHistory) {
+                self_units_list[i].history.push(step + ": Удалён.");
+            }
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -565,6 +567,9 @@ function delUnitById(id) {
     }
     for (i in units_list) {
         if (units_list[i].getId() == id) {
+            if (saveUnitHistory) {
+                units_list[i].history.push(step + ": Удалён.");
+            }
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -572,22 +577,6 @@ function delUnitById(id) {
     }
     
     return false;
-}
-
-function getFramesPerStep() {
-    if (steps >= 10) {
-        framesPerStep = frames / steps;
-        frames = 0;
-        steps = 0;
-    }
-    return framesPerStep;
-}
-
-function getPxIncrement(speed) {
-    var pixPerStep = CELL_W * speed;
-    //var framesPerStep = frames / steps;//Math.floor(frames / step);
-    //console.log(pixPerStep, frames, steps, framesPerStep, framesPerStep / pixPerStep);
-    return pixPerStep / framesPerStep;
 }
 
 function toggleSmoothMovement() {
@@ -601,4 +590,9 @@ function setPixel(imageData, x, y, r, g, b, a) {
     imageData.data[index+1] = g;
     imageData.data[index+2] = b;
     imageData.data[index+3] = a;
+}
+
+function clearTimeouts() {
+    clearTimeout(drawTimer);
+    clearTimeout(syncTimer);
 }

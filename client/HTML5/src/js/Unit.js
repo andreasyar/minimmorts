@@ -29,6 +29,12 @@ function Unit(ownerId, id, j, i, color) {
         }
     }
 
+    this.history = new Array();
+    
+    if (saveUnitHistory) {
+        this.history.push(step + ": Создан.");
+    }
+
     this.getOwnerId = function() {
         return this.ownerId;
     }

@@ -72,6 +72,8 @@ units_buffer.height = SCR_H;
 // debug
 var DEBUG = true;
 
+var DEBUG_PROTOCOL = true;
+
 var DEBUG_UNITS = true;
 
 var DEBUG_MOVEMENTS = true;
@@ -121,13 +123,15 @@ var movementManager = new MovementManager();
 // Получено ли начальное состояние.
 var is_initial_state_received = false;
 
-var frames = 0;
-var steps = 0;
-var framesPerStep = 3.9;
-
 var smoothMovementEnabled = true;
 
 var prevDrawTime = null;
+
+var drawTimer = null;
+
+var syncTimer = null;
+
+var saveUnitHistory = false;
 
 /************
  * Функции. *
@@ -157,8 +161,6 @@ function drawLoop() {
     var units_context = units_buffer.getContext('2d');
     var map_context = map_buffer.getContext('2d');
     var i;
-    
-    frames++;
 
     // Фон.
     scr_context.fillStyle = "#FFFFEE";
@@ -202,7 +204,7 @@ function drawLoop() {
     //scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
     //scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
 
-    setTimeout("drawLoop();", 1000 / FPS);
+    drawTimer = setTimeout(drawLoop, 1000 / FPS);
 }
 
 function scrOnMousedown(e) {
@@ -298,12 +300,13 @@ function scrOnMousemove(e) {
 function syncLoop() {
     var i, unit;
     
-    steps++;
-    
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
-                unit = getUnitById(stored_actions[i].unitId);
+                if ( (unit = getUnitById(stored_actions[i].unitId)) == null) {
+                    console.log("Сохранённое действие не может быть выполнено. Юнит id=" + stored_actions[i].unitId + " не найден.");
+                    continue;
+                }
                 if (movementManager.isUnitMove(unit)) {
                     movementManager.updateMovement(
                         step,
@@ -341,11 +344,6 @@ function syncLoop() {
     server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
     stored_actions = actions;
     actions = new Array();
-}
-
-function pingLoop() {
-    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
-    setTimeout("pingLoop();", 100);
 }
 
 </script>

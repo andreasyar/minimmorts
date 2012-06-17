@@ -32,7 +32,7 @@ function Map(width, height) {
     for (var i = 0; i < this.h; i++) {
         this.spriteMap[i] = new Array(this.w)
         for (var j = 0; j < this.w; j++) {
-            this.spriteMap[i][j] = {ground: this.sloader.getSpriteByName("grass").getImage()}
+            this.spriteMap[i][j] = null;
         }
     }
 

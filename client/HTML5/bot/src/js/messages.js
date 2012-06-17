@@ -261,11 +261,31 @@ function PingMessage(time) {
  * Обработчики сообщений.
  */
 var MESSAGE_HANDLERS = {
-    "ERROR": function (msg) {
-        // ["ERROR", "Some text"]
+    "ERROR": function (message) {
+        // Format:
+        // ["ERROR", "error text"]
         
-        alert(msg[1]);
+        clearTimeouts();
         disconnect();
+        alert(message[1]);
+    },
+    "SYNCERROR": function (message) {
+        // ["SYNCERROR", {"unitId":123}]
+        
+        var syncerrorMessage = message[1];
+        var unit = getUnitById(syncerrorMessage.unitId);
+            
+        if (unit == null) {
+            console.log("История юнита не может быть распечатана. Юнит id=" + syncerrorMessage.unitId + " не найден.");
+        } else if (!saveUnitHistory) {
+            console.log("История юнита не может быть распечатана, потому что её ведение отключено.");
+        } else {
+            console.log(unit.history);
+        }
+        
+        clearTimeouts()
+        disconnect();
+        alert("Ошибка синхронизации.");
     },
     "WELCOME": function (msg) {
         // Format:
@@ -274,7 +294,7 @@ var MESSAGE_HANDLERS = {
         var i;
         
         clientId = msg[1];
-        step  = msg[2];
+        step = msg[2];
         camera = new Camera();
         map = new Map(100, 100);
         
@@ -307,11 +327,15 @@ var MESSAGE_HANDLERS = {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
         
-        setTimeout("aiLoop();", 2000);
+        clearTimeouts();
+        aiTimer = setTimeout(aiLoop, 2000);
         syncLoop();
     },
     "CONFIRM": function (msg) {
-        if (Math.floor(Math.random() * 20) == 0) {
+        if (ignoreConfirmProbability != null && getRandomInt(ignoreConfirmProbability) == 0) {
+            if (DEBUG) {
+                console.log("Эмуляция лагов. Сообщение CONFIRM будет проигнорировано.")
+            }
             return;
         }
         
@@ -365,7 +389,7 @@ var MESSAGE_HANDLERS = {
         var unit = getUnitById(moveMessage.unitId);
         
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть создано.");
+            console.log("Движение не может быть создано. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
@@ -377,6 +401,10 @@ var MESSAGE_HANDLERS = {
             moveMessage.endJ,
             moveMessage.endI
         );
+
+        if (saveUnitHistory) {
+            unit.history.push(step + ": Движение создано. " + message);
+        }
     },
     "MOVEUPDATE": function (message) {
         // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
@@ -385,7 +413,7 @@ var MESSAGE_HANDLERS = {
         var unit = getUnitById(moveMessage.unitId);
         
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть обновлено.");
+            console.log("Движение не может быть обновлено. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
@@ -396,6 +424,10 @@ var MESSAGE_HANDLERS = {
                 moveMessage.endJ,
                 moveMessage.endI
             );
+
+            if (saveUnitHistory) {
+                unit.history.push(step + ": Движение обновлено. " + message);
+            }
         } else {
             console.log("Получен запрос изменения не за текущий шаг! Текущий шаг " + step + " шаг изменения пути " + moveMessage.begStep + " Запрос проигнорирован.");
         }

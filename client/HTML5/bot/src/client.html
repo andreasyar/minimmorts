@@ -29,13 +29,13 @@
  *************************/
 
 // debug
-var DEBUG = true;
+var DEBUG = false;
 
-var DEBUG_PROTOCOL = true;
+var DEBUG_PROTOCOL = false;
 
-var DEBUG_UNITS = true;
+var DEBUG_UNITS = false;
 
-var DEBUG_MOVEMENTS = true;
+var DEBUG_MOVEMENTS = false;
 
 // Список юнитов, принадлежащих клиенту.
 var self_units_list = new Array();
@@ -82,16 +82,31 @@ var movementManager = new MovementManager();
 // Менеджер действий.
 var actionManager = new ActionManager();
 
-// Получено ли начальное состояние.
-var is_initial_state_received = false;
-
-var frames = 0;
-var steps = 0;
-var framesPerStep = 3.9;
-
 var smoothMovementEnabled = true;
 
 var prevDrawTime = null;
+
+var aiTimer = null;
+
+var reconnectTimer = null;
+
+var connectTimer = null;
+
+/*
+ * Вероятность того, что бот проигнорирует сообщение CONFIRM от сервера. Это
+ * нужно для эмуляции лагов клиента. null означает, что игнорирование выключено.
+ */
+var ignoreConfirmProbability = 500;
+
+/*
+ * Вероятность того, что бот переподключится к серверу. null означает, что
+ * переподключение выключено.
+ */
+var reconnectProbability = 500;
+
+var autoReconnect = true;
+
+var saveUnitHistory = false;
 
 /************
  * Функции. *
@@ -116,27 +131,32 @@ function reconnect() {
     } else {
         console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
     }
-    setTimeout("connect();", 2000);
+    
+    connectTimer = setTimeout(connect, 2000);
 }
 
 function aiLoop() {
     actionManager.createRandomMovementRequests();
-    if (Math.floor(Math.random() * 10) == 0) {
-        setTimeout("reconnect();", 2000);
+    if (reconnectProbability != null && getRandomInt(reconnectProbability) == 0) {
+        reconnectTimer = setTimeout(reconnect, 2000);
+        if (DEBUG) {
+            console.log("Переподключение.");
+        }
     } else {
-        setTimeout("aiLoop();", 2000);
+        aiTimer = setTimeout(aiLoop, 2000);
     }
 }
 
 function syncLoop() {
     var i, unit, actions;
     
-    steps++;
-    
     for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
-                unit = getUnitById(stored_actions[i].unitId);
+                if ( (unit = getUnitById(stored_actions[i].unitId)) == null) {
+                    console.log("Сохранённое действие не может быть выполнено. Юнит id=" + stored_actions[i].unitId + " не найден.");
+                    continue;
+                }
                 if (movementManager.isUnitMove(unit)) {
                     movementManager.updateMovement(
                         step,
