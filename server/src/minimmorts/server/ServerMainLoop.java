@@ -1,10 +1,8 @@
 package minimmorts.server;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
+import java.util.Map.Entry;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +61,8 @@ public class ServerMainLoop implements Runnable {
      * Список запросов действий от всех клиентов на текущем шаге.
      */
     private final LinkedList<ActionRequest> actionsRequests = new LinkedList<>();
+    
+    private final LinkedList<State> states = new LinkedList();
 
     public static void enableLogging() {
         ServerMainLoop.loggingEnabled = true;
@@ -128,30 +128,25 @@ public class ServerMainLoop implements Runnable {
         
         LinkedList<Unit> removedUnits;
         
+        State currentState = null;
+        
         /*
-         * Отметим всех отключившихся клиентов. От них отчёта не ждем.
+         * Отметим всех отключившихся клиентов.
          */
         clientManager.markDisconnectedClients();
-
+        
         /*
-         * Проверим, все ли подключенные клиенты отчитались за этот ход.
+         * Сохраним текущее состояние игры.
          */
-        if (!clientManager.isAllClientsReported(getStep()) && waitIterations < maxWaitIterations) {
-            if (isLoggingEnabled()) {
-                //logger.info(getStep() + ": Итерация пропущена в ожидании отчётов от клиентов.");
-            }
-            waitIterations++;
+        try {
+            currentState = saveState();
+        } catch (CloneNotSupportedException ex) {
+            logger.log(Level.SEVERE, null, ex);
             return;
-        } else if (!clientManager.isAllClientsReported(getStep())) {
-            waitIterations = 0;
-            clientManager.markUnreportedClients(getStep());
-        } else {
-            waitIterations = 0;
         }
 
         /*
-         * Все отключившиеся и не отчитвшиеся клиент отмечены. Пройдём по всем
-         * входящим сообщениям и обработаем их.
+         * Пройдём по всем входящим сообщениям и обработаем их.
          */
         inboxIterator = messageManager.takeFromInbox().iterator();
         while (inboxIterator.hasNext()) {
@@ -180,33 +175,30 @@ public class ServerMainLoop implements Runnable {
                 }
                 
                 stateReportMessage = (StateReportMessage) message;
+                
+                logger.info(getStep() + ": Check state for step=" + stateReportMessage.getStep());
+                if (isStateValid(stateReportMessage)) {
+                    res = clientManager.setLastConfirmedStep(client.getId(), stateReportMessage.getStep());
+                    if (ClientManager.isLoggingEnabled() && !res) {
+                        logger.warning(getStep() + ": Не удалось установить последний подтверждённый шаг клиента. Клиент id=" + client.getId() + " не найден.");
+                    }
 
-                if (stateReportMessage.getStep() == getStep()) {
-                    if (unitManager.isStateValid(stateReportMessage.getUnits())) {
-                        res = clientManager.setLastConfirmedStep(client.getId(), getStep());
-                        if (ClientManager.isLoggingEnabled() && !res) {
-                            logger.warning(getStep() + ": Не удалось установить последний подтверждённый шаг клиента. Клиент id=" + client.getId() + " не найден.");
-                        }
-                        
-                        addAllActionsRequests(client, stateReportMessage.getActions());
-                    } else {
-                        res = clientManager.setDisconnected(client.getId());
-                        if (ClientManager.isLoggingEnabled()) {
-                            if (res) {
-                                logger.info(getStep() + ": Неверное состояние клиента. Клиент id=" + client.getId() + " помечен как отключенный.");
-                            } else {
-                                logger.warning(getStep() + ": Неверное состояние клиента. Клиент id=" + client.getId() + " не найден, поэтому не может быть помечен как отключенный.");
-                            }
-                        }
+                    addAllActionsRequests(client, stateReportMessage.getActions());
+                } else {
+                    res = clientManager.setDisconnected(client.getId());
+                    if (ClientManager.isLoggingEnabled()) {
                         if (res) {
-                            messageManager.sendErrorMessage(
-                                channel,
-                                MessageManager.createErrorMessage(ErrnoErrorService.getErrno())
-                            );
+                            logger.info(getStep() + ": Неверное состояние клиента. Клиент id=" + client.getId() + " помечен как отключенный.");
+                        } else {
+                            logger.warning(getStep() + ": Неверное состояние клиента. Клиент id=" + client.getId() + " не найден, поэтому не может быть помечен как отключенный.");
                         }
                     }
-                } else if (isLoggingEnabled()) {
-                    logger.warning(getStep() + ": Отчёт будет проигнорирован. Его отправитель клиент id=" + client.getId() + " прислал отчёт не за текущий ход step=" + stateReportMessage.getStep());
+                    if (res) {
+                        messageManager.sendErrorMessage(
+                            channel,
+                            MessageManager.createErrorMessage(ErrnoErrorService.getErrno())
+                        );
+                    }
                 }
             } else if (message instanceof LoginMessage) {
                 loginMessage = (LoginMessage) message;
@@ -253,7 +245,8 @@ public class ServerMainLoop implements Runnable {
                         moveMessage.getEndI()
                     );
                     if (movement != null) {
-                        clientManager.notifyAllOtherClients(client, MessageManager.createMoveUpdateMessage(movement));
+                        //clientManager.notifyAllOtherClients(client, MessageManager.createMoveUpdateMessage(movement));
+                        notifyClients(currentState, MessageManager.createMoveUpdateMessage(movement));
                     } else {
                         //logger.log(Level.SEVERE, "Movement not created.");
                     }
@@ -266,7 +259,8 @@ public class ServerMainLoop implements Runnable {
                         moveMessage.getEndI()
                     );
                     if (movement != null) {
-                        clientManager.notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
+                        //clientManager.notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
+                        notifyClients(currentState, MessageManager.createMoveMessage(movement));
                     } else {
                         //logger.log(Level.SEVERE, "Movement not created.");
                     }
@@ -288,7 +282,8 @@ public class ServerMainLoop implements Runnable {
                 logger.info(getStep() + ": Помеченно на удаление " + removedUnits.size() + " юнитов клиента id=" + client.getId());
             }
             movementManager.removeByUnits(removedUnits);
-            clientManager.notifyAllOtherClients(client, MessageManager.createAllDelUnitMessage(removedUnits));
+            //clientManager.notifyAllOtherClients(client, MessageManager.createAllDelUnitMessage(removedUnits));
+            notifyClients(currentState, MessageManager.createAllDelUnitMessage(removedUnits));
             
             res = clientManager.removeClient(client.getId());
             if (ClientManager.isLoggingEnabled()) {
@@ -324,14 +319,16 @@ public class ServerMainLoop implements Runnable {
                 logger.severe(getStep() + ": Не удалось создать юнита. " + ex.getMessage());
                 continue;
             }
-            clientManager.notifyAllOtherClients(client, MessageManager.createNewUnitMessage(unit));
+            //clientManager.notifyAllOtherClients(client, MessageManager.createNewUnitMessage(unit));
+            notifyClients(currentState, MessageManager.createNewUnitMessage(unit));
             try {
                 unit = unitManager.createUnit(client, randJ + 1, randI + 1);
             } catch (NullPointerException ex) {
                 logger.severe(getStep() + ": Не удалось создать юнита. " + ex.getMessage());
                 continue;
             }
-            clientManager.notifyAllOtherClients(client, MessageManager.createNewUnitMessage(unit));
+            //clientManager.notifyAllOtherClients(client, MessageManager.createNewUnitMessage(unit));
+            notifyClients(currentState, MessageManager.createNewUnitMessage(unit));
         }
 
         /*
@@ -345,7 +342,11 @@ public class ServerMainLoop implements Runnable {
             if ( (channel = clientManager.getClientChannel(client.getId())) != null) {
                 LinkedList<Message> outbox;
                 if ( (outbox = clientManager.takeFromOutbox(client.getId())) != null) {
-                    messageManager.sendConfirm(channel, getStep(), outbox);
+                    messageManager.sendConfirm(
+                        channel,
+                        client.getLastConfirmedStep(),
+                        getState(client.getLastConfirmedStep()).getOutboxes().get(client.getId())
+                    );
                     clientManager.clearReinitializationAttempts(client.getId());
                 } else if (ClientManager.isLoggingEnabled()) {
                     logger.info(getStep() + ": Не удалось получить исходящие сообщения клиента. Клиент id=" + client.getId() + " не найден.");
@@ -558,5 +559,70 @@ public class ServerMainLoop implements Runnable {
         clientManager.takeFromOutbox(client.getId());
         clientManager.setLastConfirmedStep(client.getId(), -1);
         clientManager.setLastReportedStep(clientManager.getClientChannel(client.getId()), -1);
+    }
+    
+    private State saveState() throws CloneNotSupportedException {
+        State newState = new State(getStep());
+        
+        LinkedList<Unit> units = unitManager.cloneUnits();
+        if (units.size() > 0) {
+            logger.info(getStep() + ": " + units.size() + " units saved.");
+        }
+        newState.addAllUnits(units);
+        
+        for (Client client : clientManager.getClients()) {
+            newState.addClient(client.getId(), new LinkedList<Message>());
+        }
+        
+        if (states.size() == 30) {
+            states.removeFirst();
+        }
+        states.addLast(newState);
+        
+        return newState;
+    }
+    
+    private boolean isStateValid(StateReportMessage message) {
+        for (State s : states) {
+            if (s.getStep() == message.getStep()) {
+                return unitManager.isStateValid(s.getUnits(), message.getUnits());
+            }
+        }
+        
+        return false;
+    }
+    
+    private State getState(long step) {
+        for (State s : states) {
+            if (s.getStep() == step) {
+                return s;
+            }
+        }
+        
+        return null;
+    }
+
+    private void notifyClients(State currentState, Message action) {
+        Entry pair;
+        LinkedList<Message> outbox;
+
+        Iterator i = currentState.getOutboxes().entrySet().iterator();
+        while (i.hasNext()) {
+            pair = (Entry) i.next();
+            outbox = (LinkedList<Message>) pair.getValue();
+            outbox.add(action);
+        }
+    }
+
+    private void notifyClients(State currentState, LinkedList<Message> actions) {
+        Entry pair;
+        LinkedList<Message> outbox;
+
+        Iterator i = currentState.getOutboxes().entrySet().iterator();
+        while (i.hasNext()) {
+            pair = (Entry) i.next();
+            outbox = (LinkedList<Message>) pair.getValue();
+            outbox.addAll(actions);
+        }
     }
 }

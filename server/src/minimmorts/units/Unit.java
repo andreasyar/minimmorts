@@ -7,7 +7,7 @@ import minimmorts.messages.UnitMessage;
  *
  * @author Sorc
  */
-public class Unit {
+public class Unit implements Cloneable {
     private long ownerId;
     private long id;
     private int j;
@@ -72,5 +72,10 @@ public class Unit {
         } else {
             return false;
         }
+    }
+
+    @Override
+    protected Unit clone() throws CloneNotSupportedException {
+        return (Unit) super.clone();
     }
 }

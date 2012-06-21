@@ -187,4 +187,48 @@ public class UnitManager {
         
         return clone;
     }
+
+    public LinkedList<Unit> cloneUnits() throws CloneNotSupportedException {
+        LinkedList<Unit> clone = new LinkedList<>();
+        
+        synchronized (allUnits) {
+            for (Unit u : allUnits) {
+                if (!u.isDeleted()) {
+                    clone.add(u.clone());
+                }
+            }
+        }
+        
+        return clone;
+    }
+
+    public boolean isStateValid(LinkedList<Unit> serverUnits, LinkedList<Message> clientUnits) {
+        UnitMessage m;
+        int i;
+        Unit u;
+        
+        logger.info("" + serverUnits.size());
+
+        for (Message um : clientUnits) {
+            m = (UnitMessage) um;
+            if ( (i = serverUnits.indexOf(m)) != -1) {
+                u = serverUnits.get(i);
+                if (u.getOwnerId() != m.getOwnerId() || u.getJ() != m.getJ() || u.getI() != m.getI()) {
+                    String errorText = "State invalid. Unit id:" + u.getId() +
+                        " Server: ownerId:" + u.getOwnerId() + ",j:" + u.getJ() + ",i:" + u.getI() +
+                        " Client: ownerId:" + m.getOwnerId() + ",j:" + m.getJ() + ",i:" + m.getI();
+                    ErrnoErrorService.setErrno(errorText);
+                    //logger.log(Level.INFO, errorText);
+                    return false;
+                }
+            } else {
+                String errorText = "State invalid. Unit id:" + m.getId() + " not found.";
+                ErrnoErrorService.setErrno(errorText);
+                //logger.log(Level.INFO, errorText);
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

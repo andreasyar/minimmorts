@@ -151,4 +151,8 @@ public class Client {
     void clearReinitializationAttempts() {
         reinitializationAttempts = 0;
     }
+
+    public LinkedList<Message> cloneOutbox() {
+        return (LinkedList<Message>) outbox.clone();
+    }
 }
