@@ -188,6 +188,10 @@ public class UnitManager {
         return clone;
     }
 
+    /**
+     * Возвращает список копий юнитов, не отмеченных на удаление. Если таковых
+     * нет, то возвращается пустой список.
+     */
     public LinkedList<Unit> cloneUnits() throws CloneNotSupportedException {
         LinkedList<Unit> clone = new LinkedList<>();
         
@@ -207,8 +211,8 @@ public class UnitManager {
         int i;
         Unit u;
         
-        //logger.info("" + serverUnits.size());
-
+        // TODO: 22 июня остановился тут.
+        
         for (Message um : clientUnits) {
             m = (UnitMessage) um;
             if ( (i = serverUnits.indexOf(m)) != -1) {

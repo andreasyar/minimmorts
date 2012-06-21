@@ -43,7 +43,7 @@ public class ClientManager {
     private final ConcurrentHashMap<Channel, Client> clientsByChannel = new ConcurrentHashMap();
 
     /**
-     *
+     * Список отключившихся клиентов, ожидающих пометки.
      */
     private final LinkedList<Channel> disconnectedClients = new LinkedList<>();
     
@@ -324,11 +324,11 @@ public class ClientManager {
     }
 
     /**
-     * Возвращает активных клиентов, которые не помеченны как отключенные и
-     * как неинициализированные.
+     * Возвращает активных клиентов - подключенных и инициализированных. Если
+     * таковых нет, то возвращается пустой список.
      * @return список активных клиентов
      */
-    public LinkedList<Client> getClients() {
+    public LinkedList<Client> getActiveClients() {
         LinkedList<Client> clients = new LinkedList<>();
         Entry pair;
         Client client;
@@ -337,7 +337,7 @@ public class ClientManager {
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (client.isConnected() && client.isInitialized() && client.isReported()) {
+            if (client.isConnected() && client.isInitialized()) {
                 clients.add(client);
             }
         }
@@ -389,12 +389,19 @@ public class ClientManager {
         }
     }
     
+    /**
+     * Добавляет клиента в список отключившихся клиентов, ожидающих пометки.
+     */
     public void addDisctonnectedClient(Channel c) {
         synchronized (disconnectedClients) {
             disconnectedClients.add(c);
         }
     }
     
+    /**
+     * Помечает отключенными всех клиентов, ожидающих пометки и очищает их
+     * список.
+     */
     public void markDisconnectedClients() {
         synchronized (disconnectedClients) {
             for (Channel c : disconnectedClients) {

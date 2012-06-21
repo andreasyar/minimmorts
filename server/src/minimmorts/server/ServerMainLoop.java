@@ -10,6 +10,7 @@ import java.util.logging.SimpleFormatter;
 import minimmorts.ErrnoErrorService;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
+import minimmorts.LastErrorService;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.map.Map;
@@ -35,26 +36,40 @@ public class ServerMainLoop implements Runnable {
      *
      */
     private static boolean loggingEnabled = false;
-    
-    /**
-     * Количество итераций, которые главный цикл сервера прождал отчётов от клиентов.
-     */
-    private int waitIterations = 0;
-    
-    /**
-     * Максимальное количество итераций, которые главный цикл сервера ждет отчётов от клиентов.
-     */
-    private final int maxWaitIterations = 3;
 
+    /**
+     *
+     */
     private final UnitManager unitManager;
+    
+    /**
+     *
+     */
     private final MovementManager movementManager;
+    
+    /**
+     *
+     */
     private final MessageManager messageManager;
+    
+    /**
+     *
+     */
     private final ClientManager clientManager;
     
+    /**
+     * Карта. TODO: Карта и работа с картой должны быть в отдельном пакете.
+     */
     private final Map map;
     
+    /**
+     * Номер хода.
+     */
     private static long step = 1;
         
+    /**
+     *
+     */
     private final Random randomGenerator = new Random();
 
     /**
@@ -62,6 +77,9 @@ public class ServerMainLoop implements Runnable {
      */
     private final LinkedList<ActionRequest> actionsRequests = new LinkedList<>();
     
+    /**
+     *
+     */
     private final LinkedList<State> states = new LinkedList();
 
     public static void enableLogging() {
@@ -99,22 +117,17 @@ public class ServerMainLoop implements Runnable {
 
     @Override
     public void run() {
-        Message message;
-        Message action;
         MoveMessage moveMessage;
         StateReportMessage stateReportMessage;
         LoginMessage loginMessage;
 
         Iterator clientsIterator;
         Iterator actionRequestsIterator;
-        Iterator inboxIterator;
         Iterator newClientsIterator;
         Iterator unreportedClientsIterator;
 
-        Channel channel;
         Client client;
 
-        InboxMessage inboxMessage;
 
         ActionRequest actionRequest;
 
@@ -130,8 +143,14 @@ public class ServerMainLoop implements Runnable {
         
         State currentState = null;
         
+        Iterator inboxIterator;
+        InboxMessage inboxMessage;
+        
+        Channel channel;
+        Message message, action;
+        
         /*
-         * Отметим всех отключившихся клиентов.
+         * Пометим всех отключившихся клиентов.
          */
         clientManager.markDisconnectedClients();
         
@@ -139,7 +158,7 @@ public class ServerMainLoop implements Runnable {
          * Сохраним текущее состояние игры.
          */
         try {
-            currentState = saveState();
+            currentState = saveCurrentState();
         } catch (CloneNotSupportedException ex) {
             logger.log(Level.SEVERE, null, ex);
             return;
@@ -167,16 +186,9 @@ public class ServerMainLoop implements Runnable {
                     }
                     continue;
                 }
-                if (!client.isReported()) {
-                    if (isLoggingEnabled()) {
-                        logger.warning(getStep() + ": Отчёт будет проигнорирован. Его отправитель клиент id=" + client.getId() + " не прислал его вовремя.");
-                    }
-                    continue;
-                }
                 
                 stateReportMessage = (StateReportMessage) message;
                 
-                //logger.info(getStep() + ": Check state for step=" + stateReportMessage.getStep());
                 if (isStateValid(stateReportMessage)) {
                     res = clientManager.setLastConfirmedStep(client.getId(), stateReportMessage.getStep());
                     if (ClientManager.isLoggingEnabled() && !res) {
@@ -335,7 +347,7 @@ public class ServerMainLoop implements Runnable {
          * Пройдём по всем клиентам и отправим им всё, что накопилось
          * в их исходящих сообщениях.
          */
-        clientsIterator = clientManager.getClients().iterator();
+        clientsIterator = clientManager.getActiveClients().iterator();
         while (clientsIterator.hasNext()) {
             client = (Client) clientsIterator.next();
             
@@ -472,7 +484,7 @@ public class ServerMainLoop implements Runnable {
         Channel channel;
         boolean res;
         
-        Iterator i = clientManager.getClients().iterator();
+        Iterator i = clientManager.getActiveClients().iterator();
         while (i.hasNext()) {
             client = (Client) i.next();
             if (client.getLastReportedStep() != step) {
@@ -505,7 +517,7 @@ public class ServerMainLoop implements Runnable {
         Client client;
         boolean res;
         
-        Iterator i = clientManager.getClients().iterator();
+        Iterator i = clientManager.getActiveClients().iterator();
         while (i.hasNext()) {
             client = (Client) i.next();
             if (client.getLastReportedStep() != step) {
@@ -561,16 +573,15 @@ public class ServerMainLoop implements Runnable {
         clientManager.setLastReportedStep(clientManager.getClientChannel(client.getId()), -1);
     }
     
-    private State saveState() throws CloneNotSupportedException {
+    /**
+     * Создаёт, сохраняет и возвращает текущее состояние игры.
+     */
+    private State saveCurrentState() throws CloneNotSupportedException {
         State newState = new State(getStep());
         
-        LinkedList<Unit> units = unitManager.cloneUnits();
-        if (units.size() > 0) {
-            //logger.info(getStep() + ": " + units.size() + " units saved.");
-        }
-        newState.addAllUnits(units);
+        newState.addAllUnits(unitManager.cloneUnits());
         
-        for (Client client : clientManager.getClients()) {
+        for (Client client : clientManager.getActiveClients()) {
             newState.addClient(client.getId(), new LinkedList<Message>());
         }
         
@@ -582,14 +593,26 @@ public class ServerMainLoop implements Runnable {
         return newState;
     }
     
-    private boolean isStateValid(StateReportMessage message) {
-        for (State s : states) {
-            if (s.getStep() == message.getStep()) {
-                return unitManager.isStateValid(s.getUnits(), message.getUnits());
-            }
+    /**
+     * Проверяет корректность состояния клиента. Возвращает true, если состояние
+     * верное и false в противном случае.
+     */
+    private boolean isStateValid(StateReportMessage message) throws NullPointerException {
+        if (message == null) {
+            throw new NullPointerException("State report message is null.");
         }
         
-        return false;
+        State state = getState(message.getStep());
+        if (state == null) {
+            if (isLoggingEnabled()) {
+                logger.info(getStep() + ": Состояние за ход step=" + message.getStep() + " не найдено.");
+            }
+            
+            LastErrorService.setLastError(MessageManager.createErrorMessage("Состояние за ход step=" + message.getStep() + " не найдено. Возможно, клиент имеет слишком большую суммарную задержку."));
+            return false;
+        }
+        
+        return unitManager.isStateValid(state.getUnits(), message.getUnits());
     }
     
     private State getState(long step) {
