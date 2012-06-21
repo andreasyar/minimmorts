@@ -300,7 +300,7 @@ function scrOnMousemove(e) {
 function syncLoop() {
     var i, unit;
     
-    for (i in stored_actions) {
+    /*for (i in stored_actions) {
         switch (stored_actions[i].type) {
             case "MOVE":
                 if ( (unit = getUnitById(stored_actions[i].unitId)) == null) {
@@ -327,7 +327,7 @@ function syncLoop() {
                 }
                 break;
         }
-    }
+    }*/
     
     step++;
     

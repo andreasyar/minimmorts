@@ -207,7 +207,7 @@ public class UnitManager {
         int i;
         Unit u;
         
-        logger.info("" + serverUnits.size());
+        //logger.info("" + serverUnits.size());
 
         for (Message um : clientUnits) {
             m = (UnitMessage) um;

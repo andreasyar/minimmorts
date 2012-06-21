@@ -176,7 +176,7 @@ public class ServerMainLoop implements Runnable {
                 
                 stateReportMessage = (StateReportMessage) message;
                 
-                logger.info(getStep() + ": Check state for step=" + stateReportMessage.getStep());
+                //logger.info(getStep() + ": Check state for step=" + stateReportMessage.getStep());
                 if (isStateValid(stateReportMessage)) {
                     res = clientManager.setLastConfirmedStep(client.getId(), stateReportMessage.getStep());
                     if (ClientManager.isLoggingEnabled() && !res) {
@@ -566,7 +566,7 @@ public class ServerMainLoop implements Runnable {
         
         LinkedList<Unit> units = unitManager.cloneUnits();
         if (units.size() > 0) {
-            logger.info(getStep() + ": " + units.size() + " units saved.");
+            //logger.info(getStep() + ": " + units.size() + " units saved.");
         }
         newState.addAllUnits(units);
         

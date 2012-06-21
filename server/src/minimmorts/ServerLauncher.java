@@ -63,7 +63,7 @@ public class ServerLauncher {
         
         try {
             clientManager = new ClientManager();
-            ClientManager.enableLogging();
+            //ClientManager.enableLogging();
             
             messageManager = new MessageManager(clientManager);
             movementManager = new MovementManager();
