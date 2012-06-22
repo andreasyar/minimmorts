@@ -170,6 +170,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public static NewUnitMessage createNewUnitMessage(Unit unit) {
         return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI(), unit.getColor().getRed(), unit.getColor().getGreen(), unit.getColor().getBlue());
     }
+
+    public static SyncErrorMessage createSyncErrorMessage(long unitId) {
+        return new SyncErrorMessage(unitId);
+    }
     
     /**
      * Обработчик разрыва соединения клиента с сервером.

@@ -3,10 +3,7 @@ package minimmorts;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.SQLException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
@@ -93,5 +90,11 @@ public class ServerLauncher {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
         logger.log(Level.INFO, "Game server main loop scheduled.");
+        
+        try {
+            handle.get();
+        } catch (ExecutionException | InterruptedException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
     }
 }

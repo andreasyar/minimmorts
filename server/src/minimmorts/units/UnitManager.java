@@ -10,9 +10,12 @@ import java.util.logging.SimpleFormatter;
 import minimmorts.ErrnoErrorService;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
+import minimmorts.LastErrorService;
 import minimmorts.client.Client;
 import minimmorts.messages.Message;
+import minimmorts.messages.MessageManager;
 import minimmorts.messages.UnitMessage;
+import minimmorts.server.ServerMainLoop;
 
 /**
  *
@@ -206,29 +209,46 @@ public class UnitManager {
         return clone;
     }
 
-    public boolean isStateValid(LinkedList<Unit> serverUnits, LinkedList<Message> clientUnits) {
+    public boolean isStateValid(LinkedList<Unit> serverUnits, LinkedList<Message> clientUnits) throws NullPointerException {
+        if (serverUnits == null) {
+            throw new NullPointerException("List of server units is null.");
+        }
+        if (clientUnits == null) {
+            throw new NullPointerException("List of client reported units is null.");
+        }
+        
         UnitMessage m;
         int i;
         Unit u;
         
-        // TODO: 22 июня остановился тут.
-        
         for (Message um : clientUnits) {
             m = (UnitMessage) um;
+            
             if ( (i = serverUnits.indexOf(m)) != -1) {
                 u = serverUnits.get(i);
+                
                 if (u.getOwnerId() != m.getOwnerId() || u.getJ() != m.getJ() || u.getI() != m.getI()) {
-                    String errorText = "State invalid. Unit id:" + u.getId() +
-                        " Server: ownerId:" + u.getOwnerId() + ",j:" + u.getJ() + ",i:" + u.getI() +
-                        " Client: ownerId:" + m.getOwnerId() + ",j:" + m.getJ() + ",i:" + m.getI();
-                    ErrnoErrorService.setErrno(errorText);
-                    //logger.log(Level.INFO, errorText);
+                    if (isLoggingEnabled()) {
+                        logger.info(ServerMainLoop.getStep() + ": Неверное состояние юнита id=" + u.getId() + 
+                                    " Server: ownerId=" + u.getOwnerId() + ",j=" + u.getJ() + ",i=" + u.getI() +
+                                    " Client: ownerId=" + m.getOwnerId() + ",j=" + m.getJ() + ",i=" + m.getI());
+                    }
+                    LastErrorService.setLastError(MessageManager.createSyncErrorMessage(m.getId()));
                     return false;
                 }
             } else {
-                String errorText = "State invalid. Unit id:" + m.getId() + " not found.";
-                ErrnoErrorService.setErrno(errorText);
-                //logger.log(Level.INFO, errorText);
+                String errorText = "Неверное состояние. Юнит id=" + m.getId() +
+                                   " существует в отчёте клиента, но не найден на сервере.";
+                LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
+                return false;
+            }
+        }
+        
+        for (Unit u2 : serverUnits) {
+            if ( (i = clientUnits.indexOf(u2)) == -1) {
+                String errorText = "Неверное состояние. Юнит id=" + u2.getId() +
+                                   " существует на сервере, но не найден в отчёте клиента.";
+                LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
                 return false;
             }
         }
