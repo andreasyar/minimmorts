@@ -60,13 +60,16 @@ public class ServerLauncher {
         
         try {
             clientManager = new ClientManager();
-            //ClientManager.enableLogging();
+            ClientManager.enableLogging();
             
             messageManager = new MessageManager(clientManager);
+            MessageManager.enableLogging();
+            
             movementManager = new MovementManager();
+            //MovementManager.enableLogging();
             
             unitManager = new UnitManager();
-            //UnitManager.enableLogging();
+            UnitManager.enableLogging();
             
             serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
             ServerMainLoop.enableLogging();

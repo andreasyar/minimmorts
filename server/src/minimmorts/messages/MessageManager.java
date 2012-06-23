@@ -217,6 +217,27 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     break;
                 case "STATE":
                     long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
+                    Client client;
+                    
+                    if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Клиент отправитель отчёта не существует на сервере. Отчёт будет проигнорирован. Клиент channel=" + ctx.getChannel() + " не найден.");
+                        }
+                        break;
+                    }
+                    if (!client.isConnected() || !client.isInitialized()) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Отчёты от отключенных или не инициализированных клиентов не принимаются. Клиент id=" + client.getId() + " отключен или не инициализирован.");
+                        }
+                        break;
+                    }
+                    /*if (client.getLastReportedStep() != client.getLastConfirmedStep()) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Последний отчёт не был подтверждён. Новые отчёты не принимаются. Клиент lastReportedStep=" + client.getLastReportedStep() + " lastConfirmedStep=" + client.getLastConfirmedStep());
+                        }
+                        break;
+                    }*/
+                    
                     JsonArray units = messageFields.get(2).getAsJsonArray();
                     JsonArray actions = messageFields.get(3).getAsJsonArray();
                     JsonArray unit;
@@ -269,8 +290,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
                     break;
                 case "PING":
-                    /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
-                    Client client;
+                    PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (ClientManager.isLoggingEnabled()) {
                             logger.info(ServerMainLoop.getStep() + ": Сообщение PING не может быть обработано. Клиент channel=" + ctx.getChannel() + " не найден.");
@@ -278,11 +298,13 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         break;  // Не обрабатываем дальше это сообщение.
                     }
                     if (client.getClientPingTime() != 0) {
-                        if (pm.getTime() - client.getClientPingTime() > 200) {
-                            //logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
+                        if (pm.getTime() - client.getClientPingTime() > 500 && ClientManager.isLoggingEnabled()) {
+                            logger.log(Level.SEVERE, "Client id={0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
                         }
                     }
-                    clientManager.setClientPingTime(client.getId(), pm.getTime());*/
+                    if (!clientManager.setClientPingTime(client.getId(), pm.getTime()) && ClientManager.isLoggingEnabled()) {
+                        logger.info(ServerMainLoop.getStep() + ": Не удалось установить время последнего пинга. Клиент id=" + client.getId() + " не найден.");
+                    }
                     break;
             }
         }

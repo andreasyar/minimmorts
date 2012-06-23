@@ -595,4 +595,5 @@ function setPixel(imageData, x, y, r, g, b, a) {
 function clearTimeouts() {
     clearTimeout(drawTimer);
     clearTimeout(syncTimer);
+    clearTimeout(pingTimer);
 }

@@ -59,6 +59,7 @@ function Unit(ownerId, id, j, i, color) {
         }
         context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
+        context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
         if (this.selected) {
             sprite = this.sloader.getSpriteByName("peasant_selection");
             context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);

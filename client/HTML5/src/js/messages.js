@@ -330,6 +330,7 @@ var MESSAGE_HANDLERS = {
         clearTimeouts();
         drawTimer = setTimeout(drawLoop, 1000 / FPS);
         syncLoop();
+        pingTimer = setTimeout(pingLoop, 100);
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);
         hideLoginForm();
@@ -343,47 +344,6 @@ var MESSAGE_HANDLERS = {
             syncLoop();
         } else {
             console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
-        }
-    },
-    "STATE": function (msg) {
-        // [["STATE",3349,[["UNIT",{"ownerId":13,"id":14,"j":4,"i":4,"r":128,"g":0,"b":0}],["UNIT",{"ownerId":13,"id":15,"j":5,"i":5,"r":128,"g":0,"b":0}]],[["MOVE",{"unitId":14,"j":6,"i":9}],["MOVE",{"unitId":15,"j":7,"i":9}]]]]
-        
-        if (!is_initial_state_received) {
-            is_initial_state_received = true;
-            drawTimer = setTimeout(drawLoop(), 1000 / FPS);
-            syncTimer = setTimeout(syncLoop(), 100);
-            scr.addEventListener("mousedown", scrOnMousedown, false);
-            scr.addEventListener("mouseup", scrOnMouseup, false);
-            camera = new Camera();
-            map = new Map(100, 100);
-        }
-        self_units_list = new Array();
-        units_list = new Array();
-        actions = new Array();
-
-        step = msg[1];
-        var units = msg[2];
-        var recv_actions = msg[3];
-        var cur_units_list;
-        var action_type;
-        var i;
-
-        for (i in units) {
-            if (clientId == units[i][1].ownerId) {
-                cur_units_list = self_units_list;
-            } else {
-                cur_units_list = units_list;
-            }
-            cur_units_list.push(new Unit(units[i][1].ownerId, units[i][1].id, units[i][1].j, units[i][1].i, {r:units[i][1].r,g:units[i][1].g,b:units[i][1].b}));
-        }
-
-        for (i in recv_actions) {
-            action_type = recv_actions[i][0];
-            switch (action_type) {
-                case "MOVE":
-                    
-                    break;
-            }
         }
     },
     "NEWUNIT": function (msg) {

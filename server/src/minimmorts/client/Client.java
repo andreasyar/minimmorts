@@ -55,6 +55,8 @@ public class Client {
     private boolean reported = false;
     
     private int reinitializationAttempts = 0;
+    
+    private long clientPingTime = 0;
 
     Client(long id, Channel channel, Color color) {
         this.id = id;
@@ -154,5 +156,13 @@ public class Client {
 
     public LinkedList<Message> cloneOutbox() {
         return (LinkedList<Message>) outbox.clone();
+    }
+
+    public long getClientPingTime() {
+        return clientPingTime;
+    }
+
+    void setClientPingTime(long clientPingTime) {
+        this.clientPingTime = clientPingTime;
     }
 }

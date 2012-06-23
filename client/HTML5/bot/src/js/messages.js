@@ -294,6 +294,7 @@ var MESSAGE_HANDLERS = {
         var i;
         
         clientId = msg[1];
+        document.title = "MINIMMORTS HTML5 bot " + clientId;
         step = msg[2];
         camera = new Camera();
         map = new Map(100, 100);

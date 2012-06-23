@@ -1,13 +1,15 @@
 package minimmorts.server;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import minimmorts.ErrnoErrorService;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
 import minimmorts.LastErrorService;
@@ -149,10 +151,27 @@ public class ServerMainLoop implements Runnable {
         Channel channel;
         Message message, action;
         
+        LinkedList<Client> reportedClients = new LinkedList<>();
+        
         /*
          * Пометим всех отключившихся клиентов.
          */
         clientManager.markDisconnectedClients();
+        
+        clientsIterator = clientManager.getActiveClients().iterator();
+        while(clientsIterator.hasNext()) {
+            client = (Client) clientsIterator.next();
+            
+            /*if (ServerMainLoop.isLoggingEnabled()) {
+                logger.info("Клиент id=" + client.getId() + " step=" + ServerMainLoop.getStep() + " lastReportedStep=" + client.getLastReportedStep());
+            }*/
+            if (client.getLastReportedStep() != -1 && ServerMainLoop.getStep() - client.getLastReportedStep() >= 30) {
+                clientManager.addDisctonnectedClient(client);
+                if (ServerMainLoop.isLoggingEnabled()) {
+                    logger.info(ServerMainLoop.getStep() + ": Клиент id=" + client.getId() + " не отчитывался больше 30 шагов lastReportedStep=" + client.getLastReportedStep() + " и будет помечен как отключенный.");
+                }
+            }
+        }
         
         /*
          * Сохраним текущее состояние игры.
@@ -163,7 +182,7 @@ public class ServerMainLoop implements Runnable {
             logger.log(Level.SEVERE, null, ex);
             return;
         }
-
+        
         /*
          * Пройдём по всем входящим сообщениям и обработаем их.
          */
@@ -204,6 +223,7 @@ public class ServerMainLoop implements Runnable {
                     }
 
                     addAllActionsRequests(client, stateReportMessage.getActions());
+                    reportedClients.add(client);
                 } else {
                     res = clientManager.setDisconnected(client.getId());
                     if (ClientManager.isLoggingEnabled()) {
@@ -351,31 +371,9 @@ public class ServerMainLoop implements Runnable {
         }
 
         /*
-         * Пройдём по всем клиентам и отправим им всё, что накопилось
-         * в их исходящих сообщениях.
+         * Отправим клиентам информацию о произошедших событиях.
          */
-        clientsIterator = clientManager.getActiveClients().iterator();
-        while (clientsIterator.hasNext()) {
-            client = (Client) clientsIterator.next();
-            
-            if ( (channel = clientManager.getClientChannel(client.getId())) != null) {
-                State state = getState(client.getLastConfirmedStep());
-                if (state == null) {
-                    if (isLoggingEnabled()) {
-                        logger.info(getStep() + ": Состояние за ход step=" + client.getLastConfirmedStep() + " не найдено.");
-                    }
-                    continue;
-                }
-                LinkedList<Message> outbox;
-                if ( (outbox = state.getOutboxes().get(client.getId())) != null) {
-                    messageManager.sendConfirm(channel, client.getLastConfirmedStep(), outbox);
-                } else if (ClientManager.isLoggingEnabled()) {
-                    logger.info(getStep() + ": Не удалось получить исходящие сообщения клиента. Клиент id=" + client.getId() + " не найден.");
-                }
-            } else if (ClientManager.isLoggingEnabled()) {
-                logger.info(getStep() + ": Не удалось отправить подтверждение. Клиент id=" + client.getId() + " не найден.");
-            }
-        }
+        sendOutMessages();
 
         /*
          * Удалим юнитов, помеченных на удаление.
@@ -425,7 +423,6 @@ public class ServerMainLoop implements Runnable {
         /*
          * Обновим позиции игроков.
          */
-        //logger.log(Level.INFO, "Update units positions.");
         movementManager.updatePositions(getStep());
     }
 
@@ -611,6 +608,34 @@ public class ServerMainLoop implements Runnable {
             pair = (Entry) i.next();
             outbox = (LinkedList<Message>) pair.getValue();
             outbox.addAll(actions);
+        }
+    }
+    
+    private void sendOutMessages() {
+        Client client;
+        Channel channel;
+        LinkedList<Message> outbox;
+        Iterator clientsIterator = clientManager.getActiveClients().iterator();
+        
+        while (clientsIterator.hasNext()) {
+            client = (Client) clientsIterator.next();
+            
+            if ( (channel = clientManager.getClientChannel(client.getId())) != null) {
+                State state = getState(ServerMainLoop.getStep());
+                if (state == null) {
+                    if (ServerMainLoop.isLoggingEnabled()) {
+                        logger.severe(ServerMainLoop.getStep() + ": Состояние за ход step=" + client.getLastConfirmedStep() + " не найдено.");
+                    }
+                    continue;
+                }
+                if ( (outbox = state.getOutboxes().get(client.getId())) != null) {
+                    messageManager.sendConfirm(channel, ServerMainLoop.getStep(), outbox);
+                } else if (ClientManager.isLoggingEnabled()) {
+                    logger.info(ServerMainLoop.getStep() + ": Не удалось получить исходящие сообщения клиента. Клиент id=" + client.getId() + " не найден.");
+                }
+            } else if (ClientManager.isLoggingEnabled()) {
+                logger.info(ServerMainLoop.getStep() + ": Не удалось отправить подтверждение. Клиент id=" + client.getId() + " не найден.");
+            }
         }
     }
 }

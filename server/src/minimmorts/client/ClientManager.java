@@ -472,4 +472,24 @@ public class ClientManager {
             return false;
         }
     }
+
+    /**
+     * Добавляет клиента в список отключившихся клиентов, ожидающих пометки.
+     */
+    public void addDisctonnectedClient(Client client) {
+        synchronized (disconnectedClients) {
+            disconnectedClients.add(client.getChannel());
+        }
+    }
+
+    public boolean setClientPingTime(long clientId, long clientPingTime) {
+        Client client;
+
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.setClientPingTime(clientPingTime);
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
