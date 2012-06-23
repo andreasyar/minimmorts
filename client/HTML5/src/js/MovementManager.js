@@ -100,7 +100,7 @@ function MovementManager() {
             return;
         }
         updatedSpriteMovement = new SpriteMovement(
-            existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
+        existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
             path,
             updatedMovement.getPosition(step)
         );
@@ -209,6 +209,27 @@ function MovementManager() {
         } else {
             return null;
         }
+    }
+    
+    this.removeFinishedSpriteMovements = function() {
+        var spriteMovementsInProgress = new Array();
+        
+        // TODO Движение спрайта каким-то образом может развершится позже движения самого юнита. Видимо не правильно вычисляется время движения.
+        for (var j in this.spriteMovements) {
+            if (!(this.spriteMovements[j] instanceof SpriteMovement)) {
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": " + this.spriteMovements[j] + " не является движением спрайта юнита и будет проигнорировано.");
+                }
+                continue;
+            }
+            if (!this.spriteMovements[j].finished) {
+                spriteMovementsInProgress.push(this.spriteMovements[j]);
+                continue;
+            } else if (DEBUG_MOVEMENTS) {
+                console.log(step + ": Движение спрайта юнита id=" + this.spriteMovements[j].getUnit().getId() + " удалено.");
+            }
+        }
+        this.spriteMovements = spriteMovementsInProgress;
     }
 
     return this;

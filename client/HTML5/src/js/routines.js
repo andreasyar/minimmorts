@@ -597,3 +597,8 @@ function clearTimeouts() {
     clearTimeout(syncTimer);
     clearTimeout(pingTimer);
 }
+
+function createId() {
+    uniqueId++;
+    return uniqueId;
+}

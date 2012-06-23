@@ -261,52 +261,7 @@ public class ServerMainLoop implements Runnable {
         /*
          * Пройдём по запросам действий и выполним их.
          */
-        actionRequestsIterator = actionsRequests.iterator();
-        while (actionRequestsIterator.hasNext()) {
-            actionRequest = (ActionRequest) actionRequestsIterator.next();
-            client = actionRequest.getClient();
-            action = actionRequest.getRequest();
-            
-            if (action instanceof MoveMessage) {
-                moveMessage = (MoveMessage) action;
-                if ( (unit = unitManager.getById(moveMessage.getUnitId())) == null) {
-                    if (UnitManager.isLoggingEnabled()) {
-                        logger.warning(getStep() + ": Запрос движения не может быть обработан. Юнит id=" + moveMessage.getUnitId() + " не найден.");
-                    }
-                    continue;   // Переходим к следующему запросу действия.
-                }
-                if (movementManager.isUnitMove(unit)) {
-                    movement = movementManager.updateMovement(
-                        getStep(),
-                        map,
-                        unit,
-                        moveMessage.getEndJ(),
-                        moveMessage.getEndI()
-                    );
-                    if (movement != null) {
-                        //clientManager.notifyAllOtherClients(client, MessageManager.createMoveUpdateMessage(movement));
-                        notifyClients(currentState, MessageManager.createMoveUpdateMessage(movement));
-                    } else {
-                        //logger.log(Level.SEVERE, "Movement not created.");
-                    }
-                } else {
-                    movement = movementManager.startNewMovement(
-                        getStep(),
-                        map,
-                        unit,
-                        moveMessage.getEndJ(),
-                        moveMessage.getEndI()
-                    );
-                    if (movement != null) {
-                        //clientManager.notifyAllOtherClients(client, MessageManager.createMoveMessage(movement));
-                        notifyClients(currentState, MessageManager.createMoveMessage(movement));
-                    } else {
-                        //logger.log(Level.SEVERE, "Movement not created.");
-                    }
-                }
-            }
-        }
-        actionsRequests.clear();
+        handleActionRequests();
 
         /*
          * Пройдём по всем отключенным клиентам и произведём очистку.
@@ -637,5 +592,71 @@ public class ServerMainLoop implements Runnable {
                 logger.info(ServerMainLoop.getStep() + ": Не удалось отправить подтверждение. Клиент id=" + client.getId() + " не найден.");
             }
         }
+    }
+    
+    private void handleActionRequests() {
+        State currentState = getState(ServerMainLoop.getStep());
+        Movement movement;
+        Unit unit;
+        MoveMessage moveMessage;
+        Message action;
+        ActionRequest actionRequest;
+        Iterator actionRequestsIterator = actionsRequests.iterator();
+        
+        while (actionRequestsIterator.hasNext()) {
+            actionRequest = (ActionRequest) actionRequestsIterator.next();
+            action = actionRequest.getRequest();
+            
+            if (action instanceof MoveMessage) {
+                moveMessage = (MoveMessage) action;
+                
+                if ( (unit = unitManager.getById(moveMessage.getUnitId())) == null) {
+                    logger.log(
+                        Level.SEVERE,
+                        "{0}: Запрос движения не может быть обработан. Юнит id={1} не найден.",
+                        new Object[] {ServerMainLoop.getStep(), moveMessage.getUnitId()}
+                    );
+                    continue;   // Переходим к следующему запросу действия.
+                }
+                
+                if (movementManager.isUnitMove(unit)) {
+                    movement = movementManager.updateMovement(
+                        ServerMainLoop.getStep(),
+                        map,
+                        unit,
+                        moveMessage.getEndJ(),
+                        moveMessage.getEndI()
+                    );
+                    if (movement != null) {
+                        notifyClients(currentState, MessageManager.createMoveUpdateMessage(movement));
+                    } else {
+                        logger.log(
+                            Level.SEVERE,
+                            "{0}: Движение юнита {1} в клетку [{2}, {3}] не может быть обновлено.",
+                            new Object[] {ServerMainLoop.getStep(), unit, moveMessage.getEndJ(), moveMessage.getEndI()}
+                        );
+                    }
+                } else {
+                    movement = movementManager.startNewMovement(
+                        ServerMainLoop.getStep(),
+                        map,
+                        unit,
+                        moveMessage.getEndJ(),
+                        moveMessage.getEndI()
+                    );
+                    if (movement != null) {
+                        notifyClients(currentState, MessageManager.createMoveMessage(movement));
+                    } else {
+                        logger.log(
+                            Level.SEVERE,
+                            "{0}: Новое движение юнита {1} в клетку [{2}, {3}] не может быть создано.",
+                            new Object[] {ServerMainLoop.getStep(), unit, moveMessage.getEndJ(), moveMessage.getEndI()}
+                        );
+                    }
+                }
+            }
+        }
+        
+        actionsRequests.clear();
     }
 }

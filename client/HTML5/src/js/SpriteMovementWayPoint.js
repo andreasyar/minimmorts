@@ -9,6 +9,8 @@ function SpriteMovementWayPoint(j, i, arrivalTime, arrivalSpeed, movementOrienta
         throw new Error("Constructor called like a simple function!");
     }
     
+    this.id = createId();
+    
     /**
      * Индекс клетки на карте по ширине.
      */
@@ -222,7 +224,7 @@ function SpriteMovementWayPoint(j, i, arrivalTime, arrivalSpeed, movementOrienta
      * Преобразовывает точку пути в строку.
      */
     this.toString = function() {
-        return "[j=" + this.j + ",i=" + this.i + ",t=" + this.arrivalTime + ",s=" + this.arrivalSpeed + ",o=" + this.movementOrientation + "]";
+        return "[id=" + this.id + ",j=" + this.j + ",i=" + this.i + ",t=" + this.arrivalTime + ",s=" + this.arrivalSpeed + ",o=" + this.movementOrientation + "]";
     }
     
     return this;

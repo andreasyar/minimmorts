@@ -78,4 +78,9 @@ public class Unit implements Cloneable {
     protected Unit clone() throws CloneNotSupportedException {
         return (Unit) super.clone();
     }
+
+    @Override
+    public String toString() {
+        return "ownerId=" + ownerId + ",id=" + id + ",j=" + j + ",i=" + i + ",deleted=" + deleted;
+    }
 }

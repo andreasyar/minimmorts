@@ -14,6 +14,8 @@ function SpriteMovement(unit, path, curUnitPos) {
         return null;
     }
     
+    console.log("Создано новое движение спрайта")
+    
     /**
      * Юнит.
      */
@@ -39,8 +41,8 @@ function SpriteMovement(unit, path, curUnitPos) {
             new SpriteMovementWayPoint(
                 path_array[k].j,
                 path_array[k].i,
-                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * 100),
-                32 / ((1 / DEFAULT_SPEED) * 100),
+                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
                 movementManager.getMovementOrientation(
                     wayPointPath[wayPointPath.length - 1].j,
                     wayPointPath[wayPointPath.length - 1].i,
@@ -54,8 +56,8 @@ function SpriteMovement(unit, path, curUnitPos) {
         new SpriteMovementWayPoint(
             path_array[path_array.length - 1].j,
             path_array[path_array.length - 1].i,
-            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * 100),
-            32 / ((1 / DEFAULT_SPEED) * 100),
+            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+            32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
             movementManager.getMovementOrientation(
                 wayPointPath[wayPointPath.length - 1].j,
                 wayPointPath[wayPointPath.length - 1].i,
@@ -69,6 +71,7 @@ function SpriteMovement(unit, path, curUnitPos) {
      * Путь, по которому двигается спрайт юнита.
      */
     this.path = wayPointPath;
+    console.log("original", (new Date()).getTime(), pathToString(this.path));
     
     this.begTime = wayPointPath[0].arrivalTime;
     
@@ -104,6 +107,7 @@ function SpriteMovement(unit, path, curUnitPos) {
                     curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
                 } else {
                     curPos.spriteName = "peasant_" + curPos.orientation + "_walk_0";
+                    movementManager.removeFinishedSpriteMovements();
                 }
                 this.unit.spritePos = curPos;
                 return;
@@ -133,5 +137,94 @@ function SpriteMovement(unit, path, curUnitPos) {
         return this.unit;
     }
     
+    this.update = function(path, curUnitPos) {
+        
+        /*
+         * Найдём точку пути, в которой находится спрайт игрока.
+         */
+        var curTime = (new Date()).getTime();
+        
+        var newPath = new Array();
+        
+        var found = false;
+        
+        for (var i = 0; i < this.path.length; i++) {
+            if (this.path[i].arrivalTime > curTime) {
+                newPath.push(this.path[i]);
+                break;
+            }
+        }
+        if (!found) {
+            newPath.push(this.path[this.path.length - 1]);
+        }
+        
+        console.log("pre splice", (new Date()).getTime(), pathToString(this.path));
+        console.log("post splice", pathToString(newPath));
+    
+        var path_array = convertLinkedPathToArray(path);
+
+        l = 0;
+        if (newPath.lenght > 0 && newPath[newPath.length - 1].j == path_array[0].j && newPath[newPath.length - 1].i == path_array[0].i) {
+            l = 1;
+        }
+        for (var k = l; k < path_array.length - 1; k++) {
+            newPath.push(
+                new SpriteMovementWayPoint(
+                    path_array[k].j,
+                    path_array[k].i,
+                    newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                    32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                    movementManager.getMovementOrientation(
+                        newPath[newPath.length - 1].j,
+                        newPath[newPath.length - 1].i,
+                        path_array[k].j,
+                        path_array[k].i
+                    )
+                )
+            );
+        }
+        newPath.push(
+            new SpriteMovementWayPoint(
+                path_array[path_array.length - 1].j,
+                path_array[path_array.length - 1].i,
+                newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                movementManager.getMovementOrientation(
+                    newPath[newPath.length - 1].j,
+                    newPath[newPath.length - 1].i,
+                    path_array[path_array.length - 1].j,
+                    path_array[path_array.length - 1].i
+                )
+            )
+        );
+            
+        this.path = newPath;
+        console.log("updated", pathToString(this.path));
+        
+        return this;
+    }
+    
     return this;
+}
+
+function pathToString(path) {
+    var out = "";
+    
+    for (var i = 0; i < path.length; i++) {
+        out += path[i];
+    }
+    
+    return out;
+}
+
+function convertLinkedPathToArray(path) {
+    var array = new Array();
+    var cur = path;
+    
+    do {
+        array.push(new Point(cur.j, cur.i));
+        cur = cur.parent;
+    } while (cur != null);
+    
+    return array.reverse();
 }

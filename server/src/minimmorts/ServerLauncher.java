@@ -2,15 +2,12 @@ package minimmorts;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.sql.SQLException;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import minimmorts.client.ClientManager;
-import minimmorts.db.DBWorker;
 import minimmorts.messages.MessageManager;
-import minimmorts.movement.Movement;
 import minimmorts.movement.MovementManager;
 import minimmorts.server.ServerMainLoop;
 import minimmorts.units.UnitManager;
@@ -28,7 +25,6 @@ public class ServerLauncher {
 
     public static void main(String[] args) {
         ServerConfig config = null;
-        DBWorker dbworker = null;
         ClientManager clientManager = null;
         MessageManager messageManager = null;
         MovementManager movementManager = null;
@@ -44,17 +40,6 @@ public class ServerLauncher {
             return;
         }
         logger.log(Level.INFO, "Configuration readed.");
-        
-        // Connect to database.
-
-        //dbworker = new DBWorker(config.getDbHost(), config.getDbPort(), config.getDatabaseName(), config.getDbUser(), config.getDbPassword());
-        //try {
-        //    dbworker.connect();
-        //} catch (SQLException ex) {
-        //    logger.log(Level.SEVERE, null, ex);
-        //    return;
-        //}
-        //logger.log(Level.INFO, "DB connected.");
         
         // Create game server.
         

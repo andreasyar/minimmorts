@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Derp</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body>
+
+<script type="text/javascript">
+    
+var prevTime = null;
+
+function scrOnMouseup(e) {
+    if (prevTime == null) {
+        prevTime = (new Date()).getTime();
+    } else {
+        document.getElementById('derpina').value = (new Date()).getTime() - prevTime;
+        prevTime = (new Date()).getTime();
+    }
+}
+
+</script>
+
+<input type="text" id="derpina" value="">
+
+<script type="text/javascript">
+    addEventListener("mouseup", scrOnMouseup, false);
+</script>
+
+</body>
+</html>

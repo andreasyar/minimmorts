@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import minimmorts.GlobalLogFile;
+import minimmorts.server.ServerMainLoop;
 import minimmorts.units.Unit;
 
 /**
@@ -93,22 +94,26 @@ public class Movement {
         if (n >= path.size() - 1) {
             j = path.get(path.size() - 1).getJ();
             i = path.get(path.size() - 1).getI();
-            /*logger.log(
-                Level.INFO,
-                "Unit id={0} [{1},{2}]->[{3},{4}] on step {5} Movement complete.",
-                new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
-            );*/
+            if (MovementManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Юнит {1} сходил из клетки {2} в клетку {3} Движение звершено.",
+                    new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI()), new Point(j, i)}
+                );
+            }
             unit.setJ(j);
             unit.setI(i);
             stopped = true;
         } else {
             j = path.get(n).getJ();
             i = path.get(n).getI();
-            /*logger.log(
-                Level.INFO,
-                "Unit id={0} [{1},{2}]->[{3},{4}] on step {5}",
-                new Object[] {unit.getId(), unit.getJ(), unit.getI(), j, i, step}
-            );*/
+            if (MovementManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Юнит {1} сходил из клетки {2} в клетку {3}",
+                    new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI()), new Point(j, i)}
+                );
+            }
             unit.setJ(j);
             unit.setI(i);
         }

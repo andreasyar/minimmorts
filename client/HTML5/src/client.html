@@ -70,13 +70,13 @@ units_buffer.height = SCR_H;
  *************************/
 
 // debug
-var DEBUG = false;
+var DEBUG = true;
 
-var DEBUG_PROTOCOL = false;
+var DEBUG_PROTOCOL = true;
 
-var DEBUG_UNITS = false;
+var DEBUG_UNITS = true;
 
-var DEBUG_MOVEMENTS = false;
+var DEBUG_MOVEMENTS = true;
 
 // Список юнитов, принадлежащих клиенту.
 var self_units_list = new Array();
@@ -137,6 +137,13 @@ var saveUnitHistory = false;
 
 var plannedExecutionTime = null;
 var executionTimeLag = null;
+
+var prevStepTime = null;
+var stepTimeDiff = null;
+
+var uniqueId = 0;
+
+var stateUpdatesMap = new Array();
 
 /************
  * Функции. *
@@ -338,6 +345,10 @@ function syncLoop() {
     }*/
     
     step++;
+    if (prevStepTime != null) {
+        stepTimeDiff = (new Date()).getTime() - prevStepTime;
+    }
+    prevStepTime = (new Date()).getTime();
     
     movementManager.updatePositions(step);
     map.updateMinimap();
