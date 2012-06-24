@@ -181,7 +181,13 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
         clientManager.addDisctonnectedClient(ctx.getChannel());
-        logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " возможно будет помечен как отключенный.");
+        if (MessageManager.isLoggingEnabled()) {
+            logger.log(
+                Level.INFO,
+                "{0}: Связь с клиентом потеряна. Клиент channel={1} будет помечен как отключенный.",
+                new Object[] {ServerMainLoop.getStep(), ctx.getChannel()}
+            );
+        }
     }
 
     /**
@@ -299,7 +305,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     }
                     if (client.getClientPingTime() != 0) {
                         if (pm.getTime() - client.getClientPingTime() > 500 && ClientManager.isLoggingEnabled()) {
-                            logger.log(Level.SEVERE, "Client id={0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
+                            logger.log(Level.INFO, "Client id={0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
                         }
                     }
                     if (!clientManager.setClientPingTime(client.getId(), pm.getTime()) && ClientManager.isLoggingEnabled()) {
@@ -335,8 +341,15 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         String jsonMessage = new ConfirmMessage(step, messages).toJSON();
         if (channel.isWritable()) {
             channel.write(new TextWebSocketFrame(jsonMessage));
-        } else if (isLoggingEnabled()) {
-            logger.warning(step + ": Невозможно отправить подтверждение хода. Channel=" + channel + " is not writable.");
+        } else {
+            clientManager.addDisctonnectedClient(channel);
+            if (MessageManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Невозможно отправить сообщение. Связь с клиентом потеряна. Клиент channel={1} будет помечен как отключенный.",
+                    new Object[] {ServerMainLoop.getStep(), channel}
+                );
+            }
         }
     }
 

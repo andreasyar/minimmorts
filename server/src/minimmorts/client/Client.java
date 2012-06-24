@@ -165,4 +165,14 @@ public class Client {
     void setClientPingTime(long clientPingTime) {
         this.clientPingTime = clientPingTime;
     }
+
+    @Override
+    public String toString() {
+        return "id=" + id +
+               ",channel=" + channel +
+               ",lastReportedStep=" + lastReportedStep +
+               ",lastConfirmedStep=" + lastConfirmedStep +
+               ",connected=" + connected +
+               ",initialized=" + initialized;
+    }
 }

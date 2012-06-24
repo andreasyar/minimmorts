@@ -255,4 +255,16 @@ public class UnitManager {
 
         return true;
     }
+
+    public boolean isClientHasUnit(long clientId, long unitId) {
+        synchronized (allUnits) {
+            for (Unit u : allUnits) {
+                if (u.getId() == unitId && u.getOwnerId() == clientId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

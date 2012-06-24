@@ -264,17 +264,17 @@ var MESSAGE_HANDLERS = {
     "ERROR": function (message) {
         // Format:
         // ["ERROR", "error text"]
-        
+
         clearTimeouts();
         disconnect();
         alert(message[1]);
     },
     "SYNCERROR": function (message) {
         // ["SYNCERROR", {"unitId":123}]
-        
+
         var syncerrorMessage = message[1];
         var unit = getUnitById(syncerrorMessage.unitId);
-            
+
         if (unit == null) {
             console.log("История юнита не может быть распечатана. Юнит id=" + syncerrorMessage.unitId + " не найден.");
         } else if (!saveUnitHistory) {
@@ -282,7 +282,7 @@ var MESSAGE_HANDLERS = {
         } else {
             console.log(unit.history);
         }
-        
+
         clearTimeouts()
         disconnect();
         alert("Ошибка синхронизации.");
@@ -290,44 +290,45 @@ var MESSAGE_HANDLERS = {
     "WELCOME": function (msg) {
         // Format:
         // ["WELCOME",clientId,step,[units],[actions]]
-        
+
         var i;
-        
+
         clientId = msg[1];
         document.title = "MINIMMORTS HTML5 bot " + clientId;
         step = msg[2];
         camera = new Camera();
         map = new Map(100, 100);
-        
+
         self_units_list = new Array();
         if (DEBUG_UNITS) {
             console.log("Все свои юниты удалены.");
         }
-        
+
         units_list = new Array();
         if (DEBUG_UNITS) {
             console.log("Все чужие юниты удалены.");
         }
-        
+
         actions = new Array();
         stored_actions = new Array();
         selected_units = new Array();
         movementManager = new MovementManager();
-        
+        actionManager = new ActionManager();
+
         /*
          * Создание юнитов.
          */
         for (i in msg[3]) {
             MESSAGE_HANDLERS[msg[3][i][0]](msg[3][i]);
         }
-        
+
         /*
          * Выполнение действий.
          */
         for (i in msg[4]) {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
-        
+
         clearTimeouts();
         aiTimer = setTimeout(aiLoop, 2000);
         syncLoop();
@@ -339,12 +340,12 @@ var MESSAGE_HANDLERS = {
             }
             return;
         }
-        
+
         if (step == msg[1]) {
             for (var i in msg[2]) {
                 MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);
             }
-            
+
             syncLoop();
         } else {
             console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
@@ -359,7 +360,7 @@ var MESSAGE_HANDLERS = {
 
         if (clientId == unit.ownerId) {
             cur_units_list = self_units_list;
-            
+
             /*
              * Камера будет смотреть на последнего добавленного юнита игрока.
              */
@@ -388,7 +389,7 @@ var MESSAGE_HANDLERS = {
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
-        
+
         if (unit == null) {
             console.log("Движение не может быть создано. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
@@ -412,7 +413,7 @@ var MESSAGE_HANDLERS = {
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
-        
+
         if (unit == null) {
             console.log("Движение не может быть обновлено. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
