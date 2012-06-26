@@ -2,7 +2,7 @@
 /**
  * Плавное движение спрайта юнита по клеткам.
  */
-function SpriteMovement(unit, path, curUnitPos) {
+function SpriteMovement(unit, path, curUnitPos, movement) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -80,6 +80,8 @@ function SpriteMovement(unit, path, curUnitPos) {
     this.spriteInterval = 150;
     
     this.finished = false;
+    
+    this.movement = movement;
     
     /**
      * Обновляет координаты спрайта юнита.
@@ -211,9 +213,43 @@ function SpriteMovement(unit, path, curUnitPos) {
             return false;
         }
         
+        // Стоим на месте.
+        if (step == this.movement.beg_step) {
+            return true;
+        }
+        
         var prevStepBegTime = stepBegTime - prevStepTime;
         var curTime = (new Date()).getTime() - prevStepTime;
         var diffTime = curTime - prevStepBegTime;
+        
+        var m = ((step - 1) - this.movement.beg_step) * this.movement.speed;
+        var prevPos = null;
+        var n = Math.floor(m);
+        if (n >= this.movement.path.length - 1) {
+            prevPos = this.movement.path[this.movement.path.length - 1];
+        } else {
+            prevPos = this.movement.path[n];
+        }
+        var prevPosX = Map.getCellXOnMap(prevPos.j);
+        var prevPosY = Map.getCellYOnMap(prevPos.i);
+        
+        var v = (this.movement.speed * CELL_W) / prevStepTime;
+        
+        // пока движение только на восток!
+        
+        prevPosX += (m - n) * CELL_W;
+        prevPosX += v * diffTime;
+        prevPosX = Math.floor(prevPosX);
+        
+        this.finished = prevPosX >= Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
+        
+        if (this.finished) {
+            this.unit.spritePos.x = Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
+        } else {
+            this.unit.spritePos.x = prevPosX;
+        }
+        
+        return true;
     }
     
     return this;

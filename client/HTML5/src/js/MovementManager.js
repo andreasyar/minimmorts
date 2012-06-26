@@ -43,7 +43,8 @@ function MovementManager() {
             new SpriteMovement(
                 unit,
                 path,
-                movement.getPosition(step)
+                movement.getPosition(step),
+                movement
             )
         );
     }
@@ -100,9 +101,10 @@ function MovementManager() {
             return;
         }
         updatedSpriteMovement = new SpriteMovement(
-        existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
+            existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
             path,
-            updatedMovement.getPosition(step)
+            updatedMovement.getPosition(step),
+            updatedMovement
         );
         if (updatedSpriteMovement == null) {
             console.log("Cant create sprite movement!");
@@ -159,7 +161,9 @@ function MovementManager() {
                 console.log(this.spriteMovements[i], "is not sprite movement. Ignore.");
                 continue;
             }
-            this.spriteMovements[i].updatePosition();
+            if (!this.spriteMovements[i].finished) {
+                this.spriteMovements[i].updatePosition2();
+            }
         }
     }
 
