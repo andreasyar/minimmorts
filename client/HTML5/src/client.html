@@ -138,8 +138,15 @@ var saveUnitHistory = false;
 var plannedExecutionTime = null;
 var executionTimeLag = null;
 
+/**
+ * Время начала текущего хода.
+ */
+var stepBegTime = null;
+
+/**
+ * Длительность предыдущего хода в миллисекундах.
+ */
 var prevStepTime = null;
-var stepTimeDiff = null;
 
 var uniqueId = 0;
 
@@ -315,40 +322,12 @@ function scrOnMousemove(e) {
 function syncLoop() {
     var i, unit;
     
-    /*for (i in stored_actions) {
-        switch (stored_actions[i].type) {
-            case "MOVE":
-                if ( (unit = getUnitById(stored_actions[i].unitId)) == null) {
-                    console.log("Сохранённое действие не может быть выполнено. Юнит id=" + stored_actions[i].unitId + " не найден.");
-                    continue;
-                }
-                if (movementManager.isUnitMove(unit)) {
-                    movementManager.updateMovement(
-                        step,
-                        unit,
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                } else {
-                    movementManager.startNewMovement(
-                        step,
-                        unit,
-                        unit.getJ(),
-                        unit.getI(),
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                    //console.log("Movement created on step ", step);
-                }
-                break;
-        }
-    }*/
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
     
     step++;
-    if (prevStepTime != null) {
-        stepTimeDiff = (new Date()).getTime() - prevStepTime;
-    }
-    prevStepTime = (new Date()).getTime();
     
     movementManager.updatePositions(step);
     map.updateMinimap();

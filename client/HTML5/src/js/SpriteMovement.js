@@ -41,8 +41,8 @@ function SpriteMovement(unit, path, curUnitPos) {
             new SpriteMovementWayPoint(
                 path_array[k].j,
                 path_array[k].i,
-                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
-                32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
+                32 / ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
                 movementManager.getMovementOrientation(
                     wayPointPath[wayPointPath.length - 1].j,
                     wayPointPath[wayPointPath.length - 1].i,
@@ -56,8 +56,8 @@ function SpriteMovement(unit, path, curUnitPos) {
         new SpriteMovementWayPoint(
             path_array[path_array.length - 1].j,
             path_array[path_array.length - 1].i,
-            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
-            32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+            wayPointPath[wayPointPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
+            32 / ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
             movementManager.getMovementOrientation(
                 wayPointPath[wayPointPath.length - 1].j,
                 wayPointPath[wayPointPath.length - 1].i,
@@ -172,8 +172,8 @@ function SpriteMovement(unit, path, curUnitPos) {
                 new SpriteMovementWayPoint(
                     path_array[k].j,
                     path_array[k].i,
-                    newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
-                    32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                    newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
+                    32 / ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
                     movementManager.getMovementOrientation(
                         newPath[newPath.length - 1].j,
                         newPath[newPath.length - 1].i,
@@ -187,8 +187,8 @@ function SpriteMovement(unit, path, curUnitPos) {
             new SpriteMovementWayPoint(
                 path_array[path_array.length - 1].j,
                 path_array[path_array.length - 1].i,
-                newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
-                32 / ((1 / DEFAULT_SPEED) * (stepTimeDiff == null ? 100 : stepTimeDiff)),
+                newPath[newPath.length - 1].arrivalTime + ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
+                32 / ((1 / DEFAULT_SPEED) * (prevStepTime == null ? 100 : prevStepTime)),
                 movementManager.getMovementOrientation(
                     newPath[newPath.length - 1].j,
                     newPath[newPath.length - 1].i,
@@ -202,6 +202,18 @@ function SpriteMovement(unit, path, curUnitPos) {
         console.log("updated", pathToString(this.path));
         
         return this;
+    }
+    
+    this.updatePosition2 = function() {
+        
+        if (stepBegTime == null || prevStepTime == null) {
+            console.log("Невозможно обновить координаты спрайта юнита, когда время начала текущего хода и время предыдущего хода - null");
+            return false;
+        }
+        
+        var prevStepBegTime = stepBegTime - prevStepTime;
+        var curTime = (new Date()).getTime() - prevStepTime;
+        var diffTime = curTime - prevStepBegTime;
     }
     
     return this;
