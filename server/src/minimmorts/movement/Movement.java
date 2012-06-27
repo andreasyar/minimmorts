@@ -139,4 +139,30 @@ public class Movement {
         
         return null;
     }
+
+    void update(long step, LinkedList<Point> path, int endJ, int endI) {
+        LinkedList<Point> newPath = new LinkedList<>();
+        int n = (int) Math.floor(((double) step - (double) this.begStep) * (double) this.speed);
+        
+        for (int i = 0; i <= n && i < this.path.size(); i++) {
+            newPath.add(this.path.get(i));
+        }
+        newPath.addAll(path);
+        
+        this.endJ = endJ;
+        this.endI = endI;
+        this.path = newPath;
+        
+        if (MovementManager.isLoggingEnabled()) {
+            String out = "";
+            for (Point p : this.path) {
+                out += p;
+            }
+            logger.log(
+                Level.INFO,
+                "{0}: n={3} Обновлён путь движения юнита {1} {2}",
+                new Object[] {ServerMainLoop.getStep(), unit, out, n}
+            );
+        }
+    }
 }

@@ -108,6 +108,16 @@ var autoReconnect = true;
 
 var saveUnitHistory = false;
 
+/**
+ * Время начала текущего хода.
+ */
+var stepBegTime = null;
+
+/**
+ * Длительность предыдущего хода в миллисекундах.
+ */
+var prevStepTime = null;
+
 /************
  * Функции. *
  ************/
@@ -149,6 +159,11 @@ function aiLoop() {
 
 function syncLoop() {
     var i, unit, actions;
+    
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
     
     /*for (i in stored_actions) {
         switch (stored_actions[i].type) {

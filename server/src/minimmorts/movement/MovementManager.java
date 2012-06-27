@@ -67,7 +67,7 @@ public class MovementManager {
     }
 
     public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) {
-        Movement movement = createMovement(step, map, unit, j, i, 0.4f);
+        Movement movement = createMovement(step, map, unit, j, i, 0.3f);
         if (movement == null) {
             return null;
         }
@@ -123,6 +123,31 @@ public class MovementManager {
                 new Object[] {ServerMainLoop.getStep(), unit, nextPoint}
             );
         }
+        LinkedList<Point> path = getPath(map, new Cell(nextPoint.getI(), nextPoint.getJ(), 0, 0, null), new Cell(i, j, 0, 0, null));
+        if (path == null) {
+            logger.log(
+                Level.SEVERE,
+                "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден.",
+                new Object[] {ServerMainLoop.getStep(), unit, new Point(nextPoint.getJ(), nextPoint.getI()), new Point(j, i)}
+            );
+            return null;
+        }
+        existedMovement.update(step, path, j, i);
+        /*if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
+            logger.log(
+                Level.SEVERE,
+                "{0}: Следующая точка пути движения юнита {1} после точки {2} не найдена.",
+                new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI())}
+            );
+            return null;
+        }
+        if (MovementManager.isLoggingEnabled()) {
+            logger.log(
+                Level.INFO,
+                "{0}: Следующая точка пути движения юнита {1} {2}",
+                new Object[] {ServerMainLoop.getStep(), unit, nextPoint}
+            );
+        }
         updatedMovement = createMovement(
             step,
             map,
@@ -148,10 +173,10 @@ public class MovementManager {
                 new Object[] {ServerMainLoop.getStep(), unit, path}
             );
         }
+
+        movements.set(movements.indexOf(existedMovement), updatedMovement);*/
         
-        movements.set(movements.indexOf(existedMovement), updatedMovement);
-        
-        return updatedMovement;
+        return existedMovement;
     }
 
     public void updatePositions(long step) {

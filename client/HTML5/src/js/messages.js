@@ -414,19 +414,15 @@ var MESSAGE_HANDLERS = {
             return;
         }
 
-        if (moveMessage.begStep == step) {
-            movementManager.updateMovement(
-                moveMessage.begStep,
-                unit,
-                moveMessage.endJ,
-                moveMessage.endI
-            );
+        movementManager.updateMovement(
+            step,
+            unit,
+            moveMessage.endJ,
+            moveMessage.endI
+        );
 
-            if (saveUnitHistory) {
-                unit.history.push(step + ": Движение обновлено. " + message);
-            }
-        } else {
-            console.log("Получен запрос изменения не за текущий шаг! Текущий шаг " + step + " шаг изменения пути " + moveMessage.begStep + " Запрос проигнорирован.");
+        if (saveUnitHistory) {
+            unit.history.push(step + ": Движение обновлено. " + message);
         }
     }
 }

@@ -225,29 +225,229 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
         var m = ((step - 1) - this.movement.beg_step) * this.movement.speed;
         var prevPos = null;
         var n = Math.floor(m);
-        if (n >= this.movement.path.length - 1) {
-            prevPos = this.movement.path[this.movement.path.length - 1];
-        } else {
-            prevPos = this.movement.path[n];
+        if (n > this.movement.path.length - 1) {
+            n = this.movement.path.length - 1;
         }
+        prevPos = this.movement.path[n];
+        
+        var movementOrientation = null;
+        if (n == this.movement.path.length - 1) {
+            movementOrientation = MovementManager.getMovementOrientation(
+                this.movement.path[n - 1].j,
+                this.movement.path[n - 1].i,
+                this.movement.path[n].j,
+                this.movement.path[n].i
+            );
+        } else {    // n < this.movement.path.length - 1
+            movementOrientation = MovementManager.getMovementOrientation(
+                this.movement.path[n].j,
+                this.movement.path[n].i,
+                this.movement.path[n + 1].j,
+                this.movement.path[n + 1].i
+            );
+        }
+        //console.log(prevPos + "," + movementOrientation);
+        
         var prevPosX = Map.getCellXOnMap(prevPos.j);
         var prevPosY = Map.getCellYOnMap(prevPos.i);
         
         var v = (this.movement.speed * CELL_W) / prevStepTime;
         
-        // пока движение только на восток!
-        
-        prevPosX += (m - n) * CELL_W;
-        prevPosX += v * diffTime;
-        prevPosX = Math.floor(prevPosX);
-        
-        this.finished = prevPosX >= Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
-        
-        if (this.finished) {
-            this.unit.spritePos.x = Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
-        } else {
-            this.unit.spritePos.x = prevPosX;
+        var curPos = null;
+        var endX = Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
+        var endY = Map.getCellYOnMap(this.movement.path[this.movement.path.length - 1].i);
+        switch (movementOrientation) {
+            case "N":
+                prevPosY -= (m - n) * CELL_H;
+                prevPosY -= v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                if (prevPosY <= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "NE":
+                prevPosX += (m - n) * CELL_W;
+                prevPosX += v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                prevPosY -= (m - n) * CELL_H;
+                prevPosY -= v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                /*if (prevPosX >= endX) {
+                    prevPosX = endX;
+                }
+                if (prevPosY <= endY) {
+                    prevPosY = endY;
+                }*/
+                if (prevPosX >= endX && prevPosY <= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "E":
+                prevPosX += (m - n) * CELL_W;
+                prevPosX += v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                
+                if (prevPosX >= endX && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "SE":
+                prevPosX += (m - n) * CELL_W;
+                prevPosX += v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                prevPosY += (m - n) * CELL_H;
+                prevPosY += v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                /*if (prevPosX >= endX) {
+                    prevPosX = endX;
+                }
+                if (prevPosY >= endY) {
+                    prevPosY = endY;
+                }*/
+                if (prevPosX >= endX && prevPosY >= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "S":
+                prevPosY += (m - n) * CELL_H;
+                prevPosY += v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                if (prevPosY >= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "SW":
+                prevPosX -= (m - n) * CELL_W;
+                prevPosX -= v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                prevPosY += (m - n) * CELL_H;
+                prevPosY += v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                /*if (prevPosX <= endX) {
+                    prevPosX = endX;
+                }
+                if (prevPosY >= endY) {
+                    prevPosY = endY;
+                }*/
+                if (prevPosX <= endX && prevPosY >= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "W":
+                prevPosX -= (m - n) * CELL_W;
+                prevPosX -= v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                
+                if (prevPosX <= endX && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            case "NW":
+                prevPosX -= (m - n) * CELL_W;
+                prevPosX -= v * diffTime;
+                prevPosX = Math.floor(prevPosX);
+                prevPosY -= (m - n) * CELL_H;
+                prevPosY -= v * diffTime;
+                prevPosY = Math.floor(prevPosY);
+                
+                /*if (prevPosX <= endX) {
+                    prevPosX = endX;
+                }
+                if (prevPosY <= endY) {
+                    prevPosY = endY;
+                }*/
+                if (prevPosX <= endX && prevPosY <= endY && n == this.movement.path.length - 1) {
+                    this.finished = true;
+                    prevPosX = endX;
+                    prevPosY = endY;
+                }
+                
+                curPos = {
+                    x: prevPosX,
+                    y: prevPosY,
+                    arrived: this.finished,
+                    orientation: movementOrientation
+                };
+                break;
+            default:
+                console.log("Неизвестная ориентация движения:", movementOrientation);
+                return false;
         }
+        
+        if (!this.finished) {
+            var derp = Math.ceil((curTime - this.begTime) / this.spriteInterval);
+            curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
+        } else {
+            curPos.spriteName = "peasant_" + curPos.orientation + "_walk_0";
+            movementManager.removeFinishedSpriteMovements();
+        }        
+        
+        this.unit.spritePos = curPos;
+        console.log(curPos.x + "," + curPos.y + "," + curPos.orientation);
         
         return true;
     }
