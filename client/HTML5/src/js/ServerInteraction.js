@@ -1,8 +1,7 @@
-
-// Взаимодействите с сервером.
-// Require messages.js
-
-// Отправка и приём сообщений с сервера.
+/**
+ * Отправка и приём сообщений с сервера.
+ * Require messages.js
+ */
 function ServerInteraction() {
 
     // Эту функцию можно вызвать только как конструктор (с new).
@@ -15,26 +14,32 @@ function ServerInteraction() {
         throw new Error("Your browser does not support Web Socket!");
     }
 
-    // Веб сокет для обмена сообщениями.
+    /**
+     * Веб сокет.
+     */
     this.socket = null;
 
-    // Соединяется с серевером.
+    /**
+     * Соединяется с серевером.
+     * @param addr адрес сервера
+     */
     this.connect = function(addr) {
         console.log('Соединяемся с ' + addr)
 
         if (window.WebSocket) {
-            this.socket = new WebSocket(addr)
+            this.socket = new WebSocket(addr);
         } else {
-            this.socket = new MozWebSocket(addr)
+            this.socket = new MozWebSocket(addr);
         }
-        this.socket.parent = this
+        this.socket.parent = this;
 
         /**
          * Обработчик получения сообщения от сервера.
+         * @param event событие получения сообщения
          */
         this.socket.onmessage = function(event) {
             if (DEBUG_PROTOCOL) {
-                console.log("<- " + event.data)
+                console.log("<- " + event.data);
             }
             var obj = JSON.parse(event.data)
             for (var key in MESSAGE_HANDLERS) {
@@ -45,13 +50,19 @@ function ServerInteraction() {
             }
         }
 
-        // Обработчик открытия соединения с сервером.
+        /**
+         * Обработчик открытия соединения с сервером.
+         * @param event событие открытия соединения
+         */
         this.socket.onopen = function(event) {
             console.log("Web Socket opened.");
             server.sendMessage(new MessagePacket(new LoginMessage(getLogin(), getPassword())));
         };
 
-        // Обработчик закрытия соединения с сервером.
+        /**
+         * Обработчик закрытия соединения с сервером.
+         * @param event событие закрытия соединения
+         */
         this.socket.onclose = function(event) {
             console.log("Web Socket closed.");
         };
@@ -59,17 +70,17 @@ function ServerInteraction() {
 
     /**
      * Отправляет сообщение.
-     * @param msg Сообщение.
+     * @param message Сообщение.
      */
-    this.sendMessage = function(msg) {
+    this.sendMessage = function(message) {
         if (this.socket == null || this.socket.readyState != WebSocket.OPEN) {
-            throw new Error("Cant send message. Connection not established.")
+            throw new Error("Cant send message. Connection not established.");
         } else {
-            msg = JSON.stringify(msg)
+            message = JSON.stringify(message);
             if (DEBUG_PROTOCOL) {
-                console.log("-> " + msg);
+                console.log("-> " + message);
             }
-            this.socket.send(msg);
+            this.socket.send(message);
         }
 
         return true;

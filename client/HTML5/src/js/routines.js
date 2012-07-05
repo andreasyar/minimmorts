@@ -584,6 +584,13 @@ function toggleSmoothMovement() {
     document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
 }
 
+/**
+ * Возвращает случайное число в диапазоне [0, n]
+ */
+function getRandomInt(n) {
+    return Math.floor(Math.random() * (n + 1));
+}
+
 function setPixel(imageData, x, y, r, g, b, a) {
     var index = (x + y * imageData.width) * 4;
     imageData.data[index+0] = r;
@@ -601,4 +608,84 @@ function clearTimeouts() {
 function createId() {
     uniqueId++;
     return uniqueId;
+}
+
+/**
+ * Преобразовывает путь-список, возвращаемый функцией getPath(), в путь массив
+ * точек. Требует для работы класс Point и Cell.
+ */
+function convertLinkedPathToArray(path) {
+    if (!(path instanceof Cell)) {
+        throw new Error("Путь не является объектом типа Cell.");
+    }
+    
+    var arrayPath = new Array();
+    var curCell = path;
+
+    do {
+        arrayPath.push(new Point(curCell.j, curCell.i));
+        curCell = curCell.parent;
+    } while (curCell != null);
+
+    return arrayPath.reverse();
+}
+
+/**
+ * Проверяет, является ли объект массивом.
+ */
+function isArray(obj) {
+    return obj.constructor == Array;
+}
+
+/**
+ * Преобразует путь массив точек в строку. Требует для работы класс Point.
+ */
+function pathToString(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var out = "";
+
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+        out += path[i];
+    }
+
+    return out;
+}
+
+/**
+ * Создаёт путь на карте по вейпоинтам.
+ */
+function generatePath(map, waypoints) {
+    if (!(map instanceof Map)) {
+        throw new Error("Карта не является объектом типа Map.");
+    }
+    if (!(waypoints instanceof Array)) {
+        throw new Error("Вейпоинты не является массивом.");
+    }
+    
+    var generatedPath = new Array();
+    var path;
+
+    for (var i = 1; i < waypoints.length; i++) {
+        path = getPath(
+            new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+            new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+        );
+        if (path == false) {
+            console.log("Путь " + waypoints[i - 1] + "->" + waypoints[i] + " не может быть построен.");
+            return null;
+        }
+        path = convertLinkedPathToArray(path);
+        if (generatedPath.length > 0) {
+            path.splice(0, 1);
+        }
+        generatedPath = generatedPath.concat(path);
+    }
+
+    return generatedPath;
 }

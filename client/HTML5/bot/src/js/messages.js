@@ -410,5 +410,8 @@ var MESSAGE_HANDLERS = {
         if (saveUnitHistory) {
             unit.history.push(step + ": Движение обновлено. " + message);
         }
+    },
+    "PING": function(message) {
+        ping = (new Date()).getTime() - message[0][1].time;
     }
 }

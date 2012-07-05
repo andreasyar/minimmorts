@@ -17,8 +17,9 @@
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
     <script type="text/javascript" src="js/Sprite.js"></script>
     <script type="text/javascript" src="js/SpriteMovement.js"></script>
-    <script type="text/javascript" src="js/SpriteMovementWayPoint.js"></script>
     <script type="text/javascript" src="js/ActionManager.js"></script>
+    <script type="text/javascript" src="js/Point.js"></script>
+    <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
 </head>
 <body>
 
@@ -117,6 +118,18 @@ var stepBegTime = null;
  * Длительность предыдущего хода в миллисекундах.
  */
 var prevStepTime = null;
+
+var uniqueId = 0;
+
+var stateUpdatesMap = new Array();
+
+var draws = 0;
+var drawsPerStep = 0;
+
+var ping = null;
+
+var drawBegTime = null;
+var redraws = 0;
 
 /************
  * Функции. *

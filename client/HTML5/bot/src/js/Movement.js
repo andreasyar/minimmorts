@@ -1,7 +1,7 @@
-
-// Движение.
-
-function Movement (unit, speed, beg_step, waypoints) {
+/**
+ * Движение юнита.
+ */
+function Movement (unit, speed, beg_step, waypoints, path) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -9,7 +9,7 @@ function Movement (unit, speed, beg_step, waypoints) {
     }
 
     /**
-     * Ссылка на движущегося юнита.
+     * Юнит.
      */
     this.unit = unit;
 
@@ -19,9 +19,9 @@ function Movement (unit, speed, beg_step, waypoints) {
     this.speed = speed;
 
     /**
-     * TODO нужно подумать где и как правильней создавать путь.
+     * Путь движения.
      */
-    this.path = null;
+    this.path = path;
 
     /**
      * Номер хода, когда движение началось.
@@ -36,20 +36,20 @@ function Movement (unit, speed, beg_step, waypoints) {
     /**
      * Флаг окончания движения.
      */
-    this.stopped = false;
-    
+    this.finished = false;
+
     this.getBegJ = function() {
         return this.waypoints[0].j;
     }
-    
+
     this.getBegI = function() {
         return this.waypoints[0].i;
     }
-    
+
     this.getEndJ = function() {
         return this.waypoints[this.waypoints.length - 1].j;
     }
-    
+
     this.getEndI = function() {
         return this.waypoints[this.waypoints.length - 1].i;
     }
@@ -78,22 +78,14 @@ function Movement (unit, speed, beg_step, waypoints) {
             }
             this.unit.j = this.path[this.path.length - 1].j;
             this.unit.i = this.path[this.path.length - 1].i;
-            this.stopped = true;
+            this.finished = true;
+            //movementManager.removeFinishedMovements();
         } else {
             if (DEBUG_MOVEMENTS) {
                 console.log(step + ": Юнит id=" + unit.getId() + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[n].j + "," + this.path[n].i + "]");
             }
             this.unit.j = this.path[n].j;
             this.unit.i = this.path[n].i;
-        }
-    }
-
-    this.getPosition = function(step) {
-        var n = Math.floor((step - this.beg_step) * this.speed);
-        if (n >= this.path.length - 1) {
-            return this.path[this.path.length - 1];
-        } else {
-            return this.path[n];
         }
     }
 
@@ -105,59 +97,8 @@ function Movement (unit, speed, beg_step, waypoints) {
         return this.beg_step;
     }
 
-    this.getNextPathPoint = function(j, i) {
-        for (var k = 0; k < this.path.length; k++) {
-            if (this.path[k].j == j && this.path[k].i == i) {
-                if (this.path[k + 1] != undefined) {
-                    return this.path[k + 1];
-                } else {
-                    return this.path[k];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    this.isStopped = function() {
-        return this.stopped;
-    }
-
-    this.getNextPathPointOrientation = function(j, i) {
-        var nextPathPoint = null;
-
-        for (var k = 0; k < this.path.length; k++) {
-            if (this.path[k].j == j && this.path[k].i == i) {
-                if (this.path[k + 1] != undefined) {
-                    nextPathPoint = this.path[k + 1];
-                }
-            }
-        }
-
-        if (nextPathPoint == null) {
-            return null;
-        }
-
-        var jDiff = nextPathPoint.j - j;
-        var iDiff = nextPathPoint.i - i;
-
-        if (jDiff == 0 && iDiff == -1) {
-            return "N";
-        } else if (jDiff == 1 && iDiff == -1) {
-            return "NE";
-        } else if (jDiff == 1 && iDiff == 0) {
-            return "E";
-        } else if (jDiff == 1 && iDiff == 1) {
-            return "SE";
-        } else if (jDiff == 0 && iDiff == 1) {
-            return "S";
-        } else if (jDiff == -1 && iDiff == 1) {
-            return "SW";
-        } else if (jDiff == -1 && iDiff == 0) {
-            return "W";
-        } else {
-            return "NW";
-        }
+    this.isFinished = function() {
+        return this.finished;
     }
 
     this.toString = function() {
@@ -165,41 +106,10 @@ function Movement (unit, speed, beg_step, waypoints) {
                ",begI=" +this.getBegI() +
                ",endJ=" +this.getEndJ() +
                ",endI=" +this.getEndI() +
-               ",stopped=" +this.isStopped() +
+               ",finished=" +this.isFinished() +
                ",beg_step=" +this.getBegStep() +
                "}";
     }
 
-    /*this.update = function(step, path, endJ, endI) {
-        var newPath = new Array();
-        var pathArray = convertLinkedPathToArray(path);
-        var n = Math.floor((step - this.beg_step) * this.speed);
-
-        var i;
-        for (i = 0; i <= n && i < this.path.length; i++) {
-            newPath.push(this.path[i]);
-        }
-        for (i = 0; i < pathArray.length; i++) {
-            newPath.push(pathArray[i]);
-        }
-
-        this.endJ = endJ;
-        this.endI = endI;
-        this.path = newPath;
-
-        if (DEBUG_MOVEMENTS) {
-            console.log(n + " Обновлен путь движения: " + pathToString(this.path));
-        }
-    }*/
-
-    return this;
-}
-
-function Point(j, i) {
-    this.j = j;
-    this.i = i;
-    this.toString = function () {
-        return "[" + this.j + "," + this.i + "]";
-    }
     return this;
 }

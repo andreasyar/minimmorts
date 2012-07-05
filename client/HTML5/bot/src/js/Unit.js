@@ -52,6 +52,9 @@ function Unit(ownerId, id, j, i, color) {
         var drawCoordinates;
         if (smoothMovementEnabled) {
             sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+            if (sprite == null) {
+                return;
+            }
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
@@ -59,11 +62,16 @@ function Unit(ownerId, id, j, i, color) {
         }
         context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
+        //context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
         if (this.selected) {
             sprite = this.sloader.getSpriteByName("peasant_selection");
             context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
         }
         return;
+    }
+
+    this.toString = function() {
+        return "{ownerId=" + this.ownerId + ",id=" + this.id + ",j=" + this.j + ",i=" + this.i + "}";
     }
 
     return this;

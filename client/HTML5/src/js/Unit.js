@@ -69,6 +69,10 @@ function Unit(ownerId, id, j, i, color) {
         }
         return;
     }
+    
+    this.toString = function() {
+        return "{ownerId=" + this.ownerId + ",id=" + this.id + ",j=" + this.j + ",i=" + this.i + "}";
+    }
 
     return this;
 }

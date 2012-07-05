@@ -96,7 +96,7 @@ function Map(width, height) {
             for (j = j_from; j <= j_to; j++) {
                 tAxis = camera.translateAxis(Map.getCellXOnMap(j), Map.getCellYOnMap(i));
                 context.drawImage(this.spriteMap[i][j].ground, tAxis.x, tAxis.y);
-                context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), tAxis.x, tAxis.y);
+                //context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), tAxis.x, tAxis.y);
             }
         }
     }
