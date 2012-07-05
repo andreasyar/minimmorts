@@ -64,7 +64,7 @@ function LogoutMessage() {
 /**
  * Требование хода.
  */
-function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
+function MoveRequestMessage(unitId, j, i) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -74,12 +74,7 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     /**
      * Тип сообщения.
      */
-    this.type = "MOVE";
-
-    /**
-     * Номер шага начала движения (игнорируется сервером).
-     */
-    this.begStep = begStep;
+    this.type = "MOVEREQ";
 
     /**
      * Идентификатор движущегося юнита.
@@ -87,30 +82,20 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     this.unitId = unitId;
 
     /**
-     * j-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begJ = begJ;
-
-    /**
-     * i-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begI = begI;
-
-    /**
      * j-индекс клетки назначения.
      */
-    this.endJ = endJ;
+    this.j = j;
 
     /**
      * i-индекс клетки назначения.
      */
-    this.endI = endI;
+    this.i = i;
 
     /**
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {unitId: this.unitId, begJ: this.begJ, begI: this.begI, endJ: this.endJ, endI: this.endI});
+        return new Array(this.type, {unitId: this.unitId, j: this.j, i: this.i});
     }
 
     return this;
@@ -283,6 +268,7 @@ var MESSAGE_HANDLERS = {
             console.log(unit.history);
         }
 
+        autoReconnect = false;
         clearTimeouts()
         disconnect();
         alert("Ошибка синхронизации.");
@@ -385,7 +371,7 @@ var MESSAGE_HANDLERS = {
         }
     },
     "MOVE": function (message) {
-        // Example: ["MOVE",{"begStep":237,"unitId":5,"begJ":0,"begI":1,"endJ":13,"endI":10}]
+        // Example:
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
@@ -398,10 +384,7 @@ var MESSAGE_HANDLERS = {
         movementManager.startNewMovement(
             moveMessage.begStep,
             unit,
-            moveMessage.begJ,
-            moveMessage.begI,
-            moveMessage.endJ,
-            moveMessage.endI
+            moveMessage.waypoints
         );
 
         if (saveUnitHistory) {
@@ -409,21 +392,19 @@ var MESSAGE_HANDLERS = {
         }
     },
     "MOVEUPDATE": function (message) {
-        // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
+        // Example: 
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
-
+        
         if (unit == null) {
             console.log("Движение не может быть обновлено. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
         movementManager.updateMovement(
-            step,
             unit,
-            moveMessage.endJ,
-            moveMessage.endI
+            moveMessage.waypoints
         );
 
         if (saveUnitHistory) {

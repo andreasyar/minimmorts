@@ -107,10 +107,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                 new MoveMessage(
                     movement.getBegStep(),
                     movement.getUnit().getId(),
-                    movement.getBegJ(),
-                    movement.getBegI(),
-                    movement.getEndJ(),
-                    movement.getEndI()
+                    movement.getWaypoints()
                 )
             );
         }
@@ -139,10 +136,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getBegJ(),
-            m.getBegI(),
-            m.getEndJ(),
-            m.getEndI()
+            m.getWaypoints()
         );
     }
     
@@ -155,10 +149,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveUpdateMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getBegJ(),
-            m.getBegI(),
-            m.getEndJ(),
-            m.getEndI()
+            m.getWaypoints()
         );
     }
 
@@ -252,7 +243,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     LinkedList<Message> unitsList = new LinkedList<>();
                     LinkedList<Message> actionsList = new LinkedList<>();
                     UnitMessage unitMessage;
-                    MoveMessage moveMessage;
+                    MoveRequestMessage moveRequestMessage;
                     String subType;
                     
                     boolean res;
@@ -275,9 +266,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         action = elem.getAsJsonArray();
                         subType = gson.fromJson(action.get(0), String.class);
                         switch (subType) {
-                            case "MOVE":
-                                moveMessage = gson.fromJson(action.get(1), MoveMessage.class);
-                                actionsList.add(moveMessage);
+                            case "MOVEREQ":
+                                moveRequestMessage = gson.fromJson(action.get(1), MoveRequestMessage.class);
+                                actionsList.add(moveRequestMessage);
                                 break;
                             default:
                                 //logger.log(Level.SEVERE, "Unknown message type {0}", subType);

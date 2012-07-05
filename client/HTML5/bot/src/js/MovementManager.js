@@ -30,32 +30,30 @@ function MovementManager() {
         return false;
     }
 
-    this.startNewMovement = function(step, unit, begJ, begI, endJ, endI) {
-        var path = getPath(new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == false) {
-            console.log("Путь [" + begJ + ", " + begI + "]->[" + endJ + ", " + endI + "] не может быть построен. Новое движение не может быть создано.");
-            return;
+    this.startNewMovement = function(step, unit, waypoints) {
+        var movement = new Movement(unit, DEFAULT_SPEED, step, waypoints);
+        var path = this.regeneratePath(map, movement);
+        if (path == null) {
+            console.log(unit, DEFAULT_SPEED, step, waypoints);
+            alert("Path is null");
+            throw new Error("Path is null");
         }
-        var movement = new Movement(unit, begJ, begI, endJ, endI, DEFAULT_SPEED, path, step);
+        movement.setPath(path);
 
         this.movements.push(movement);
-        this.spriteMovements.push(
+        /*this.spriteMovements.push(
             new SpriteMovement(
                 unit,
                 path,
                 movement.getPosition(step),
                 movement
             )
-        );
+        );*/
     }
 
-    this.updateMovement = function(step, unit, endJ, endI) {
+    this.updateMovement = function(unit, waypoints) {
         var existedMovement = null;
-        var existedSpriteMovement = null;
-        var nextPoint;
-        var updatedMovement;
-        var updatedSpriteMovement;
-        var path;
+        var newPath;
 
         for (var i in this.movements) {
             if (this.movements[i].getUnit() == unit) {
@@ -67,79 +65,11 @@ function MovementManager() {
             console.log("Movement not found.");
             return;
         }
-        if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            console.log("Next path point not found.");
-            return;
-        }
-        path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == false) {
-            console.log("Путь [" + nextPoint.j + ", " + nextPoint.i + "]->[" + endJ + ", " + endI + "] не может быть построен. Движение не может быть обновлено.");
-            return;
-        }
-        existedMovement.update(step, path, endJ, endI);
-        /*LinkedList<Point> path = getPath(map, new Cell(unit.getI(), unit.getJ(), 0, 0, null), new Cell(i, j, 0, 0, null));
-        if (path == null) {
-            logger.log(
-                Level.SEVERE,
-                "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден.",
-                new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI()), new Point(j, i)}
-            );
-            return null;
-    }
-        existedMovement.update(step, path, j, i);*/
-        /*for (var j in this.spriteMovements) {
-            if (this.spriteMovements[j].getUnit() == unit) {
-                existedSpriteMovement = this.spriteMovements[j];
-                break;
-            }
-        }
-        if (existedSpriteMovement == null) {
-            console.log("Sprite movement not found. It's ok.");
-        }
-        if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            console.log("Next path point not found.");
-            return;
-        }
-        //console.log("Next point is", nextPoint);
-        path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == false) {
-            console.log("Путь [" + nextPoint.j + ", " + nextPoint.i + "]->[" + endJ + ", " + endI + "] не может быть построен. Движение не может быть обновлено.");
-            return;
-        }
-        updatedMovement = new Movement(
-            existedMovement.getUnit(),
-            nextPoint.j,
-            nextPoint.i,
-            endJ,
-            endI,
-            DEFAULT_SPEED,
-            path,
-            step
-        );
-        if (updatedMovement == null) {
-            console.log("Cant create movement!");
-            return;
-        }
-        if (DEBUG_MOVEMENTS) {
-            console.log("Движение " + existedMovement + " обновлено на " + updatedMovement);
-        }
-        updatedSpriteMovement = new SpriteMovement(
-            existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
-            path,
-            updatedMovement.getPosition(step),
-            updatedMovement
-        );
-        if (updatedSpriteMovement == null) {
-            console.log("Cant create sprite movement!");
-            return;
-        }
-
-        this.movements.splice(i, 1);
-        this.movements.push(updatedMovement);
-        if (existedSpriteMovement != null) {
-            this.spriteMovements.splice(j, 1);
-        }
-        this.spriteMovements.push(updatedSpriteMovement);*/
+        
+        existedMovement.setWaypoints(waypoints);
+        newPath = this.regeneratePath(map, existedMovement);
+        console.log("derp: " + pathToString(newPath));
+        existedMovement.setPath(newPath);
     }
 
     this.updatePositions = function(step) {
@@ -183,10 +113,10 @@ function MovementManager() {
             if (!(this.spriteMovements[i] instanceof SpriteMovement)) {
                 console.log(this.spriteMovements[i], "is not sprite movement. Ignore.");
                 continue;
-        }
+            }
             if (!this.spriteMovements[i].finished) {
                 this.spriteMovements[i].updatePosition2();
-    }
+            }
         }
     }
 
@@ -257,6 +187,30 @@ function MovementManager() {
             }
         }
         this.spriteMovements = spriteMovementsInProgress;
+    }
+    
+    this.regeneratePath = function(map, existedMovement) {
+        var waypoints = existedMovement.getWaypoints();
+        var newPath = new Array();        
+        var path;
+        
+        for (var i = 1; i < waypoints.length; i++) {
+            path = getPath(
+                new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+            );
+            if (path == false) {
+                console.log("Путь [" + waypoints[i - 1].j + ", " + waypoints[i - 1].i + "]->[" + waypoints[i].j + ", " + waypoints[i].i + "] не может быть построен. Движение не может быть обновлено.");
+                return null;
+            }
+            path = convertLinkedPathToArray(path);
+            if (newPath.length > 0) {
+                path.splice(0, 1);
+            }
+            newPath = newPath.concat(path);
+        }
+        
+        return newPath;
     }
 
     return this;

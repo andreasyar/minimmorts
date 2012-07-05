@@ -22,6 +22,8 @@ import org.xml.sax.SAXException;
  */
 public class ServerLauncher {
     private static final Logger logger = Logger.getLogger(ServerLauncher.class.getName());
+    
+    public static ScheduledFuture<?> handle;
 
     public static void main(String[] args) {
         ServerConfig config = null;
@@ -51,7 +53,7 @@ public class ServerLauncher {
             //MessageManager.enableLogging();
             
             movementManager = new MovementManager();
-            MovementManager.enableLogging();
+            //MovementManager.enableLogging();
             
             unitManager = new UnitManager();
             //UnitManager.enableLogging();
@@ -76,7 +78,7 @@ public class ServerLauncher {
         // Start game server main loop.
         
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
+        handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
         logger.log(Level.INFO, "Game server main loop scheduled.");
         
         try {

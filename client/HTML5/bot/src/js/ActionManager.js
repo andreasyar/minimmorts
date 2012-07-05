@@ -22,11 +22,8 @@ function ActionManager() {
         this.actions.MOVEMENT = new Array();
         for (var i = 0; i < self_units_list.length; i++) {
             this.actions.MOVEMENT.push(
-                new MoveMessage(
-                    step,
+                new MoveRequestMessage(
                     self_units_list[i].getId(),
-                    -1,
-                    -1,
                     getRandomInt(map.w - 1),
                     getRandomInt(map.h - 1)
                 )

@@ -3,6 +3,7 @@ package minimmorts.movement;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,13 +17,30 @@ import minimmorts.units.Unit;
  * @author Sorc
  */
 public class Movement {
-    private static final Logger logger = Logger.getLogger(Movement.class.getName());
+    
+    /**
+     *
+     */
+    private static Logger logger = null;
+
+    /**
+     * Флаг включения логирования.
+     */
+    private static boolean loggingEnabled = false;
+
+    public static void enableLogging() {
+        Movement.loggingEnabled = true;
+    }
+
+    public static void disableLogging() {
+        Movement.loggingEnabled = false;
+    }
+
+    public static boolean isLoggingEnabled() {
+        return Movement.loggingEnabled;
+    }
 
     private Unit unit;
-    private int begJ;
-    private int begI;
-    private int endJ;
-    private int endI;
 
     /**
      * Скорость движения в клетках за шаг.
@@ -33,6 +51,8 @@ public class Movement {
     private long begStep;
     private boolean stopped;
     
+    private final LinkedList<Point> waypoints = new LinkedList<>();
+    
     public static void initLogging() {
         try {
             FileHandler fh = new FileHandler(Movement.class.getName() + ".txt");
@@ -40,19 +60,26 @@ public class Movement {
             logger.addHandler(fh);
             logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
             logger.setLevel(Level.ALL);
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        } catch (SecurityException ex) {
+        } catch (IOException | SecurityException ex) {
             logger.log(Level.SEVERE, null, ex);
         }
     }
 
-    public Movement(Unit unit, int begJ, int begI, int endJ, int endI, float speed, LinkedList<Point> path, long begStep) {
+    public Movement(Unit unit, int begJ, int begI, int endJ, int endI, float speed, LinkedList<Point> path, long begStep) throws NullPointerException, IOException {
+        if (Movement.logger == null) {
+            Movement.logger = Logger.getLogger(Movement.class.getName());
+            FileHandler h = new FileHandler(Movement.class.getName() + ".txt");
+            h.setFormatter(new SimpleFormatter());
+            Movement.logger.addHandler(h);
+            Movement.logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
+            Movement.logger.setLevel(Level.ALL);
+        }
+        if (path == null) {
+            throw new NullPointerException("path is null");
+        }
         this.unit = unit;
-        this.begJ = begJ;
-        this.begI = begI;
-        this.endJ = endJ;
-        this.endI = endI;
+        waypoints.add(new Point(begJ, begI));
+        waypoints.add(new Point(endJ, endI));
         this.speed = speed;
         this.path = path;
         this.begStep = begStep;
@@ -64,19 +91,19 @@ public class Movement {
     }
 
     public int getBegJ() {
-        return path.get(0).getJ();
+        return waypoints.get(0).getJ();
     }
 
     public int getBegI() {
-        return path.get(0).getI();
+        return waypoints.get(0).getI();
     }
 
     public int getEndJ() {
-        return endJ;
+        return waypoints.get(waypoints.size() - 1).getJ();
     }
 
     public int getEndI() {
-        return endI;
+        return waypoints.get(waypoints.size() - 1).getI();
     }
 
     public boolean isStopped() {
@@ -123,6 +150,17 @@ public class Movement {
         return path;
     }
 
+    void setPath(LinkedList<Point> path) throws NullPointerException {
+        if (path == null) {
+            throw new NullPointerException("path is null");
+        }
+        this.path = path;
+    }
+
+    public LinkedList<Point> getWaypoints() {
+        return waypoints;
+    }
+
     Point getNextPathPoint(int j, int i) {
         Iterator pathIterator = path.iterator();
         Point p;
@@ -140,29 +178,63 @@ public class Movement {
         return null;
     }
 
-    void update(long step, LinkedList<Point> path, int endJ, int endI) {
-        LinkedList<Point> newPath = new LinkedList<>();
-        int n = (int) Math.floor(((double) step - (double) this.begStep) * (double) this.speed);
-        
-        for (int i = 0; i <= n && i < this.path.size(); i++) {
-            newPath.add(this.path.get(i));
+    void update(int endJ, int endI) throws IndexOutOfBoundsException, NoSuchElementException, NullPointerException {
+        Point nextPathPoint = null;
+        String derp = this.waypointsToString();
+        int n = (int) Math.floor(((double) ServerMainLoop.getStep() - (double) this.begStep) * (double) this.speed);
+        if (n >= this.path.size() - 1) {
+            nextPathPoint = this.path.getLast();
+        } else {
+            nextPathPoint = this.path.get(n + 1);
         }
-        newPath.addAll(path);
         
-        this.endJ = endJ;
-        this.endI = endI;
-        this.path = newPath;
+        Point lastPathPoint = waypoints.removeLast();
         
-        if (MovementManager.isLoggingEnabled()) {
-            String out = "";
-            for (Point p : this.path) {
-                out += p;
-            }
+        /*
+         * Если следующая точка пути юнита является одновременно и вейпоинтом,
+         * то нам не нужно добавлять эту точку к вейпоинтам, она и так там есть.
+         */
+        if (!waypoints.getLast().equals(nextPathPoint)) {
+            waypoints.add(nextPathPoint);
+        }
+        
+        /*
+         * Если следующая точка пути юнита является точкой куда собирается
+         * сходить игрок, то нам не нужно добавлять точку к вейпоинтам, юнит
+         * и так туда сходит.
+         */
+        if (nextPathPoint.getJ() != endJ || nextPathPoint.getI() != endI) {
+            waypoints.add(new Point(endJ, endI));
+        }
+        
+        if (haveSameWaypoints()) {
             logger.log(
-                Level.INFO,
-                "{0}: n={3} Обновлён путь движения юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), unit, out, n}
+                Level.SEVERE,
+                "{0}: {1} {2} {3} {4} {5} {6}",
+                new Object[] {ServerMainLoop.getStep(), n, nextPathPoint, lastPathPoint, this.waypointsToString(), n >= this.path.size() - 1, derp}
             );
+            throw new NullPointerException("Попытка добавить вэйпоинт такой же как предыдущий.");
         }
+        // TODO Здесь должно быть пересоздание пути, но мы пока что поручим это вызывающему коду.
+    }
+
+    public String waypointsToString() {
+        String out = "";
+        for (int i = 0; i < waypoints.size(); i++) {
+            out += waypoints.get(i);
+        }
+        return out;
+    }
+
+    private boolean haveSameWaypoints() {
+        Point cur = waypoints.getFirst();
+        for (int i = 1; i < waypoints.size(); i++) {
+            if (cur.equals(waypoints.get(i))) {
+                return true;
+            } else {
+                cur = waypoints.get(i);
+            }
+        }
+        return false;
     }
 }

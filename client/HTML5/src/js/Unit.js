@@ -52,6 +52,9 @@ function Unit(ownerId, id, j, i, color) {
         var drawCoordinates;
         if (smoothMovementEnabled) {
             sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+            if (sprite == null) {
+                return;
+            }
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);

@@ -8,19 +8,19 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-    
+
     if (!(unit instanceof Unit)) {
         console.log(unit, "не является юнитом.");
         return null;
     }
-    
+
     console.log("Создано новое движение спрайта")
-    
+
     /**
      * Юнит.
      */
     this.unit = unit;
-    
+
     var path_array = new Array();
     var cur_path_point = path;
     do {
@@ -66,23 +66,23 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
             )
         )
     );
-    
+
     /**
      * Путь, по которому двигается спрайт юнита.
      */
     this.path = wayPointPath;
     console.log("original", (new Date()).getTime(), pathToString(this.path));
-    
+
     this.begTime = wayPointPath[0].arrivalTime;
-    
+
     this.endTime = wayPointPath[wayPointPath.length - 1].arrivalTime;
-    
+
     this.spriteInterval = 150;
-    
+
     this.finished = false;
-    
+
     this.movement = movement;
-    
+
     /**
      * Обновляет координаты спрайта юнита.
      */
@@ -90,14 +90,14 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
         var curTime = (new Date()).getTime();
         var curPos;
         var derp;
-        
+
         for (var i = 0; i < this.path.length; i++) {
             if (this.path[i].arrivalTime > curTime) {
                 if (i == 0) {
                     console.log("Попытка движения спрайта юнита по пути, с начальной точкой в будущем. Тут явно что-то не так.");
                     return;
                 }
-                
+
                 curPos = this.path[i].getPosOnTheWayFrom(this.path[i - 1]);
                 if (curPos == null) {
                     console.log("Невозможно двигаться из точки " + this.path[i - 1] + " в точку " + this.path[i]);
@@ -115,7 +115,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 return;
             }
         }
-        
+
         if (!this.finished) {
             curPos = this.path[this.path.length - 1].getPosOnTheWayFrom(this.path[this.path.length - 2]);
             if (curPos == null) {
@@ -131,25 +131,25 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
             this.unit.spritePos = curPos;
         }
     }
-    
+
     /**
      * Возвращает юнита.
      */
     this.getUnit = function() {
         return this.unit;
     }
-    
+
     this.update = function(path, curUnitPos) {
-        
+
         /*
          * Найдём точку пути, в которой находится спрайт игрока.
          */
         var curTime = (new Date()).getTime();
-        
+
         var newPath = new Array();
-        
+
         var found = false;
-        
+
         for (var i = 0; i < this.path.length; i++) {
             if (this.path[i].arrivalTime > curTime) {
                 newPath.push(this.path[i]);
@@ -159,10 +159,10 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
         if (!found) {
             newPath.push(this.path[this.path.length - 1]);
         }
-        
+
         console.log("pre splice", (new Date()).getTime(), pathToString(this.path));
         console.log("post splice", pathToString(newPath));
-    
+
         var path_array = convertLinkedPathToArray(path);
 
         l = 0;
@@ -199,37 +199,43 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 )
             )
         );
-            
+
         this.path = newPath;
         console.log("updated", pathToString(this.path));
-        
+
         return this;
     }
-    
+
     this.updatePosition2 = function() {
-        
+
         if (stepBegTime == null || prevStepTime == null) {
             console.log("Невозможно обновить координаты спрайта юнита, когда время начала текущего хода и время предыдущего хода - null");
             return false;
         }
-        
+
         // Стоим на месте.
         if (step == this.movement.beg_step) {
             return true;
         }
-        
+
+        if (this.movement.path == null) {
+            console.log("Невозможно обновить координаты спрайта юнита, его путь - null");
+            return false;
+        }
+
         var prevStepBegTime = stepBegTime - prevStepTime;
         var curTime = (new Date()).getTime() - prevStepTime;
         var diffTime = curTime - prevStepBegTime;
-        
+
         var m = ((step - 1) - this.movement.beg_step) * this.movement.speed;
         var prevPos = null;
         var n = Math.floor(m);
+        this.movement.nInc(n);
         if (n > this.movement.path.length - 1) {
             n = this.movement.path.length - 1;
         }
         prevPos = this.movement.path[n];
-        
+
         var movementOrientation = null;
         if (n == this.movement.path.length - 1) {
             movementOrientation = MovementManager.getMovementOrientation(
@@ -247,12 +253,12 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
             );
         }
         //console.log(prevPos + "," + movementOrientation);
-        
+
         var prevPosX = Map.getCellXOnMap(prevPos.j);
         var prevPosY = Map.getCellYOnMap(prevPos.i);
-        
+
         var v = (this.movement.speed * CELL_W) / prevStepTime;
-        
+
         var curPos = null;
         var endX = Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
         var endY = Map.getCellYOnMap(this.movement.path[this.movement.path.length - 1].i);
@@ -261,12 +267,12 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY -= (m - n) * CELL_H;
                 prevPosY -= v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 if (prevPosY <= endY && n == this.movement.path.length - 1) {
                     this.finished = true;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -281,7 +287,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY -= (m - n) * CELL_H;
                 prevPosY -= v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 /*if (prevPosX >= endX) {
                     prevPosX = endX;
                 }
@@ -293,7 +299,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                     prevPosX = endX;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -305,12 +311,12 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosX += (m - n) * CELL_W;
                 prevPosX += v * diffTime;
                 prevPosX = Math.floor(prevPosX);
-                
+
                 if (prevPosX >= endX && n == this.movement.path.length - 1) {
                     this.finished = true;
                     prevPosX = endX;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -325,7 +331,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY += (m - n) * CELL_H;
                 prevPosY += v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 /*if (prevPosX >= endX) {
                     prevPosX = endX;
                 }
@@ -337,7 +343,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                     prevPosX = endX;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -349,12 +355,12 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY += (m - n) * CELL_H;
                 prevPosY += v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 if (prevPosY >= endY && n == this.movement.path.length - 1) {
                     this.finished = true;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -369,7 +375,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY += (m - n) * CELL_H;
                 prevPosY += v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 /*if (prevPosX <= endX) {
                     prevPosX = endX;
                 }
@@ -381,7 +387,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                     prevPosX = endX;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -393,12 +399,12 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosX -= (m - n) * CELL_W;
                 prevPosX -= v * diffTime;
                 prevPosX = Math.floor(prevPosX);
-                
+
                 if (prevPosX <= endX && n == this.movement.path.length - 1) {
                     this.finished = true;
                     prevPosX = endX;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -413,7 +419,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 prevPosY -= (m - n) * CELL_H;
                 prevPosY -= v * diffTime;
                 prevPosY = Math.floor(prevPosY);
-                
+
                 /*if (prevPosX <= endX) {
                     prevPosX = endX;
                 }
@@ -425,7 +431,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                     prevPosX = endX;
                     prevPosY = endY;
                 }
-                
+
                 curPos = {
                     x: prevPosX,
                     y: prevPosY,
@@ -437,42 +443,84 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
                 console.log("Неизвестная ориентация движения:", movementOrientation);
                 return false;
         }
-        
+
         if (!this.finished) {
             var derp = Math.ceil((curTime - this.begTime) / this.spriteInterval);
+            if (derp < 0) {
+                console.log("derp < 0! D:");
+                return false;
+            }
             curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + (derp % 5);
+        
+            if (curPos.orientation == "N" || curPos.orientation == "NE" || curPos.orientation == "E" || curPos.orientation == "SE" || curPos.orientation == "S") {
+                //this.xInc(curPos.x);
+            }
+            if (curPos.orientation == "N" || curPos.orientation == "NW" || curPos.orientation == "W" || curPos.orientation == "SW" || curPos.orientation == "S") {
+                //this.xDec(curPos.x);
+            }
         } else {
             curPos.spriteName = "peasant_" + curPos.orientation + "_walk_0";
             movementManager.removeFinishedSpriteMovements();
-        }        
-        
+        }
+
         this.unit.spritePos = curPos;
-        console.log(curPos.x + "," + curPos.y + "," + curPos.orientation);
-        
+        //console.log(curPos.x + "," + curPos.y + "," + curPos.orientation);
+
         return true;
     }
     
+    this.xIncArray = new Array();
+    this.xDecArray = new Array();
+    this.xInc = function(x) {
+        this.xDecArray = new Array();
+        
+        for (var i = 0; i < this.xIncArray.length; i++) {
+            if (this.xIncArray[i] > x) {
+                console.log(this.xIncArray, x);
+                throw new Error("x cannot decrase!");
+            }
+        }
+        
+        this.xIncArray.push(x);
+    }
+    this.xDec = function(x) {
+        this.xIncArray = new Array();
+        
+        for (var i = 0; i < this.xDecArray.length; i++) {
+            if (this.xDecArray[i] < x) {
+                console.log(this.xDecArray, x);
+                throw new Error("x cannot incrase!");
+            }
+        }
+        
+        this.xDecArray.push(x);
+    }
+
     return this;
 }
 
 function pathToString(path) {
+    if (path == null) {
+        return "null";
+    }
+
     var out = "";
-    
+
     for (var i = 0; i < path.length; i++) {
         out += path[i];
     }
-    
+
     return out;
 }
 
 function convertLinkedPathToArray(path) {
     var array = new Array();
     var cur = path;
-    
+
     do {
         array.push(new Point(cur.j, cur.i));
         cur = cur.parent;
     } while (cur != null);
-    
+
     return array.reverse();
 }

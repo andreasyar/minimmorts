@@ -13,6 +13,7 @@ import java.util.logging.SimpleFormatter;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
 import minimmorts.LastErrorService;
+import minimmorts.ServerLauncher;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.map.Map;
@@ -153,11 +154,17 @@ public class ServerMainLoop implements Runnable {
          * Обработаем все входящие сообщения.
          */
         handleInbox();
-
-        /*
-         * Выполним запросы действий клиентов.
-         */
-        handleActionRequests();
+        
+        try {
+            /*
+             * Выполним запросы действий клиентов.
+             */
+            handleActionRequests();
+        } catch (NullPointerException | IOException ex) {
+            logger.log(Level.SEVERE, null, ex);
+            ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
+            return;
+        }
 
         /*
          * Произведём очистку и удалим отключенных клиентов.
@@ -429,11 +436,11 @@ public class ServerMainLoop implements Runnable {
     /**
      * Выполняет запросы действий клиентов.
      */
-    private void handleActionRequests() {
+    private void handleActionRequests() throws NullPointerException, IOException {
         State currentState = getState(ServerMainLoop.getStep());
         Movement movement;
         Unit unit;
-        MoveMessage moveMessage;
+        MoveRequestMessage moveRequestMessage;
         Message action;
         ActionRequest actionRequest;
         Client client;
@@ -453,20 +460,20 @@ public class ServerMainLoop implements Runnable {
             action = actionRequest.getRequest();
             client = actionRequest.getClient();
             
-            if (action instanceof MoveMessage) {
-                moveMessage = (MoveMessage) action;
+            if (action instanceof MoveRequestMessage) {
+                moveRequestMessage = (MoveRequestMessage) action;
                 
-                if ( (unit = unitManager.getById(moveMessage.getUnitId())) == null) {
+                if ( (unit = unitManager.getById(moveRequestMessage.getUnitId())) == null) {
                     logger.log(
                         Level.SEVERE,
-                        "{0}: Запрос движения не может быть выполнен. Юнит id={1} не найден. Запрос исходил от клиента {2}. Сообщение {3}",
-                        new Object[] {ServerMainLoop.getStep(), moveMessage.getUnitId(), client, moveMessage.toJSON()}
+                        "{0}: Запрос движения не может быть выполнен. Юнит id={1} не найден. Запрос исходил от клиента {2}",
+                        new Object[] {ServerMainLoop.getStep(), moveRequestMessage.getUnitId(), client}
                     );
-                    if (!unitManager.isClientHasUnit(client.getId(), moveMessage.getUnitId())){
+                    if (!unitManager.isClientHasUnit(client.getId(), moveRequestMessage.getUnitId())){
                         logger.log(
                             Level.SEVERE,
                             "{0}: Клиент {1} запросил движение не своего юнита id={2}.",
-                            new Object[] {ServerMainLoop.getStep(), client, moveMessage.getUnitId()}
+                            new Object[] {ServerMainLoop.getStep(), client, moveRequestMessage.getUnitId()}
                         );
                     }
                     continue;   // Переходим к следующему запросу действия.
@@ -480,13 +487,22 @@ public class ServerMainLoop implements Runnable {
                     continue;   // Переходим к следующему запросу действия.
                 }
                 
+                if (unit.getJ() == moveRequestMessage.getJ() && unit.getI() == moveRequestMessage.getI()) {
+                    logger.log(
+                        Level.SEVERE,
+                        "{0}: Запрос движения не может быть выполнен. Так как юнит {1} хочет сходить в ту же самую точку, в которой он находится.",
+                        new Object[] {ServerMainLoop.getStep(), unit}
+                    );
+                    continue;   // Переходим к следующему запросу действия.
+                }
+                
                 if (movementManager.isUnitMove(unit)) {
                     movement = movementManager.updateMovement(
                         ServerMainLoop.getStep(),
                         map,
                         unit,
-                        moveMessage.getEndJ(),
-                        moveMessage.getEndI()
+                        moveRequestMessage.getJ(),
+                        moveRequestMessage.getI()
                     );
                     if (movement != null) {
                         notifyClients(currentState, MessageManager.createMoveUpdateMessage(movement));
@@ -494,7 +510,7 @@ public class ServerMainLoop implements Runnable {
                         logger.log(
                             Level.SEVERE,
                             "{0}: Движение юнита {1} в клетку {2} не может быть обновлено.",
-                            new Object[] {ServerMainLoop.getStep(), unit, new Point(moveMessage.getEndJ(), moveMessage.getEndI())}
+                            new Object[] {ServerMainLoop.getStep(), unit, new Point(moveRequestMessage.getJ(), moveRequestMessage.getI())}
                         );
                     }
                 } else {
@@ -502,8 +518,8 @@ public class ServerMainLoop implements Runnable {
                         ServerMainLoop.getStep(),
                         map,
                         unit,
-                        moveMessage.getEndJ(),
-                        moveMessage.getEndI()
+                        moveRequestMessage.getJ(),
+                        moveRequestMessage.getI()
                     );
                     if (movement != null) {
                         notifyClients(currentState, MessageManager.createMoveMessage(movement));
@@ -511,7 +527,7 @@ public class ServerMainLoop implements Runnable {
                         logger.log(
                             Level.SEVERE,
                             "{0}: Новое движение юнита {1} в клетку {2} не может быть создано.",
-                            new Object[] {ServerMainLoop.getStep(), unit, new Point(moveMessage.getEndJ(), moveMessage.getEndI())}
+                            new Object[] {ServerMainLoop.getStep(), unit, new Point(moveRequestMessage.getJ(), moveRequestMessage.getI())}
                         );
                     }
                 }
@@ -673,8 +689,8 @@ public class ServerMainLoop implements Runnable {
                     new WelcomeMessage(
                         client.getId(),
                         getStep(),
-                        MessageManager.createAllNewUnitMessage(unitManager.getAllUnits()),
-                        MessageManager.createAllMoveMessage(movementManager.getAllMovements())
+                        MessageManager.createAllNewUnitMessage(unitManager.getAllActiveUnits()),
+                        MessageManager.createAllMoveMessage(movementManager.getAllActiveMovements())
                     )
                 );
             } else {

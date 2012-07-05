@@ -70,13 +70,13 @@ units_buffer.height = SCR_H;
  *************************/
 
 // debug
-var DEBUG = false;
+var DEBUG = true;
 
-var DEBUG_PROTOCOL = false;
+var DEBUG_PROTOCOL = true;
 
-var DEBUG_UNITS = false;
+var DEBUG_UNITS = true;
 
-var DEBUG_MOVEMENTS = true;
+var DEBUG_MOVEMENTS = false;
 
 // Список юнитов, принадлежащих клиенту.
 var self_units_list = new Array();
@@ -290,11 +290,8 @@ function scrOnMouseup(e) {
                 continue;
             }
             actions.push(
-                new MoveMessage(
-                    step,
+                new MoveRequestMessage(
                     selected_units[i].getId(),
-                    -1,
-                    -1,
                     neighbourCells[i].j,
                     neighbourCells[i].i
                 )

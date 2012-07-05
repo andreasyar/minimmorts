@@ -1,35 +1,77 @@
 
 // Движение.
 
-function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
+function Movement (unit, speed, beg_step, waypoints) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-    
+
+    /**
+     * Ссылка на движущегося юнита.
+     */
     this.unit = unit;
-    this.begJ = begJ;
-    this.begI = begI;
-    this.endJ = endJ;
-    this.endI = endI;
+
+    /**
+     * Скорость движения в клетках в шаг.
+     */
     this.speed = speed;
+
+    /**
+     * TODO нужно подумать где и как правильней создавать путь.
+     */
+    this.path = null;
+
+    /**
+     * Номер хода, когда движение началось.
+     */
+    this.beg_step = beg_step;
+
+    /**
+     * Точки, по которым строится путь движения.
+     */
+    this.waypoints = waypoints;
+
+    /**
+     * Флаг окончания движения.
+     */
     this.stopped = false;
     
-    var path_array = new Array();
-    var cur_path_point = path;
-    do {
-        path_array.push(new Point(cur_path_point.j, cur_path_point.i));
-        cur_path_point = cur_path_point.parent;
-    } while (cur_path_point != null)
-    path_array.reverse();
-    //console.log(this.unit.getId(), step, path_array);
-
-    this.path = path_array;    
-    this.beg_step = beg_step;
+    this.getBegJ = function() {
+        return this.waypoints[0].j;
+    }
     
+    this.getBegI = function() {
+        return this.waypoints[0].i;
+    }
+    
+    this.getEndJ = function() {
+        return this.waypoints[this.waypoints.length - 1].j;
+    }
+    
+    this.getEndI = function() {
+        return this.waypoints[this.waypoints.length - 1].i;
+    }
+
+    this.setPath = function(path) {
+        this.path = path;
+    }
+
+    this.setWaypoints = function(waypoints) {
+        this.waypoints = waypoints;
+    }
+
+    this.getWaypoints = function() {
+        return this.waypoints;
+    }
+
     this.updatePosition = function(step) {
         var n = Math.floor((step - this.beg_step) * this.speed);
+        if (this.path == null) {
+            console.log("Положение юнита id=" + this.unit.getId() + " не может быть обновлено. Путь - null");
+            return;
+        }
         if (n >= this.path.length - 1) {
             if (DEBUG_MOVEMENTS) {
                 console.log(step + ": Юнит id=" + unit.getId() + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[this.path.length - 1].j + "," + this.path[this.path.length - 1].i + "] и движение звершилось.");
@@ -45,7 +87,7 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             this.unit.i = this.path[n].i;
         }
     }
-    
+
     this.getPosition = function(step) {
         var n = Math.floor((step - this.beg_step) * this.speed);
         if (n >= this.path.length - 1) {
@@ -54,15 +96,15 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             return this.path[n];
         }
     }
-    
+
     this.getUnit = function() {
         return this.unit;
     }
-    
+
     this.getBegStep = function() {
         return this.beg_step;
     }
-    
+
     this.getNextPathPoint = function(j, i) {
         for (var k = 0; k < this.path.length; k++) {
             if (this.path[k].j == j && this.path[k].i == i) {
@@ -73,17 +115,17 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     this.isStopped = function() {
         return this.stopped;
     }
-    
+
     this.getNextPathPointOrientation = function(j, i) {
         var nextPathPoint = null;
-        
+
         for (var k = 0; k < this.path.length; k++) {
             if (this.path[k].j == j && this.path[k].i == i) {
                 if (this.path[k + 1] != undefined) {
@@ -91,14 +133,14 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
                 }
             }
         }
-        
+
         if (nextPathPoint == null) {
             return null;
         }
-        
+
         var jDiff = nextPathPoint.j - j;
         var iDiff = nextPathPoint.i - i;
-        
+
         if (jDiff == 0 && iDiff == -1) {
             return "N";
         } else if (jDiff == 1 && iDiff == -1) {
@@ -117,22 +159,22 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
             return "NW";
         }
     }
-    
+
     this.toString = function() {
-        return "{begJ=" + this.begJ +
-               ",begI=" +this.begI +
-               ",endJ=" +this.endJ +
-               ",endI=" +this.endI +
-               ",stopped=" +this.stopped +
-               ",beg_step=" +this.beg_step +
+        return "{begJ=" + this.getBegJ() +
+               ",begI=" +this.getBegI() +
+               ",endJ=" +this.getEndJ() +
+               ",endI=" +this.getEndI() +
+               ",stopped=" +this.isStopped() +
+               ",beg_step=" +this.getBegStep() +
                "}";
     }
-    
-    this.update = function(step, path, endJ, endI) {
+
+    /*this.update = function(step, path, endJ, endI) {
         var newPath = new Array();
         var pathArray = convertLinkedPathToArray(path);
         var n = Math.floor((step - this.beg_step) * this.speed);
-        
+
         var i;
         for (i = 0; i <= n && i < this.path.length; i++) {
             newPath.push(this.path[i]);
@@ -140,16 +182,16 @@ function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
         for (i = 0; i < pathArray.length; i++) {
             newPath.push(pathArray[i]);
         }
-        
+
         this.endJ = endJ;
         this.endI = endI;
         this.path = newPath;
-        
+
         if (DEBUG_MOVEMENTS) {
             console.log(n + " Обновлен путь движения: " + pathToString(this.path));
         }
-    }
-    
+    }*/
+
     return this;
 }
 

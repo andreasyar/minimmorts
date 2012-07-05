@@ -58,7 +58,7 @@ public class MovementManager {
     
     public boolean isUnitMove(Unit unit) {
         for (Movement m : movements) {
-            if (m.getUnit().equals(unit)) {
+            if (m.getUnit().equals(unit) && !m.isStopped()) {
                 return true;
             }
         }
@@ -66,7 +66,7 @@ public class MovementManager {
         return false;
     }
 
-    public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) {
+    public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) throws NullPointerException, IOException {
         Movement movement = createMovement(step, map, unit, j, i, 0.3f);
         if (movement == null) {
             return null;
@@ -91,8 +91,7 @@ public class MovementManager {
 
     public Movement updateMovement(long step, Map map, Unit unit, int j, int i) {
         Movement existedMovement = null;
-        Point nextPoint;
-        Movement updatedMovement;
+        LinkedList<Point> newPath;
         
         for (Movement m : movements) {
             if (m.getUnit().equals(unit)) {
@@ -108,73 +107,11 @@ public class MovementManager {
             );
             return null;
         }
-        if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            logger.log(
-                Level.SEVERE,
-                "{0}: Следующая точка пути движения юнита {1} после точки {2} не найдена.",
-                new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI())}
-            );
+        existedMovement.update(j, i);
+        if ( (newPath = regeneratePath(map, existedMovement)) == null) {
             return null;
         }
-        if (MovementManager.isLoggingEnabled()) {
-            logger.log(
-                Level.INFO,
-                "{0}: Следующая точка пути движения юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), unit, nextPoint}
-            );
-        }
-        LinkedList<Point> path = getPath(map, new Cell(nextPoint.getI(), nextPoint.getJ(), 0, 0, null), new Cell(i, j, 0, 0, null));
-        if (path == null) {
-            logger.log(
-                Level.SEVERE,
-                "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден.",
-                new Object[] {ServerMainLoop.getStep(), unit, new Point(nextPoint.getJ(), nextPoint.getI()), new Point(j, i)}
-            );
-            return null;
-        }
-        existedMovement.update(step, path, j, i);
-        /*if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            logger.log(
-                Level.SEVERE,
-                "{0}: Следующая точка пути движения юнита {1} после точки {2} не найдена.",
-                new Object[] {ServerMainLoop.getStep(), unit, new Point(unit.getJ(), unit.getI())}
-            );
-            return null;
-        }
-        if (MovementManager.isLoggingEnabled()) {
-            logger.log(
-                Level.INFO,
-                "{0}: Следующая точка пути движения юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), unit, nextPoint}
-            );
-        }
-        updatedMovement = createMovement(
-            step,
-            map,
-            existedMovement.getUnit(),
-            nextPoint.getJ(),
-            nextPoint.getI(),
-            j,
-            i,
-            0.4f
-        );
-        if (updatedMovement == null) {
-            return null;
-        }
-        
-        if (MovementManager.isLoggingEnabled()) {
-            String path = "";
-            for (Point p : updatedMovement.getPath()) {
-                path += p;
-            }
-            logger.log(
-                Level.INFO,
-                "{0}: Обновлён путь движения юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), unit, path}
-            );
-        }
-
-        movements.set(movements.indexOf(existedMovement), updatedMovement);*/
+        existedMovement.setPath(newPath);
         
         return existedMovement;
     }
@@ -204,11 +141,11 @@ public class MovementManager {
         }
     }
 
-    private Movement createMovement(long step, Map map, Unit unit, int endJ, int endI, float speed) {
+    private Movement createMovement(long step, Map map, Unit unit, int endJ, int endI, float speed) throws NullPointerException, IOException {
         return createMovement(step, map, unit, unit.getJ(), unit.getI(), endJ, endI, speed);
     }
 
-    private Movement createMovement(long step, Map map, Unit unit, int begJ, int begI, int endJ, int endI, float speed) {
+    private Movement createMovement(long step, Map map, Unit unit, int begJ, int begI, int endJ, int endI, float speed) throws NullPointerException, IOException {
         LinkedList<Point> path = getPath(map, new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
         if (path == null) {
             logger.log(
@@ -233,6 +170,46 @@ public class MovementManager {
                 }
             }
         }
+    }
+
+    private LinkedList<Point> regeneratePath(Map map, Movement movement) {
+        LinkedList<Point> waypoints = movement.getWaypoints();
+        LinkedList<Point> newPath = new LinkedList<>();
+        LinkedList<Point> path;
+        
+        for (int i = 1; i < waypoints.size(); i++) {
+            path = getPath(
+                map,
+                new Cell(waypoints.get(i - 1).getI(), waypoints.get(i - 1).getJ(), 0, 0, null),
+                new Cell(waypoints.get(i).getI(), waypoints.get(i).getJ(), 0, 0, null)
+            );
+            if (path == null) {
+                logger.log(
+                    Level.SEVERE,
+                    "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден. Waypoints {4}",
+                    new Object[] {ServerMainLoop.getStep(), movement.getUnit(), waypoints.get(i - 1), waypoints.get(i), movement.waypointsToString()}
+                );
+                return null;
+            }
+            if (!newPath.isEmpty()) {
+                path.removeFirst(); // Чтобы точки пути не дублировались.
+            }
+            newPath.addAll(path);
+        }
+        
+        if (MovementManager.isLoggingEnabled()) {
+            String pathStr = "";
+            for (Point p : movement.getPath()) {
+                pathStr += p;
+            }
+            logger.log(
+                Level.INFO,
+                "{0}: Пересоздан путь для юнита {1} {2}",
+                new Object[] {ServerMainLoop.getStep(), movement.getUnit(), pathStr}
+            );
+        }
+        
+        return newPath;
     }
 
     private class Cell {
@@ -292,6 +269,10 @@ public class MovementManager {
             return this.i == i && this.j == j;
         }
 
+        public boolean equal(Cell cell) {
+            return this.i == cell.getI() && this.j == cell.getJ();
+        }
+
         @Override
         public String toString() {
             return "[" + j + ", " + i + "]";
@@ -347,6 +328,10 @@ public class MovementManager {
         int stat_close = 0;
 
         if (!map.isOnMap(end.getJ(), end.getI())) {
+            return null;
+        }
+        
+        if (beg.equal(end)) {
             return null;
         }
 
@@ -452,5 +437,17 @@ public class MovementManager {
             clone = (LinkedList<Movement>) movements.clone();
         }
         return clone;
+    }
+
+    public LinkedList<Movement> getAllActiveMovements() {
+        LinkedList<Movement> activeMovements = new LinkedList<>();;
+        synchronized (movements) {
+            for (Movement m : movements) {
+                if (!m.isStopped()) {
+                    activeMovements.add(m);
+                }
+            }
+        }
+        return activeMovements;
     }
 }

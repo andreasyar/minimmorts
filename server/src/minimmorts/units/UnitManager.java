@@ -7,10 +7,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import minimmorts.ErrnoErrorService;
-import minimmorts.GlobalLogFile;
-import minimmorts.IdGenerator;
-import minimmorts.LastErrorService;
+import minimmorts.*;
 import minimmorts.client.Client;
 import minimmorts.messages.Message;
 import minimmorts.messages.MessageManager;
@@ -177,7 +174,7 @@ public class UnitManager {
      * Возвращает всех юнитов, не помеченных на удаление.
      * @return копия списока юнитов
      */
-    public LinkedList<Unit> getAllUnits() {
+    public LinkedList<Unit> getAllActiveUnits() {
         LinkedList<Unit> clone = new LinkedList<>();
         
         synchronized (allUnits) {
@@ -234,12 +231,14 @@ public class UnitManager {
                                     " Client: ownerId=" + m.getOwnerId() + ",j=" + m.getJ() + ",i=" + m.getI());
                     }
                     LastErrorService.setLastError(MessageManager.createSyncErrorMessage(m.getId()));
+                    ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                     return false;
                 }
             } else {
                 String errorText = "Неверное состояние. Юнит id=" + m.getId() +
                                    " существует в отчёте клиента, но не найден на сервере.";
                 LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
+                ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                 return false;
             }
         }
@@ -249,6 +248,7 @@ public class UnitManager {
                 String errorText = "Неверное состояние. Юнит id=" + u2.getId() +
                                    " существует на сервере, но не найден в отчёте клиента.";
                 LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
+                ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                 return false;
             }
         }
