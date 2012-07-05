@@ -71,7 +71,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
      * Путь, по которому двигается спрайт юнита.
      */
     this.path = wayPointPath;
-    console.log("original", (new Date()).getTime(), pathToString(this.path));
+    //console.log("original", (new Date()).getTime(), pathToString(this.path));
     
     this.begTime = wayPointPath[0].arrivalTime;
     

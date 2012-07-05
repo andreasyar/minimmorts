@@ -33,12 +33,12 @@ function ServerInteraction() {
          * Обработчик получения сообщения от сервера.
          */
         this.socket.onmessage = function(event) {
-            if (DEBUG) {
+            if (DEBUG_PROTOCOL) {
                 console.log("<- " + event.data)
             }
             var obj = JSON.parse(event.data)
             for (var key in MESSAGE_HANDLERS) {
-                if (obj[0] != undefined && obj[0] == key) {
+                if ((obj[0] != undefined && obj[0] == key) || (obj[0] != undefined && obj[0][0] != undefined && obj[0][0] == key)) {
                     MESSAGE_HANDLERS[key](obj);
                     break;
                 }
@@ -66,7 +66,7 @@ function ServerInteraction() {
             throw new Error("Cant send message. Connection not established.")
         } else {
             msg = JSON.stringify(msg)
-            if (DEBUG) {
+            if (DEBUG_PROTOCOL) {
                 console.log("-> " + msg);
             }
             this.socket.send(msg);

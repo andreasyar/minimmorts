@@ -287,7 +287,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
                     break;
                 case "PING":
-                    PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
+                    /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (ClientManager.isLoggingEnabled()) {
                             logger.info(ServerMainLoop.getStep() + ": Сообщение PING не может быть обработано. Клиент channel=" + ctx.getChannel() + " не найден.");
@@ -301,7 +301,8 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     }
                     if (!clientManager.setClientPingTime(client.getId(), pm.getTime()) && ClientManager.isLoggingEnabled()) {
                         logger.info(ServerMainLoop.getStep() + ": Не удалось установить время последнего пинга. Клиент id=" + client.getId() + " не найден.");
-                    }
+                    }*/
+                    ctx.getChannel().write(frame);
                     break;
             }
         }

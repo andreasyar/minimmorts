@@ -70,11 +70,11 @@ units_buffer.height = SCR_H;
  *************************/
 
 // debug
-var DEBUG = true;
+var DEBUG = false;
 
 var DEBUG_PROTOCOL = true;
 
-var DEBUG_UNITS = true;
+var DEBUG_UNITS = false;
 
 var DEBUG_MOVEMENTS = false;
 
@@ -152,6 +152,14 @@ var uniqueId = 0;
 
 var stateUpdatesMap = new Array();
 
+var draws = 0;
+var drawsPerStep = 0;
+
+var ping = null;
+
+var drawBegTime = null;
+var redraws = 0;
+
 /************
  * Функции. *
  ************/
@@ -176,6 +184,11 @@ function disconnect() {
 }
 
 function drawLoop() {
+    if (drawBegTime == null) {
+        drawBegTime = (new Date()).getTime();
+    }
+    redraws++;
+    
     var scr_context = scr.getContext('2d');
     var units_context = units_buffer.getContext('2d');
     var map_context = map_buffer.getContext('2d');
@@ -220,10 +233,15 @@ function drawLoop() {
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
     scr_context.drawImage(units_buffer, 0, 0);
-    //scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
+    //draws++;
+    //scr_context.fillText("drawsPerStep=" + drawsPerStep, 100, 100);
     //scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
     if (executionTimeLag != null) {
         //scr_context.fillText("executionTimeLag=" + executionTimeLag, 30, 130);
+    }
+    if (ping != null) {
+        scr_context.fillText("Ping: " + ping, 30, 130);
+        scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
     }
 
     drawTimer = setTimeout(drawLoop, 1000 / FPS);
@@ -325,6 +343,8 @@ function syncLoop() {
     stepBegTime = (new Date()).getTime();
     
     step++;
+    drawsPerStep = draws;
+    draws = 0;
     
     movementManager.updatePositions(step);
     map.updateMinimap();

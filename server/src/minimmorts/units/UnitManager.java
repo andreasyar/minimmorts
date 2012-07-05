@@ -231,14 +231,12 @@ public class UnitManager {
                                     " Client: ownerId=" + m.getOwnerId() + ",j=" + m.getJ() + ",i=" + m.getI());
                     }
                     LastErrorService.setLastError(MessageManager.createSyncErrorMessage(m.getId()));
-                    ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                     return false;
                 }
             } else {
                 String errorText = "Неверное состояние. Юнит id=" + m.getId() +
                                    " существует в отчёте клиента, но не найден на сервере.";
                 LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
-                ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                 return false;
             }
         }
@@ -248,7 +246,6 @@ public class UnitManager {
                 String errorText = "Неверное состояние. Юнит id=" + u2.getId() +
                                    " существует на сервере, но не найден в отчёте клиента.";
                 LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
-                ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
                 return false;
             }
         }

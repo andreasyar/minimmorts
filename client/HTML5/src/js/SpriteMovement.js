@@ -71,7 +71,7 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
      * Путь, по которому двигается спрайт юнита.
      */
     this.path = wayPointPath;
-    console.log("original", (new Date()).getTime(), pathToString(this.path));
+    //console.log("original", (new Date()).getTime(), pathToString(this.path));
 
     this.begTime = wayPointPath[0].arrivalTime;
 
@@ -222,9 +222,19 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
             console.log("Невозможно обновить координаты спрайта юнита, его путь - null");
             return false;
         }
+        
+        if ((new Date()).getTime() - stepBegTime > prevStepTime) {
+            // Стоим на месте
+            return true;
+        }
 
         var prevStepBegTime = stepBegTime - prevStepTime;
+        
         var curTime = (new Date()).getTime() - prevStepTime;
+        this.tInc2((new Date()).getTime());
+        /*if (!this.tInc(curTime)) {
+            return false;
+        }*/
         var diffTime = curTime - prevStepBegTime;
 
         var m = ((step - 1) - this.movement.beg_step) * this.movement.speed;
@@ -494,6 +504,30 @@ function SpriteMovement(unit, path, curUnitPos, movement) {
         }
         
         this.xDecArray.push(x);
+    }
+    this.tIncArray = new Array();
+    this.tInc = function(t) {
+        for (var i = 0; i < this.tIncArray.length; i++) {
+            if (this.tIncArray[i] > t) {
+                //console.log(this.tIncArray, t);
+                //throw new Error("t cannot decrase!");
+                return false;
+            }
+        }
+        
+        this.tIncArray.push(t);
+        return true;
+    }
+    this.tIncArray2 = new Array();
+    this.tInc2 = function(t) {
+        for (var i = 0; i < this.tIncArray2.length; i++) {
+            if (this.tIncArray2[i] > t) {
+                console.log(this.tIncArray2, t);
+                throw new Error("t cannot decrase!");
+            }
+        }
+        
+        this.tIncArray2.push(t);
     }
 
     return this;

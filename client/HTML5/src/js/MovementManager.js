@@ -68,7 +68,7 @@ function MovementManager() {
         
         existedMovement.setWaypoints(waypoints);
         newPath = this.regeneratePath(map, existedMovement);
-        console.log("derp: " + pathToString(newPath));
+        //console.log("derp: " + pathToString(newPath));
         existedMovement.setPath(newPath);
     }
 

@@ -162,7 +162,6 @@ public class ServerMainLoop implements Runnable {
             handleActionRequests();
         } catch (NullPointerException | IOException ex) {
             logger.log(Level.SEVERE, null, ex);
-            ServerLauncher.handle.cancel(false);    // TODO Удалить эту хуету
             return;
         }
 
