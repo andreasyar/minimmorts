@@ -60,13 +60,30 @@ function Unit(ownerId, id, j, i, color) {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
             drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
         }
-        context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
-        //context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
+        if (DEBUG) {
+            context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
+        }
         if (this.selected) {
             sprite = this.sloader.getSpriteByName("peasant_selection");
             context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
         }
+        return;
+    }
+    this.drawColor = function(context, camera) {
+        var sprite;
+        var drawCoordinates;
+        if (smoothMovementEnabled) {
+            sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+            if (sprite == null) {
+                return;
+            }
+            drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
+        } else {
+            sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
+            drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
+        }
+        context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
         return;
     }
     

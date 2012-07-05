@@ -66,6 +66,12 @@ var units_buffer = document.createElement('canvas');
 units_buffer.width = SCR_W;
 units_buffer.height = SCR_H;
 
+// Холст для рисования цвета игроков (цветных квадратиков под юнитами).
+
+var unitcolors_buffer = document.createElement('canvas');
+unitcolors_buffer.width = SCR_W;
+unitcolors_buffer.height = SCR_H;
+
 /*************************
  * Служебные переменные. *
  *************************/
@@ -193,6 +199,7 @@ function drawLoop() {
     var scr_context = scr.getContext('2d');
     var units_context = units_buffer.getContext('2d');
     var map_context = map_buffer.getContext('2d');
+    var unitcolors_context = unitcolors_buffer.getContext('2d');
     var i;
 
     // Фон.
@@ -201,6 +208,7 @@ function drawLoop() {
 
     // Пока что будем очищать весь холст целиком, а не только область, в которой было что-то нарисовано.
     units_context.clearRect(0, 0, units_buffer.width, units_buffer.height);
+    unitcolors_context.clearRect(0, 0, unitcolors_buffer.width, unitcolors_buffer.height);
     map_context.clearRect(0, 0, map_buffer.width, map_buffer.height);
 
     // Нарисуем карту.
@@ -212,13 +220,13 @@ function drawLoop() {
     // Нарисуем юнитов, принадлежащих клиенту.
     for (i in self_units_list) {
         self_units_list[i].draw(units_context, camera);
-        //self_units_list[i].drawPath(units_context, camera);
+        self_units_list[i].drawColor(unitcolors_context, camera);
     }
 
     // Нарисуем остальных юнитов.
     for (i in units_list) {
         units_list[i].draw(units_context, camera);
-        //units_list[i].drawPath(units_context, camera);
+        units_list[i].drawColor(unitcolors_context, camera);
     }
     
     if (selection_rect != null) {
@@ -233,13 +241,9 @@ function drawLoop() {
 
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
+    scr_context.drawImage(unitcolors_buffer, 0, 0);
     scr_context.drawImage(units_buffer, 0, 0);
-    //draws++;
-    //scr_context.fillText("drawsPerStep=" + drawsPerStep, 100, 100);
-    //scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
-    if (executionTimeLag != null) {
-        //scr_context.fillText("executionTimeLag=" + executionTimeLag, 30, 130);
-    }
+    
     if (ping != null) {
         scr_context.fillText("Ping: " + ping, 30, 130);
         scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
