@@ -1,5 +1,7 @@
 #summary Run instructions.
 
+*OBSOLETE*
+
 ==Checkout==
 
   * Go to Source page http://code.google.com/p/minimmorts/source/checkout and follow instructions to get your copy of server and client.
