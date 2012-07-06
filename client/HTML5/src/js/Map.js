@@ -131,10 +131,10 @@ function Map(width, height) {
                 }
             }
         }
-        for (k in self_units_list) {
+        for (k = 0; k < self_units_list.length; k++) {
             setPixel(this.miniMap, self_units_list[k].j, self_units_list[k].i, 0, 0, 255, 255);
         }
-        for (k in units_list) {
+        for (k = 0; k < units_list.length; k++) {
             setPixel(this.miniMap, units_list[k].j, units_list[k].i, 255, 0, 0, 255);
         }
         var camJ = Math.max(0, Map.getCellJOnMap(camera.x));

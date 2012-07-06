@@ -235,7 +235,7 @@ function scrOnMouseup(e) {
         selected_units = new Array();
         selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
 
-        for (var i in self_units_list) {
+        for (var i = 0; i < self_units_list.length; i++) {
             if (self_units_list[i].j >= selection_rect.beg.j
                     && self_units_list[i].j <= selection_rect.end.j
                     && self_units_list[i].i >= selection_rect.beg.i

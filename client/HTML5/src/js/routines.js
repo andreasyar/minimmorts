@@ -718,13 +718,13 @@ function drawLoop() {
     movementManager.updateSpritePositions();
 
     // Нарисуем юнитов, принадлежащих клиенту.
-    for (i in self_units_list) {
+    for (i = 0; i < self_units_list.length; i++) {
         self_units_list[i].draw(units_context, camera);
         self_units_list[i].drawColor(unitcolors_context, camera);
     }
 
     // Нарисуем остальных юнитов.
-    for (i in units_list) {
+    for (i = 0; i < units_list.length; i++) {
         units_list[i].draw(units_context, camera);
         units_list[i].drawColor(unitcolors_context, camera);
     }

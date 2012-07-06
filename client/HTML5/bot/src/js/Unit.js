@@ -49,6 +49,7 @@ function Unit(ownerId, id, j, i, color) {
         if (smoothMovementEnabled) {
             sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
             if (sprite == null) {
+                console.log("Спрайт " + this.spritePos.spriteName + " не найден.");
                 return;
             }
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);

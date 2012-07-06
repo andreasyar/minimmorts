@@ -24,7 +24,7 @@ function MovementManager() {
      * Проверяет, движется ли юнит.
      */
     this.isUnitMove = function(unit) {
-        for (var i in this.movements) {
+        for (var i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit() == unit && !this.movements[i].isFinished()) {
                 return true;
             }
@@ -57,7 +57,7 @@ function MovementManager() {
      */
     this.updateMovement = function(unit, waypoints) {
         var existedMovement = null;
-        for (var i in this.movements) {
+        for (var i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit() == unit) {
                 existedMovement = this.movements[i];
                 break;
@@ -141,7 +141,7 @@ function MovementManager() {
     this.delMovementByUnitId = function(id) {
         var i;
 
-        for (i in this.movements) {
+        for (i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit().getId() == id) {
                 this.movements.splice(i, 1);
                 if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
@@ -150,7 +150,7 @@ function MovementManager() {
                 break;
             }
         }
-        for (i in this.spriteMovements) {
+        for (i = 0; i < this.spriteMovements.length; i++) {
             if (this.spriteMovements[i].getUnit().getId() == id) {
                 this.spriteMovements.splice(i, 1);
                 if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
