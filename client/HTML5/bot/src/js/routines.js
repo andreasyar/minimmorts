@@ -517,19 +517,19 @@ function getNeighboursCells(cells) {
             if (neighbours[_i] == undefined) {
                 neighbours[_i] = {};
             }
-            neighbours[_i][_j] = {j: _j, i: _i};
+            neighbours[_i][_j] = new Point(_j, _i);
         }
     }
     var i, j, result = new Array();
     for (i in cells) {
-        checkCell(neighbours, cells[i].j - 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i - 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i + 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i + 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i + 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() + 1);
     }
     for (i in neighbours) {
         for (j in neighbours[i]) {
@@ -557,9 +557,6 @@ function getUnitById(id) {
 function delUnitById(id) {
     for (var i in self_units_list) {
         if (self_units_list[i].getId() == id) {
-            if (saveUnitHistory) {
-                self_units_list[i].history.push(step + ": Удалён.");
-            }
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -567,9 +564,6 @@ function delUnitById(id) {
     }
     for (i in units_list) {
         if (units_list[i].getId() == id) {
-            if (saveUnitHistory) {
-                units_list[i].history.push(step + ": Удалён.");
-            }
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -603,11 +597,6 @@ function clearTimeouts() {
     clearTimeout(aiTimer);
     clearTimeout(reconnectTimer);
     clearTimeout(connectTimer);
-}
-
-function createId() {
-    uniqueId++;
-    return uniqueId;
 }
 
 /**
@@ -688,4 +677,63 @@ function generatePath(map, waypoints) {
     }
 
     return generatedPath;
+}
+
+function connect() {
+    server = new ServerInteraction();
+    server.connect("ws://localhost:8015/");
+}
+
+function disconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close();
+    }
+}
+
+function syncLoop() {
+    var i, actions;
+    
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
+    
+    step++;
+    
+    movementManager.updatePositions(step);
+
+    var unitMessages = new Array();
+    for (i in self_units_list) {
+        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    }
+    for (i in units_list) {
+        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    }
+    actions = actionManager.takeMovementRequests();
+    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+}
+
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    pingTimer = setTimeout(pingLoop, 100);
+}
+
+function reconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close()
+    } else {
+        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
+    }
+    
+    connectTimer = setTimeout(connect, 2000);
+}
+
+function aiLoop() {
+    actionManager.createRandomMovementRequests();
+    if (reconnectProbability != null && getRandomInt(reconnectProbability) == 0) {
+        reconnectTimer = setTimeout(reconnect, 2000);
+        console.log("Переподключение.");
+    } else {
+        aiTimer = setTimeout(aiLoop, 2000);
+    }
 }

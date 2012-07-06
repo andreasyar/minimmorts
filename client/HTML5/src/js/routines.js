@@ -517,19 +517,19 @@ function getNeighboursCells(cells) {
             if (neighbours[_i] == undefined) {
                 neighbours[_i] = {};
             }
-            neighbours[_i][_j] = {j: _j, i: _i};
+            neighbours[_i][_j] = new Point(_j, _i);
         }
     }
     var i, j, result = new Array();
     for (i in cells) {
-        checkCell(neighbours, cells[i].j - 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i - 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i + 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i + 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i + 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() + 1);
     }
     for (i in neighbours) {
         for (j in neighbours[i]) {
@@ -557,9 +557,6 @@ function getUnitById(id) {
 function delUnitById(id) {
     for (var i in self_units_list) {
         if (self_units_list[i].getId() == id) {
-            if (saveUnitHistory) {
-                self_units_list[i].history.push(step + ": Удалён.");
-            }
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -567,9 +564,6 @@ function delUnitById(id) {
     }
     for (i in units_list) {
         if (units_list[i].getId() == id) {
-            if (saveUnitHistory) {
-                units_list[i].history.push(step + ": Удалён.");
-            }
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
             return true;
@@ -601,13 +595,7 @@ function setPixel(imageData, x, y, r, g, b, a) {
 
 function clearTimeouts() {
     clearTimeout(drawTimer);
-    clearTimeout(syncTimer);
     clearTimeout(pingTimer);
-}
-
-function createId() {
-    uniqueId++;
-    return uniqueId;
 }
 
 /**
@@ -688,4 +676,107 @@ function generatePath(map, waypoints) {
     }
 
     return generatedPath;
+}
+
+function connect() {
+    server = new ServerInteraction();
+    server.connect(document.getElementById('host').value);
+    return false;
+}
+
+function disconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close();
+    }
+}
+
+function drawLoop() {
+    if (drawBegTime == null) {
+        drawBegTime = (new Date()).getTime();
+    }
+    redraws++;
+
+    var scr_context = scr.getContext('2d');
+    var units_context = units_buffer.getContext('2d');
+    var map_context = map_buffer.getContext('2d');
+    var unitcolors_context = unitcolors_buffer.getContext('2d');
+    var i;
+
+    // Фон.
+    scr_context.fillStyle = "#FFFFEE";
+    scr_context.fillRect(0, 0, scr.width, scr.height);
+
+    // Пока что будем очищать весь холст целиком, а не только область, в которой было что-то нарисовано.
+    units_context.clearRect(0, 0, units_buffer.width, units_buffer.height);
+    unitcolors_context.clearRect(0, 0, unitcolors_buffer.width, unitcolors_buffer.height);
+    map_context.clearRect(0, 0, map_buffer.width, map_buffer.height);
+
+    // Нарисуем карту.
+    map.draw(map_context, camera);
+
+    // Обновим позиции спрайтов юнитов.
+    movementManager.updateSpritePositions();
+
+    // Нарисуем юнитов, принадлежащих клиенту.
+    for (i in self_units_list) {
+        self_units_list[i].draw(units_context, camera);
+        self_units_list[i].drawColor(unitcolors_context, camera);
+    }
+
+    // Нарисуем остальных юнитов.
+    for (i in units_list) {
+        units_list[i].draw(units_context, camera);
+        units_list[i].drawColor(unitcolors_context, camera);
+    }
+
+    if (selection_rect != null) {
+        selection_rect.draw(units_context, camera);
+    }
+
+    units_context.putImageData(
+        map.miniMap,
+        10,
+        10
+    );
+
+    // Нарисуем карту и юнитов на основном холсте.
+    scr_context.drawImage(map_buffer, 0, 0);
+    scr_context.drawImage(unitcolors_buffer, 0, 0);
+    scr_context.drawImage(units_buffer, 0, 0);
+
+    if (ping != null) {
+        scr_context.fillText("Ping: " + ping, 30, 130);
+        scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
+    }
+
+    drawTimer = setTimeout(drawLoop, 1000 / FPS);
+}
+
+function syncLoop() {
+    var i, actions;
+
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
+
+    step++;
+
+    movementManager.updatePositions(step);
+    map.updateMinimap();
+
+    var unitMessages = new Array();
+    for (i in self_units_list) {
+        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    }
+    for (i in units_list) {
+        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    }
+    actions = actionManager.takeMovementRequests();
+    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+}
+
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    pingTimer = setTimeout(pingLoop, 100);
 }

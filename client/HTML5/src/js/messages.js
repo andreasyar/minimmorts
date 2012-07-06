@@ -261,11 +261,7 @@ var MESSAGE_HANDLERS = {
         var unit = getUnitById(syncerrorMessage.unitId);
             
         if (unit == null) {
-            console.log("История юнита не может быть распечатана. Юнит id=" + syncerrorMessage.unitId + " не найден.");
-        } else if (!saveUnitHistory) {
-            console.log("История юнита не может быть распечатана, потому что её ведение отключено.");
-        } else {
-            console.log(unit.history);
+            console.log("Юнит id=" + syncerrorMessage.unitId + " не найден.");
         }
         
         clearTimeouts()
@@ -293,10 +289,9 @@ var MESSAGE_HANDLERS = {
             console.log("Все чужие юниты удалены.");
         }
         
-        actions = new Array();
-        stored_actions = new Array();
         selected_units = new Array();
         movementManager = new MovementManager();
+        actionManager = new ActionManager();
         
         /*
          * Создание юнитов.
@@ -380,10 +375,6 @@ var MESSAGE_HANDLERS = {
             unit,
             moveMessage.waypoints
         );
-
-        if (saveUnitHistory) {
-            unit.history.push(step + ": Движение создано. " + message);
-        }
     },
     "MOVEUPDATE": function (message) {
         // Example: 
@@ -400,10 +391,6 @@ var MESSAGE_HANDLERS = {
             unit,
             moveMessage.waypoints
         );
-
-        if (saveUnitHistory) {
-            unit.history.push(step + ": Движение обновлено. " + message);
-        }
     },
     "PING": function(message) {
         ping = (new Date()).getTime() - message[0][1].time;

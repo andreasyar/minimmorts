@@ -6,7 +6,6 @@
     <script type="text/javascript" src="js/constants.js"></script>
     <script type="text/javascript" src="js/resources.js"></script>
     <script type="text/javascript" src="js/routines.js"></script>
-    
     <script type="text/javascript" src="js/Camera.js"></script>
     <script type="text/javascript" src="js/Unit.js"></script>
     <script type="text/javascript" src="js/SpriteLoader.js"></script>
@@ -29,69 +28,115 @@
  * Служебные переменные. *
  *************************/
 
-// debug
-var DEBUG = false;
-
+/**
+ * Включение дебага протокола обмена данными с сервером.
+ */
 var DEBUG_PROTOCOL = false;
 
+/**
+ * Включение дебага юнитов.
+ */
 var DEBUG_UNITS = false;
 
+/**
+ * Включение дебага движения.
+ */
 var DEBUG_MOVEMENTS = false;
 
-// Список юнитов, принадлежащих клиенту.
+/**
+ * Список юнитов, принадлежащих клиенту.
+ */
 var self_units_list = new Array();
 
-// Список юнитов.
+/**
+ * Список юнитов.
+ */
 var units_list = new Array();
 
-// Карта.
+/**
+ * Карта.
+ */
 var map;
 
-// Сервер.
+/**
+ * Сервер.
+ */
 var server;
 
-// Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+/**
+ * Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+ */
 var camera;
 
-// Камера свободна или привязана к своему игроку.
+/**
+ * Камера свободна или привязана к своему игроку.
+ */
 var is_camera_free = false;
 
-// Буфер действий.
-var actions = new Array();
-
-// Действия, которые должны быть выполнены после получения подтверждения.
-var stored_actions;
-
-// Номер текущего хода.
+/**
+ * Номер текущего хода.
+ */
 var step;
 
-// Id этого клиента.
+/**
+ * Id этого клиента.
+ */
 var clientId;
 
-// Выделенные юниты.
+/**
+ * Выделенные юниты.
+ */
 var selected_units = new Array();
 
-// Клетка начала выделения.
+/**
+ * Клетка начала выделения.
+ */
 var selections_beg;
 
-// Прямоугольник выделения.
+/**
+ * Прямоугольник выделения.
+ */
 var selection_rect = null;
 
-// Менеджер движения.
+/**
+ * Менеджер движения.
+ */
 var movementManager = new MovementManager();
 
-// Менеджер действий.
+/**
+ * Менеджер действий.
+ */
 var actionManager = new ActionManager();
 
+/**
+ * Включает плавное движение юнитов.
+ */
 var smoothMovementEnabled = true;
 
-var prevDrawTime = null;
+/**
+ * Таймер цикла пинга сервера.
+ */
+var pingTimer = null;
 
+/**
+ * Таймер цикла с AI бота.
+ */
 var aiTimer = null;
 
+/**
+ * Таймер переподключения.
+ */
 var reconnectTimer = null;
 
+/**
+ * Таймер подключения.
+ */
 var connectTimer = null;
+
+/**
+ * Включает переподключение при разрыве связи с сервером.
+ */
+var autoReconnect = true;
 
 /*
  * Вероятность того, что бот проигнорирует сообщение CONFIRM от сервера. Это
@@ -105,10 +150,6 @@ var ignoreConfirmProbability = 300;
  */
 var reconnectProbability = 300;
 
-var autoReconnect = true;
-
-var saveUnitHistory = false;
-
 /**
  * Время начала текущего хода.
  */
@@ -119,109 +160,20 @@ var stepBegTime = null;
  */
 var prevStepTime = null;
 
-var uniqueId = 0;
-
-var stateUpdatesMap = new Array();
-
-var draws = 0;
-var drawsPerStep = 0;
-
+/**
+ * Пинг до сервера.
+ */
 var ping = null;
 
+/**
+ * Время начала первой итерации цикла рисования.
+ */
 var drawBegTime = null;
+
+/**
+ * Текущее количество итераций цикла рисования.
+ */
 var redraws = 0;
-
-/************
- * Функции. *
- ************/
-
-function connect() {
-    server = new ServerInteraction();
-    server.connect("ws://localhost:8015/");
-}
-
-function disconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    } else {
-        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
-    }
-}
-
-function reconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    } else {
-        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
-    }
-    
-    connectTimer = setTimeout(connect, 2000);
-}
-
-function aiLoop() {
-    actionManager.createRandomMovementRequests();
-    if (reconnectProbability != null && getRandomInt(reconnectProbability) == 0) {
-        reconnectTimer = setTimeout(reconnect, 2000);
-        if (DEBUG) {
-            console.log("Переподключение.");
-        }
-    } else {
-        aiTimer = setTimeout(aiLoop, 2000);
-    }
-}
-
-function syncLoop() {
-    var i, unit, actions;
-    
-    if (stepBegTime != null) {
-        prevStepTime = (new Date()).getTime() - stepBegTime;
-    }
-    stepBegTime = (new Date()).getTime();
-    
-    /*for (i in stored_actions) {
-        switch (stored_actions[i].type) {
-            case "MOVE":
-                if ( (unit = getUnitById(stored_actions[i].unitId)) == null) {
-                    console.log("Сохранённое действие не может быть выполнено. Юнит id=" + stored_actions[i].unitId + " не найден.");
-                    continue;
-                }
-                if (movementManager.isUnitMove(unit)) {
-                    movementManager.updateMovement(
-                        step,
-                        unit,
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                } else {
-                    movementManager.startNewMovement(
-                        step,
-                        unit,
-                        unit.getJ(),
-                        unit.getI(),
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                    //console.log("Movement created on step ", step);
-                }
-                break;
-        }
-    }*/
-    
-    step++;
-    
-    movementManager.updatePositions(step);
-
-    var unitMessages = new Array();
-    for (i in self_units_list) {
-        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
-    }
-    for (i in units_list) {
-        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
-    }
-    actions = actionManager.takeMovementRequests();
-    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
-    stored_actions = actions;
-}
 
 </script>
 

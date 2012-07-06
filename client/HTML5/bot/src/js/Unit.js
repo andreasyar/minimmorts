@@ -31,10 +31,6 @@ function Unit(ownerId, id, j, i, color) {
     
     this.history = new Array();
     
-    if (saveUnitHistory) {
-        this.history.push(step + ": Создан.");
-    }
-
     this.getOwnerId = function() {
         return this.ownerId;
     }
@@ -61,7 +57,7 @@ function Unit(ownerId, id, j, i, color) {
             drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
         }
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
-        if (DEBUG) {
+        if (DEBUG_UNITS) {
             context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
         }
         if (this.selected) {

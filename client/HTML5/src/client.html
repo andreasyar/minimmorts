@@ -6,7 +6,6 @@
     <script type="text/javascript" src="js/constants.js"></script>
     <script type="text/javascript" src="js/resources.js"></script>
     <script type="text/javascript" src="js/routines.js"></script>
-    
     <script type="text/javascript" src="js/Camera.js"></script>
     <script type="text/javascript" src="js/Unit.js"></script>
     <script type="text/javascript" src="js/SpriteLoader.js"></script>
@@ -17,6 +16,7 @@
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
     <script type="text/javascript" src="js/Sprite.js"></script>
     <script type="text/javascript" src="js/SpriteMovement.js"></script>
+    <script type="text/javascript" src="js/ActionManager.js"></script>
     <script type="text/javascript" src="js/Point.js"></script>
     <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
     <style type="text/css" >
@@ -48,11 +48,10 @@ scr.id = "scr";
 scr.width = SCR_W;
 scr.height = SCR_H;
 scr.oncontextmenu = function() {
-    return false;  
+    return false;
 }
-// Добавление обработчика щелчка мышью происходит при запуске игры.
-var body = document.getElementsByTagName('body')[0];
-body.appendChild(scr);
+// Добавление обработчиков нажатий клавиш мыши происходит при запуске игры.
+document.body.appendChild(scr);
 
 // Холст для рисования карты.
 
@@ -76,74 +75,100 @@ unitcolors_buffer.height = SCR_H;
  * Служебные переменные. *
  *************************/
 
-// debug
-var DEBUG = false;
-
+/**
+ * Включение дебага протокола обмена данными с сервером.
+ */
 var DEBUG_PROTOCOL = false;
 
+/**
+ * Включение дебага юнитов.
+ */
 var DEBUG_UNITS = false;
 
+/**
+ * Включение дебага движения.
+ */
 var DEBUG_MOVEMENTS = false;
 
-// Список юнитов, принадлежащих клиенту.
+/**
+ * Список юнитов, принадлежащих клиенту.
+ */
 var self_units_list = new Array();
 
-// Список юнитов.
+/**
+ * Список юнитов.
+ */
 var units_list = new Array();
 
-// Карта.
+/**
+ * Карта.
+ */
 var map;
 
-// Сервер.
+/**
+ * Сервер.
+ */
 var server;
 
-// Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+/**
+ * Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+ */
 var camera;
 
-// Камера свободна или привязана к своему игроку.
+/**
+ * Камера свободна или привязана к своему игроку.
+ */
 var is_camera_free = false;
 
-// Буфер действий.
-var actions = new Array();
-
-// Действия, которые должны быть выполнены после получения подтверждения.
-var stored_actions;
-
-// Номер текущего хода.
+/**
+ * Номер текущего хода.
+ */
 var step;
 
-// Id этого клиента.
+/**
+ * Id этого клиента.
+ */
 var clientId;
 
-// Выделенные юниты.
+/**
+ * Выделенные юниты.
+ */
 var selected_units = new Array();
 
-// Клетка начала выделения.
+/**
+ * Клетка начала выделения.
+ */
 var selections_beg;
 
-// Прямоугольник выделения.
+/**
+ * Прямоугольник выделения.
+ */
 var selection_rect = null;
 
-// Менеджер движения.
+/**
+ * Менеджер движения.
+ */
 var movementManager = new MovementManager();
 
-// Получено ли начальное состояние.
-var is_initial_state_received = false;
+/**
+ * Менеджер действий.
+ */
+var actionManager = new ActionManager();
 
+/**
+ * Включает плавное движение юнитов.
+ */
 var smoothMovementEnabled = true;
 
-var prevDrawTime = null;
-
-var drawTimer = null;
-
-var syncTimer = null;
-
+/**
+ * Таймер цикла пинга сервера.
+ */
 var pingTimer = null;
 
-var saveUnitHistory = false;
-
-var plannedExecutionTime = null;
-var executionTimeLag = null;
+/**
+ * Таймер цикла рисования.
+ */
+var drawTimer = null;
 
 /**
  * Время начала текущего хода.
@@ -155,102 +180,24 @@ var stepBegTime = null;
  */
 var prevStepTime = null;
 
-var uniqueId = 0;
-
-var stateUpdatesMap = new Array();
-
-var draws = 0;
-var drawsPerStep = 0;
-
+/**
+ * Пинг до сервера.
+ */
 var ping = null;
 
+/**
+ * Время начала первой итерации цикла рисования.
+ */
 var drawBegTime = null;
+
+/**
+ * Текущее количество итераций цикла рисования.
+ */
 var redraws = 0;
 
 /************
  * Функции. *
  ************/
-
-function connect() {
-    if (server == undefined) {
-        server = new ServerInteraction()
-        server.connect(document.getElementById('host').value)
-    } else if (server.socket.readyState == WebSocket.OPEN) {
-        server.sendMessage(new LoginMessage(getLogin(), getPassword()))
-    } else {
-        server.connect(document.getElementById('host').value)
-    }
-        
-    return false
-}
-
-function disconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    }
-}
-
-function drawLoop() {
-    if (drawBegTime == null) {
-        drawBegTime = (new Date()).getTime();
-    }
-    redraws++;
-    
-    var scr_context = scr.getContext('2d');
-    var units_context = units_buffer.getContext('2d');
-    var map_context = map_buffer.getContext('2d');
-    var unitcolors_context = unitcolors_buffer.getContext('2d');
-    var i;
-
-    // Фон.
-    scr_context.fillStyle = "#FFFFEE";
-    scr_context.fillRect(0, 0, scr.width, scr.height);
-
-    // Пока что будем очищать весь холст целиком, а не только область, в которой было что-то нарисовано.
-    units_context.clearRect(0, 0, units_buffer.width, units_buffer.height);
-    unitcolors_context.clearRect(0, 0, unitcolors_buffer.width, unitcolors_buffer.height);
-    map_context.clearRect(0, 0, map_buffer.width, map_buffer.height);
-
-    // Нарисуем карту.
-    map.draw(map_context, camera);
-    
-    // Обновим позиции спрайтов юнитов.
-    movementManager.updateSpritePositions();
-
-    // Нарисуем юнитов, принадлежащих клиенту.
-    for (i in self_units_list) {
-        self_units_list[i].draw(units_context, camera);
-        self_units_list[i].drawColor(unitcolors_context, camera);
-    }
-
-    // Нарисуем остальных юнитов.
-    for (i in units_list) {
-        units_list[i].draw(units_context, camera);
-        units_list[i].drawColor(unitcolors_context, camera);
-    }
-    
-    if (selection_rect != null) {
-        selection_rect.draw(units_context, camera);
-    }
-    
-    units_context.putImageData(
-        map.miniMap,
-        10,
-        10
-    );
-
-    // Нарисуем карту и юнитов на основном холсте.
-    scr_context.drawImage(map_buffer, 0, 0);
-    scr_context.drawImage(unitcolors_buffer, 0, 0);
-    scr_context.drawImage(units_buffer, 0, 0);
-    
-    if (ping != null) {
-        scr_context.fillText("Ping: " + ping, 30, 130);
-        scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
-    }
-
-    drawTimer = setTimeout(drawLoop, 1000 / FPS);
-}
 
 function scrOnMousedown(e) {
     var x;
@@ -264,7 +211,7 @@ function scrOnMousedown(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
+
     if (e.button == 0) {
         selections_beg = {x1: x, y1: y}
         scr.addEventListener("mousemove", scrOnMousemove, false);
@@ -283,17 +230,17 @@ function scrOnMouseup(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
+
     if (e.button == 0) {
         selected_units = new Array();
         selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
-        
+
         for (var i in self_units_list) {
             if (self_units_list[i].j >= selection_rect.beg.j
                     && self_units_list[i].j <= selection_rect.end.j
                     && self_units_list[i].i >= selection_rect.beg.i
                     && self_units_list[i].i <= selection_rect.end.i) {
-                
+
                 self_units_list[i].selected = true;
                 selected_units.push(self_units_list[i]);
             } else {
@@ -304,22 +251,7 @@ function scrOnMouseup(e) {
         selection_rect = null;
     } else if (e.button == 2) {
         var tAxis = camera.reTranslateAxis(x, y);
-        var neighbourCells = new Array({j: Map.getCellJOnMap(tAxis.x), i: Map.getCellIOnMap(tAxis.y)});
-        while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
-            neighbourCells = getNeighboursCells(neighbourCells);
-        }
-        for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
-            if (selected_units[i].getJ() == neighbourCells[i].j && selected_units[i].getI() == neighbourCells[i].i) {
-                continue;
-            }
-            actions.push(
-                new MoveRequestMessage(
-                    selected_units[i].getId(),
-                    neighbourCells[i].j,
-                    neighbourCells[i].i
-                )
-            );
-        }
+        actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)));
     }
 }
 
@@ -335,48 +267,8 @@ function scrOnMousemove(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
+
     selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
-}
-
-function syncLoop() {
-    var i, unit;
-    
-    if (stepBegTime != null) {
-        prevStepTime = (new Date()).getTime() - stepBegTime;
-    }
-    stepBegTime = (new Date()).getTime();
-    
-    step++;
-    drawsPerStep = draws;
-    draws = 0;
-    
-    movementManager.updatePositions(step);
-    map.updateMinimap();
-
-    var unitMessages = new Array();
-    for (i in self_units_list) {
-        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
-    }
-    for (i in units_list) {
-        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
-    }
-    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
-    stored_actions = actions;
-    actions = new Array();
-}
-
-function jsPing() {
-    if (plannedExecutionTime != null) {
-        executionTimeLag = (new Date()).getTime() - plannedExecutionTime;
-    }
-    plannedExecutionTime = (new Date()).getTime() + 500;
-    setTimeout(jsPing, 500);
-}
-
-function pingLoop() {
-    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
-    pingTimer = setTimeout(pingLoop, 100);
 }
 
 </script>
@@ -396,16 +288,16 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <script type="text/javascript">
 showLoginForm();
 document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
-    
+
 document.onkeydown = function(event) {
     var events = event || window.event
     if (events.keyCode == 116) {    // F5
         disconnect();
     }
-    if (camera != undefined && camera.target == undefined && events.keyCode == 37) {    // left arrow 
+    if (camera != undefined && camera.target == undefined && events.keyCode == 37) {    // left arrow
         camera.x -= 1 * CELL_W;
     }
-    if (camera != undefined && camera.target == undefined && events.keyCode == 38) {    // up arrow 
+    if (camera != undefined && camera.target == undefined && events.keyCode == 38) {    // up arrow
         camera.y -= 1 * CELL_H;
     }
     if (camera != undefined && camera.target == undefined && events.keyCode == 39) {    // right arrow
@@ -415,8 +307,6 @@ document.onkeydown = function(event) {
         camera.y += 1 * CELL_H;
     }
 }
-
-jsPing();
 </script>
 
 </body>

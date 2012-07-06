@@ -69,9 +69,7 @@ function ServerInteraction() {
                 clearTimeouts();
                 var ms = 3000 + 1000 * getRandomInt(17);
                 connectTimer = setTimeout(connect, ms);
-                if (DEBUG) {
-                    console.log("Переподключение через " + ms + " милисекунд.");
-                }
+                console.log("Переподключение через " + ms + " милисекунд.");
             }
         };
     };
