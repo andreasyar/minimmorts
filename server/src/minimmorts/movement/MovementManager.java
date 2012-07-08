@@ -1,7 +1,6 @@
 package minimmorts.movement;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -32,6 +31,10 @@ public class MovementManager {
      * Список всех движений.
      */
     private final LinkedList<Movement> movements = new LinkedList<>();
+    
+    private final PathCache pathCache;
+    
+    private boolean usePathCache = true;
 
     public MovementManager() throws IOException {
         if (MovementManager.logger == null) {
@@ -42,6 +45,8 @@ public class MovementManager {
             MovementManager.logger.addHandler(GlobalLogFile.getGlobalLogFileHandler());
             MovementManager.logger.setLevel(Level.ALL);
         }
+        
+        pathCache = new PathCache();
     }
 
     public static void enableLogging() {
@@ -67,23 +72,29 @@ public class MovementManager {
     }
 
     public Movement startNewMovement(long step, Map map, Unit unit, int j, int i) throws NullPointerException, IOException {
-        Movement movement = createMovement(step, map, unit, j, i, 0.3f);
-        if (movement == null) {
-            return null;
-        }
+        LinkedList<Point> waypoints = new LinkedList<>();
+        waypoints.add(new Point(unit.getJ(), unit.getI()));
+        waypoints.add(new Point(j, i));
         
         if (MovementManager.isLoggingEnabled()) {
-            String path = "";
-            for (Point p : movement.getPath()) {
-                path += p;
-            }
             logger.log(
                 Level.INFO,
-                "{0}: Создан новый путь для юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), unit, path}
+                "{0}: Создаётся новое движение юнита {1} по точкам {2}",
+                new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(waypoints)}
             );
         }
         
+        LinkedList<Point> path = generatePath(map, waypoints, unit);
+        if (path == null) {
+            logger.log(
+                Level.SEVERE,
+                "{0}: Путь движения юнита {1} по точкам {2} не найден.",
+                new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(waypoints)}
+            );
+            return null;
+        }
+        
+        Movement movement = new Movement(unit, waypoints, 0.3f, path, step);
         movements.add(movement);
         
         return movement;
@@ -108,7 +119,20 @@ public class MovementManager {
             return null;
         }
         existedMovement.update(j, i);
-        if ( (newPath = regeneratePath(map, existedMovement)) == null) {
+        if (MovementManager.isLoggingEnabled()) {
+            logger.log(
+                Level.INFO,
+                "{0}: Обновляется движение юнита {1} по точкам {2}",
+                new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(existedMovement.getWaypoints())}
+            );
+        }
+        
+        if ( (newPath = generatePath(map, existedMovement.getWaypoints(), unit)) == null) {
+            logger.log(
+                Level.SEVERE,
+                "{0}: Путь движения юнита {1} по точкам {2} не найден.",
+                new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(existedMovement.getWaypoints())}
+            );
             return null;
         }
         existedMovement.setPath(newPath);
@@ -141,26 +165,6 @@ public class MovementManager {
         }
     }
 
-    private Movement createMovement(long step, Map map, Unit unit, int endJ, int endI, float speed) throws NullPointerException, IOException {
-        return createMovement(step, map, unit, unit.getJ(), unit.getI(), endJ, endI, speed);
-    }
-
-    private Movement createMovement(long step, Map map, Unit unit, int begJ, int begI, int endJ, int endI, float speed) throws NullPointerException, IOException {
-        LinkedList<Point> path = getPath(map, new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == null) {
-            logger.log(
-                Level.SEVERE,
-                "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден.",
-                new Object[] {ServerMainLoop.getStep(), unit, new Point(begJ, begI), new Point(endJ, endI)}
-            );
-            return null;
-        }
-        
-        Movement m = new Movement(unit, unit.getJ(), unit.getI(), endJ, endI, speed, path, step);
-        
-        return m;
-    }
-
     public void removeByUnits(LinkedList<Unit> removedUnits) {
         for (Unit u : removedUnits) {
             for (Movement m : movements) {
@@ -172,44 +176,104 @@ public class MovementManager {
         }
     }
 
-    private LinkedList<Point> regeneratePath(Map map, Movement movement) {
-        LinkedList<Point> waypoints = movement.getWaypoints();
-        LinkedList<Point> newPath = new LinkedList<>();
+    private LinkedList<Point> generatePath(Map map, LinkedList<Point> waypoints, Unit unit) {
+        LinkedList<Point> generatedPath = new LinkedList<>();
         LinkedList<Point> path;
+        boolean cachedPathUsed = false;
         
         for (int i = 1; i < waypoints.size(); i++) {
-            path = getPath(
-                map,
-                new Cell(waypoints.get(i - 1).getI(), waypoints.get(i - 1).getJ(), 0, 0, null),
-                new Cell(waypoints.get(i).getI(), waypoints.get(i).getJ(), 0, 0, null)
-            );
-            if (path == null) {
-                logger.log(
-                    Level.SEVERE,
-                    "{0}: Путь движения юнита {1} из точки {2} в точку {3} не найден. Waypoints {4}",
-                    new Object[] {ServerMainLoop.getStep(), movement.getUnit(), waypoints.get(i - 1), waypoints.get(i), movement.waypointsToString()}
+            if (usePathCache) {
+                if ( (path = pathCache.getCachedPath(waypoints.get(i - 1).getJ(), waypoints.get(i - 1).getI(), waypoints.get(i).getJ(), waypoints.get(i).getI(), unit)) == null) {
+                    path = getPath(
+                        map,
+                        new Cell(waypoints.get(i - 1).getI(), waypoints.get(i - 1).getJ(), 0, 0, null),
+                        new Cell(waypoints.get(i).getI(), waypoints.get(i).getJ(), 0, 0, null)
+                    );
+                    if (path == null) {
+                        logger.log(
+                            Level.SEVERE,
+                            "{0}: Путь через точки {1}->{2} не может быть построен.",
+                            new Object[] {ServerMainLoop.getStep(), waypoints.get(i - 1), waypoints.get(i)}
+                        );
+                        return null;
+                    }
+                    if (MovementManager.isLoggingEnabled()) {
+                        logger.log(
+                            Level.INFO,
+                            "{0}: Для движения юнита {1} по участку пути {2}->{3} был создан путь {4}",
+                            new Object[] {ServerMainLoop.getStep(), unit, waypoints.get(i - 1), waypoints.get(i), MovementManager.pathToString(path)}
+                        );
+                    }
+                    
+                    pathCache.cachePath(path);
+                } else {
+                    if (MovementManager.isLoggingEnabled()) {
+                        logger.log(
+                            Level.INFO,
+                            "{0}: Для движения юнита {1} по участку пути {2}->{3} был взят из кеша путь {4}",
+                            new Object[] {ServerMainLoop.getStep(), unit, waypoints.get(i - 1), waypoints.get(i), MovementManager.pathToString(path)}
+                        );
+                    }
+                    
+                    cachedPathUsed = true;
+                }
+            } else {
+                path = getPath(
+                    map,
+                    new Cell(waypoints.get(i - 1).getI(), waypoints.get(i - 1).getJ(), 0, 0, null),
+                    new Cell(waypoints.get(i).getI(), waypoints.get(i).getJ(), 0, 0, null)
                 );
-                return null;
+                if (path == null) {
+                    logger.log(
+                        Level.SEVERE,
+                        "{0}: Путь через точки {1}->{2} не может быть построен.",
+                        new Object[] {ServerMainLoop.getStep(), waypoints.get(i - 1), waypoints.get(i)}
+                    );
+                    return null;
+                }
             }
-            if (!newPath.isEmpty()) {
+            if (!generatedPath.isEmpty()) {
                 path.removeFirst(); // Чтобы точки пути не дублировались.
             }
-            newPath.addAll(path);
+            generatedPath.addAll(path);
         }
         
-        if (MovementManager.isLoggingEnabled()) {
-            String pathStr = "";
-            for (Point p : movement.getPath()) {
-                pathStr += p;
+        if (cachedPathUsed) {
+            if (MovementManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Для движения юнита {1} по точкам {2} был сформирован путь частично или полностью взятый из кеша {3}",
+                    new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(waypoints), MovementManager.pathToString(generatedPath)}
+                );
             }
-            logger.log(
-                Level.INFO,
-                "{0}: Пересоздан путь для юнита {1} {2}",
-                new Object[] {ServerMainLoop.getStep(), movement.getUnit(), pathStr}
-            );
+        } else {
+            if (MovementManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Для движения юнита {1} по точкам {2} был создан путь {3}",
+                    new Object[] {ServerMainLoop.getStep(), unit, MovementManager.waypointsToString(waypoints), MovementManager.pathToString(generatedPath)}
+                );
+            }
         }
         
-        return newPath;
+        return generatedPath;
+    }
+
+    public static String waypointsToString(LinkedList<Point> waypoints) {
+        String out = "";
+        for (int i = 0; i < waypoints.size() - 1; i++) {
+            out += waypoints.get(i) + "->";
+        }
+        out += waypoints.getLast();
+        return out;
+    }
+    
+    public static String pathToString(LinkedList<Point> path) {
+        String out = "";
+        for (int i = 0; i < path.size(); i++) {
+            out += path.get(i);
+        }
+        return out;
     }
 
     private class Cell {

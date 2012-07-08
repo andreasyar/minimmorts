@@ -745,11 +745,11 @@ public class ServerMainLoop implements Runnable {
                     continue;
                 }
                 if (!client.isConnected()) {
-                    logger.log(
+                    /*logger.log(
                         Level.SEVERE,
                         "{0}: Отчёт не может быть обработан. Его отправитель клиент {1} отключен.",
                         new Object[] {ServerMainLoop.getStep(), client}
-                    );
+                    );*/
                     continue;
                 }
                 

@@ -51,7 +51,7 @@ public class Movement {
     private long begStep;
     private boolean stopped;
     
-    private final LinkedList<Point> waypoints = new LinkedList<>();
+    private final LinkedList<Point> waypoints;
     
     public static void initLogging() {
         try {
@@ -65,7 +65,7 @@ public class Movement {
         }
     }
 
-    public Movement(Unit unit, int begJ, int begI, int endJ, int endI, float speed, LinkedList<Point> path, long begStep) throws NullPointerException, IOException {
+    public Movement(Unit unit, LinkedList<Point> waypoints, float speed, LinkedList<Point> path, long begStep) throws NullPointerException, IOException {
         if (Movement.logger == null) {
             Movement.logger = Logger.getLogger(Movement.class.getName());
             FileHandler h = new FileHandler(Movement.class.getName() + ".txt");
@@ -78,8 +78,7 @@ public class Movement {
             throw new NullPointerException("path is null");
         }
         this.unit = unit;
-        waypoints.add(new Point(begJ, begI));
-        waypoints.add(new Point(endJ, endI));
+        this.waypoints = waypoints;
         this.speed = speed;
         this.path = path;
         this.begStep = begStep;

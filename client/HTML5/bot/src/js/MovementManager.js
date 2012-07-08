@@ -37,7 +37,7 @@ function MovementManager() {
      * Создаёт новое движение.
      */
     this.startNewMovement = function(begStep, unit, waypoints) {
-        var path = generatePath(map, waypoints);
+        var path = generatePath(map, waypoints, unit);
         if (path == null) {
             console.log("Путь null. Движение не может быть создано.");
             return;
@@ -67,7 +67,7 @@ function MovementManager() {
             return;
         }
         
-        var path = generatePath(map, waypoints);
+        var path = generatePath(map, waypoints, existedMovement.getUnit());
         if (path == null) {
             console.log("Путь null. Движение не может быть обновлено.");
             return;

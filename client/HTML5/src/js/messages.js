@@ -266,7 +266,7 @@ var MESSAGE_HANDLERS = {
         
         clearTimeouts()
         disconnect();
-        alert("Ошибка синхронизации.");
+        alert("Ошибка синхронизации. Юнит id=" + syncerrorMessage.unitId);
     },
     "WELCOME": function (msg) {
         // Format:

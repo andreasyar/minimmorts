@@ -19,6 +19,7 @@
     <script type="text/javascript" src="js/ActionManager.js"></script>
     <script type="text/javascript" src="js/Point.js"></script>
     <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
+    <script type="text/javascript" src="js/PathCache.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -194,6 +195,16 @@ var drawBegTime = null;
  * Текущее количество итераций цикла рисования.
  */
 var redraws = 0;
+    
+/**
+ * Кеш путей.
+ */
+var pathCache = new PathCache();
+
+/**
+ * Использовать кеш путей.
+ */
+var usePathCache = true;
 
 /************
  * Функции. *

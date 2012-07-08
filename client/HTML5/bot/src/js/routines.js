@@ -649,7 +649,7 @@ function pathToString(path) {
 /**
  * Создаёт путь на карте по вейпоинтам.
  */
-function generatePath(map, waypoints) {
+function generatePath(map, waypoints, unit) {
     if (!(map instanceof Map)) {
         throw new Error("Карта не является объектом типа Map.");
     }
@@ -659,8 +659,11 @@ function generatePath(map, waypoints) {
     
     var generatedPath = new Array();
     var path;
+    var cachedPathUsed = false;
 
     for (var i = 1; i < waypoints.length; i++) {
+        if (usePathCache) {
+            if ( (path = pathCache.getCachedPath(waypoints[i - 1].j, waypoints[i - 1].i, waypoints[i].j, waypoints[i].i, unit)) == null) {
         path = getPath(
             new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
             new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
@@ -670,10 +673,31 @@ function generatePath(map, waypoints) {
             return null;
         }
         path = convertLinkedPathToArray(path);
+                pathCache.cachePath(path);
+            } else {
+                cachedPathUsed = true;
+            }
+        } else {
+            path = getPath(
+                new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+            );
+            if (path == false) {
+                console.log("Путь " + waypoints[i - 1] + "->" + waypoints[i] + " не может быть построен.");
+                return null;
+            }
+            path = convertLinkedPathToArray(path);
+        }
         if (generatedPath.length > 0) {
             path.splice(0, 1);
         }
         generatedPath = generatedPath.concat(path);
+    }
+
+    if (cachedPathUsed) {
+        console.log(step + ": Использован (возможно частично) путь из кеша для юнита " + unit + " " + pathToString(generatedPath) + " вэйпоинты " + waypointsToString(waypoints));
+    } else {
+        //console.log(step + ": Создан путь для юнита " + unit + " " + pathToString(generatedPath) + " вэйпоинты " + waypointsToString(waypoints));
     }
 
     return generatedPath;
@@ -716,6 +740,61 @@ function syncLoop() {
 function pingLoop() {
     server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
     pingTimer = setTimeout(pingLoop, 100);
+}
+
+function createId() {
+    return createId.id = createId.id == undefined ? 0 : createId.id + 1;
+}
+
+function clonePath(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var clone = new Array();
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+
+        clone.push(path[i]);
+    }
+    return clone;
+}
+
+function waypointsToString(waypoints) {
+    var out = "";
+
+    for (var i = 0; i < waypoints.length; i++) {
+        out += "[" + waypoints[i].j + "," + waypoints[i].i + "]";
+    }
+
+    return out;
+}
+
+function removeByValue(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            //var old = cloneArray(array);
+            array.splice(i, 1)
+            //var _new = cloneArray(array);
+            //console.log(old, value, i, _new)
+            //return _new;
+            return array;
+        }
+    }
+    
+    return array;
+}
+
+function indexOf(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            return i;
+        }
+    }
+    
+    return -1;
 }
 
 function reconnect() {
