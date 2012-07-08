@@ -20,6 +20,7 @@
     <script type="text/javascript" src="js/Point.js"></script>
     <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
     <script type="text/javascript" src="js/PathCache.js"></script>
+    <script type="text/javascript" src="js/Follow.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -90,6 +91,11 @@ var DEBUG_UNITS = false;
  * Включение дебага движения.
  */
 var DEBUG_MOVEMENTS = false;
+
+/**
+ * Включение дебага преследования.
+ */
+var DEBUG_FOLLOW = true;
 
 /**
  * Список юнитов, принадлежащих клиенту.
@@ -206,6 +212,19 @@ var pathCache = new PathCache();
  */
 var usePathCache = true;
 
+var scrollBarsHovered = {
+    left: false,
+    top: false,
+    right: false,
+    bottom: false
+}
+
+var camFollowEnabled = false;
+
+var followings = [];
+
+var followingsTimer = null;
+
 /************
  * Функции. *
  ************/
@@ -223,15 +242,18 @@ function scrOnMousedown(e) {
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
 
-    if (e.button == 0) {
+    camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+
+    if (e.button == 0 && !camMove) {
         selections_beg = {x1: x, y1: y}
-        scr.addEventListener("mousemove", scrOnMousemove, false);
+        //scr.addEventListener("mousemove", scrOnMousemove, false);
     }
 }
 
 function scrOnMouseup(e) {
     var x;
     var y;
+    var camMove = false;
     if (e.pageX != undefined && e.pageY != undefined) {
         x = e.pageX;
         y = e.pageY;
@@ -243,26 +265,79 @@ function scrOnMouseup(e) {
     y -= scr.offsetTop;
 
     if (e.button == 0) {
-        selected_units = new Array();
-        selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
+        
+        /*
+         * Движение камеры при кликах на панельках по бокам экрана.
+         */
+        if (scrollBarsHovered.top) {
+            camera.y -= 1 * CELL_H;
+        }
+        if (scrollBarsHovered.bottom) {
+            camera.y += 1 * CELL_H;
+        }
+        if (scrollBarsHovered.left) {
+            camera.x -= 1 * CELL_W;
+        }
+        if (scrollBarsHovered.right) {
+            camera.x += 1 * CELL_W;
+        }
+        camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+        
+        if (!camMove) {
+            selected_units = new Array();
+            selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
 
-        for (var i = 0; i < self_units_list.length; i++) {
-            if (self_units_list[i].j >= selection_rect.beg.j
-                    && self_units_list[i].j <= selection_rect.end.j
-                    && self_units_list[i].i >= selection_rect.beg.i
-                    && self_units_list[i].i <= selection_rect.end.i) {
+            for (var i = 0; i < self_units_list.length; i++) {
+                if (self_units_list[i].j >= selection_rect.beg.j
+                        && self_units_list[i].j <= selection_rect.end.j
+                        && self_units_list[i].i >= selection_rect.beg.i
+                        && self_units_list[i].i <= selection_rect.end.i) {
 
-                self_units_list[i].selected = true;
-                selected_units.push(self_units_list[i]);
-            } else {
-                self_units_list[i].selected = false;
+                    self_units_list[i].selected = true;
+                    selected_units.push(self_units_list[i]);
+                } else {
+                    self_units_list[i].selected = false;
+                }
+            }
+            //scr.removeEventListener("mousemove", scrOnMousemove, false);
+            selection_rect = null;
+            selections_beg = null;
+            
+            if (camFollowEnabled && selected_units.length > 0 && !camera.isFollow()) {
+                camera.follow(selected_units[0]);
+            } else if (camera.isFollow()) {
+                camera.unfollow();
             }
         }
-        scr.removeEventListener("mousemove", scrOnMousemove, false);
-        selection_rect = null;
     } else if (e.button == 2) {
         var tAxis = camera.reTranslateAxis(x, y);
-        actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)));
+        var follow = false;
+        var i, j, k;
+        for (i = 0; i < self_units_list.length; i++) {
+            for (j = 0; j < selected_units.length; j++) {
+                if (self_units_list[i] != selected_units[j] && self_units_list[i].isInSprite(tAxis.x, tAxis.y)) {
+                    for (k = 0; k < selected_units.length; k++) {
+                        addFollowing(selected_units[k], self_units_list[i]);
+                    }
+                    follow = true;
+                    break;
+                }
+            }
+        }
+        for (i = 0; !follow && i < units_list.length; i++) {
+            for (j = 0; j < selected_units.length; j++) {
+                if (units_list[i] != selected_units[j] && units_list[i].isInSprite(tAxis.x, tAxis.y)) {
+                    for (k = 0; k < selected_units.length; k++) {
+                        addFollowing(selected_units[k], units_list[i]);
+                    }
+                    follow = true;
+                    break;
+                }
+            }
+        }
+        if (!follow) {
+            actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)), true);
+        }
     }
 }
 
@@ -279,7 +354,30 @@ function scrOnMousemove(e) {
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
 
-    selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
+    if (selections_beg != null) {
+        selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
+    }
+    
+    if (y >= 0 && y <= 24) {
+        scrollBarsHovered.top = true;
+        scrollBarsHovered.bottom = false;
+    } else if (y >= SCR_H - 1 - 24 && y <= SCR_H - 1) {
+        scrollBarsHovered.top = false;
+        scrollBarsHovered.bottom = true;
+    } else {
+        scrollBarsHovered.top = false;
+        scrollBarsHovered.bottom = false;
+    }
+    if (x >= 0 && x <= 24) {
+        scrollBarsHovered.left = true;
+        scrollBarsHovered.right = false;
+    } else if (x >= SCR_W - 1 - 24 && x <= SCR_W - 1) {
+        scrollBarsHovered.left = false;
+        scrollBarsHovered.right = true;
+    } else {
+        scrollBarsHovered.left = false;
+        scrollBarsHovered.right = false;
+    }
 }
 
 </script>
@@ -295,6 +393,10 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <br>
 <input type="checkbox" id="toggleSmoothMovement" onclick="toggleSmoothMovement();" checked>
 <b>Плавное движение</b> (юнит двигается плавно, но при этом, в случае лагов, может отображаться не в том месте, где на самом деле находся)<br>
+
+<br>
+<input type="checkbox" id="toggleCamFollow" onclick="toggleCamFollow();">
+<b>Слежение за юнитами</b> (камера движется вслед за выделенными юнитами)<br>
 
 <script type="text/javascript">
 showLoginForm();
@@ -317,6 +419,28 @@ document.onkeydown = function(event) {
     if (camera != undefined && camera.target == undefined && events.keyCode == 40) {    // down arrow
         camera.y += 1 * CELL_H;
     }
+}
+
+var _tripleClickTimer = 0;
+scr.ondblclick = function(evt) {
+    ClearSelection();
+    window.clearTimeout(_tripleClickTimer);
+
+    //handle triple click selecting whole paragraph
+    scr.onclick = function() {
+        ClearSelection();
+    };
+
+    _tripleClickTimer = window.setTimeout(function() {
+           document.onclick = null; 
+    }, 100);
+};
+
+function ClearSelection() {
+    if (window.getSelection)
+        window.getSelection().removeAllRanges();
+    else if (document.selection)
+        document.selection.empty();
 }
 </script>
 

@@ -34,6 +34,22 @@ function MovementManager() {
     }
 
     /**
+     * 
+     */
+    this.getMovementDest = function(unit) {
+        if (this.isUnitMove(unit)) {
+            for (var i = 0; i < this.movements.length; i++) {
+                if (this.movements[i].getUnit() == unit) {
+                    var wp = this.movements[i].getWaypoints();
+                    return wp[wp.length - 1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Создаёт новое движение.
      */
     this.startNewMovement = function(begStep, unit, waypoints) {

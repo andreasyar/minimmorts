@@ -35,15 +35,16 @@ function ActionManager() {
     /**
      * Добавляет запросы движения выделенных юнитов в заданную точку (клетку).
      * @param dest - точка назначения
+     * @param removeFollows - удалять преследования или нет
      */
-    this.moveSelectedUnits = function(dest) {
+    this.moveSelectedUnits = function(dest, removeFollows) {
         if (!(dest instanceof Point)) {
             throw new Error("Точка назначения не является объектом типа Point.");
         }
 
         this.actions.MOVEMENT = new Array();
         
-        var neighbourCells = new Array(dest);
+        var neighbourCells = [dest];
         while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
             neighbourCells = getNeighboursCells(neighbourCells);
         }
@@ -52,7 +53,19 @@ function ActionManager() {
                 continue;
             }
             this.actions.MOVEMENT.push(new MoveRequestMessage(selected_units[i].getId(), neighbourCells[i].getJ(), neighbourCells[i].getI()));
+            removeFollowing(selected_units[i]);
         }
+    }
+    
+    this.moveUnit = function(unit, dest) {
+        if (!(dest instanceof Point)) {
+            throw new Error("Точка назначения не является объектом типа Point.");
+        }
+        if (!(unit instanceof Unit)) {
+            throw new Error("Юнит назначения не является объектом типа Unit.");
+        }
+
+        this.actions.MOVEMENT.push(new MoveRequestMessage(unit.getId(), dest.getJ(), dest.getI()));
     }
 
     /**

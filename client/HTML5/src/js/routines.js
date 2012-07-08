@@ -520,7 +520,7 @@ function getNeighboursCells(cells) {
             neighbours[_i][_j] = new Point(_j, _i);
         }
     }
-    var i, j, result = new Array();
+    var i, j, result = cells;
     for (i in cells) {
         checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() - 1);
         checkCell(neighbours, cells[i].getJ()    , cells[i].getI() - 1);
@@ -559,6 +559,7 @@ function delUnitById(id) {
         if (self_units_list[i].getId() == id) {
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(self_units_list[i]);
             return true;
         }
     }
@@ -566,6 +567,7 @@ function delUnitById(id) {
         if (units_list[i].getId() == id) {
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(units_list[i]);
             return true;
         }
     }
@@ -576,6 +578,17 @@ function delUnitById(id) {
 function toggleSmoothMovement() {
     smoothMovementEnabled = smoothMovementEnabled ? false : true;
     document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
+}
+
+function toggleCamFollow() {
+    camFollowEnabled = camFollowEnabled ? false : true;
+    document.getElementById('toggleCamFollow').checked = camFollowEnabled;
+            
+    if (camFollowEnabled && selected_units.length > 0 && camera != undefined && !camera.isFollow()) {
+        camera.follow(selected_units[0]);
+    } else if (camera != undefined && camera.isFollow()) {
+        camera.unfollow();
+    }
 }
 
 /**
@@ -596,6 +609,7 @@ function setPixel(imageData, x, y, r, g, b, a) {
 function clearTimeouts() {
     clearTimeout(drawTimer);
     clearTimeout(pingTimer);
+    clearTimeout(followingsTimer);
 }
 
 /**
@@ -882,6 +896,129 @@ function drawLoop() {
         scr_context.fillText("Ping: " + ping, 30, 130);
         scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
     }
+    
+    scr_context.beginPath();
+    scr_context.moveTo(0, 0);
+    scr_context.lineTo(24, 24);
+    scr_context.lineTo(24, SCR_H - 1 - 24);
+    scr_context.lineTo(0, SCR_H - 1);
+    scr_context.lineTo(0, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.left) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(0, 0);
+    scr_context.lineTo(24, 24);
+    scr_context.lineTo(SCR_W - 1 - 24, 24);
+    scr_context.lineTo(SCR_W - 1, 0);
+    scr_context.lineTo(0, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.top) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(SCR_W - 1, 0);
+    scr_context.lineTo(SCR_W - 1, SCR_H - 1);
+    scr_context.lineTo(SCR_W - 1 - 24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1 - 24, 24);
+    scr_context.lineTo(SCR_W - 1, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.right) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(SCR_W - 1, SCR_H - 1);
+    scr_context.lineTo(0, SCR_H - 1);
+    scr_context.lineTo(24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1 - 24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1, SCR_H - 1);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.bottom) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
 
     drawTimer = setTimeout(drawLoop, 1000 / FPS);
+}
+
+function followLoop() {
+    var object;
+    var target;
+    var objectDest;
+    var targetPos;
+    
+    for (var i = 0; i < followings.length; i++) {
+        object = followings[i].getObject();
+        target = followings[i].getTarget();
+        if ( (objectDest = movementManager.getMovementDest(object)) == null) {
+            objectDest = new Point(object.getJ(), object.getI());
+        }
+        targetPos = new Point(target.getJ(), target.getI());
+        
+        if (!targetPos.equals(objectDest)) {
+            actionManager.moveUnit(object, targetPos);
+        }
+    }
+    
+    followingsTimer = setTimeout(followLoop, 500);
+}
+
+function removeFollowing(object) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            followings.splice(i, 1);
+            break;
+        }
+    }
+}
+
+function removeFollowingByTarget(target) {
+    var found = false;
+    do {
+        for (var i = 0; i < followings.length; i++) {
+            if (followings[i].getTarget() == target) {
+                followings.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        found = false;
+    } while (found);
+}
+
+function addFollowing(object, target) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            if (DEBUG_FOLLOW) {
+                console.log(step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
+            }
+            followings[i].setTarget(target);
+            return true;
+        }
+    }
+    
+    followings.push(new Follow(object, target));
+    if (DEBUG_FOLLOW) {
+        console.log(step + ": Юнит " + object + " начал преследовать цель " + target);
+    }
+    return true;
 }

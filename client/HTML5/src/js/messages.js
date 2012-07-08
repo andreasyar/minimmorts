@@ -276,7 +276,7 @@ var MESSAGE_HANDLERS = {
         
         clientId = msg[1];
         step = msg[2];
-        camera = new Camera();
+        camera = new Camera(null);
         map = new Map(100, 100);
         
         self_units_list = new Array();
@@ -311,8 +311,10 @@ var MESSAGE_HANDLERS = {
         drawTimer = setTimeout(drawLoop, 1000 / FPS);
         syncLoop();
         pingTimer = setTimeout(pingLoop, 100);
+        followingsTimer = setTimeout(followLoop, 500);
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);
+        scr.addEventListener("mousemove", scrOnMousemove, false);
         hideLoginForm();
     },
     "CONFIRM": function (msg) {

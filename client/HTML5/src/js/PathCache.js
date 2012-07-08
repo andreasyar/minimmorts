@@ -30,7 +30,9 @@ function PathCache() {
             if (pathCache.length == PathCache.MAX_CACHE_SIZE) {
                 var oldPair = this.getRarestUsedPath();
                 i = indexOf(pathCache, oldPair);
-                console.log("Кеш путей заполнился. Удаляем", i, oldPair, newPair);
+                if (DEBUG_MOVEMENTS) {
+                    console.log("Кеш путей заполнился. Удаляем", i, oldPair, newPair);
+                }
                 this.cleanPathMap(oldPair.getKey(), i);
                 pathCache[i] = newPair;
             } else {
@@ -99,7 +101,9 @@ function PathCache() {
                             }*/
                             return null;
                         } else {
-                            console.log(step + ": В кеше найден нужный путь для юнита " + unit + " " + k + ":" + pathToString(path) + " проходящий через точки " + waypointsToString([new Point(begJ, begI), new Point(endJ, endI)]));
+                            if (DEBUG_MOVEMENTS) {
+                                console.log(step + ": В кеше найден нужный путь для юнита " + unit + " " + k + ":" + pathToString(path) + " проходящий через точки " + waypointsToString([new Point(begJ, begI), new Point(endJ, endI)]));
+                            }
                             doSave = false;
                             for (k = 0; k < path.length; k++) {
                                 if (path[k].getJ() == begJ && path[k].getI() == begI) {

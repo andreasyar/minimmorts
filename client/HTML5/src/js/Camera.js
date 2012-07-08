@@ -42,7 +42,11 @@ function Camera(target) {
      * Отвязывает камеру от цели.
      */
     this.unfollow = function() {
-        delete this.target;
+        this.target = null;
+    }
+    
+    this.isFollow = function() {
+        return this.target != null;
     }
     
     /**
@@ -51,8 +55,8 @@ function Camera(target) {
      */
     this.updatePos = function () {
         if (this.target != undefined && this.target != null) {
-            this.x = this.target.x - SCR_W / 2;
-            this.y = this.target.y - SCR_H / 2;
+            this.x = this.target.spritePos.x - SCR_W / 2;
+            this.y = this.target.spritePos.y - SCR_H / 2;
         }
     }
 
