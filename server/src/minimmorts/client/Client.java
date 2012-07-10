@@ -44,15 +44,19 @@ public class Client {
     private long lastConfirmedStep = -1;
     
     /**
-     * Пометка клиента как отключенного от сервера.
+     * Цвет юнитов.
      */
-    private boolean disconnected = false;
+    private Color color;
+    
+    private boolean connected = false;
     
     private boolean initialized = false;
     
-    private long clientPingTime = 0;
+    private boolean reported = false;
     
-    private Color color;
+    private int reinitializationAttempts = 0;
+    
+    private long clientPingTime = 0;
 
     Client(long id, Channel channel, Color color) {
         this.id = id;
@@ -98,12 +102,20 @@ public class Client {
         this.lastConfirmedStep = step;
     }
 
-    public boolean isDisconnected() {
-        return disconnected;
+    public Color getColor() {
+        return color;
     }
 
-    void markDisconnected() {
-        this.disconnected = true;
+    public boolean isConnected() {
+        return connected;
+    }
+
+    void setConnected() {
+        connected = true;
+    }
+
+    void setDisconnected() {
+        connected = false;
     }
 
     public boolean isInitialized() {
@@ -111,7 +123,39 @@ public class Client {
     }
 
     void setInitialized() {
-        this.initialized = true;
+        initialized = true;
+    }
+
+    void setUninitialized() {
+        initialized = false;
+    }
+
+    public boolean isReported() {
+        return reported;
+    }
+
+    void setReported() {
+        reported = true;
+    }
+
+    void setUnreported() {
+        reported = false;
+    }
+
+    public int getReinitializationAttempts() {
+        return reinitializationAttempts;
+    }
+
+    void incReinitializationAttempts() {
+        reinitializationAttempts++;
+    }
+
+    void clearReinitializationAttempts() {
+        reinitializationAttempts = 0;
+    }
+
+    public LinkedList<Message> cloneOutbox() {
+        return (LinkedList<Message>) outbox.clone();
     }
 
     public long getClientPingTime() {
@@ -122,11 +166,13 @@ public class Client {
         this.clientPingTime = clientPingTime;
     }
 
-    public Color getColor() {
-        return color;
-    }
-
-    void setUninitialized() {
-        this.initialized = false;
+    @Override
+    public String toString() {
+        return "id=" + id +
+               ",channel=" + channel +
+               ",lastReportedStep=" + lastReportedStep +
+               ",lastConfirmedStep=" + lastConfirmedStep +
+               ",connected=" + connected +
+               ",initialized=" + initialized;
     }
 }

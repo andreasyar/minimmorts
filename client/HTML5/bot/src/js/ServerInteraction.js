@@ -24,7 +24,7 @@ function ServerInteraction() {
      * @param addr адрес сервера
      */
     this.connect = function(addr) {
-        console.log("Connect to " + addr);
+        console.log('Соединяемся с ' + addr)
 
         if (window.WebSocket) {
             this.socket = new WebSocket(addr);
@@ -43,7 +43,7 @@ function ServerInteraction() {
             }
             var obj = JSON.parse(event.data)
             for (var key in MESSAGE_HANDLERS) {
-                if (obj[0] != undefined && obj[0] == key) {
+                if ((obj[0] != undefined && obj[0] == key) || (obj[0] != undefined && obj[0][0] != undefined && obj[0][0] == key)) {
                     MESSAGE_HANDLERS[key](obj);
                     break;
                 }
@@ -65,6 +65,12 @@ function ServerInteraction() {
          */
         this.socket.onclose = function(event) {
             console.log("Web Socket closed.");
+            if (autoReconnect) {
+                clearTimeouts();
+                var ms = 3000 + 1000 * getRandomInt(17);
+                connectTimer = setTimeout(connect, ms);
+                console.log("Переподключение через " + ms + " милисекунд.");
+            }
         };
     };
 

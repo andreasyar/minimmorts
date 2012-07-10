@@ -107,10 +107,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                 new MoveMessage(
                     movement.getBegStep(),
                     movement.getUnit().getId(),
-                    movement.getBegJ(),
-                    movement.getBegI(),
-                    movement.getEndJ(),
-                    movement.getEndI()
+                    movement.getWaypoints()
                 )
             );
         }
@@ -139,10 +136,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getBegJ(),
-            m.getBegI(),
-            m.getEndJ(),
-            m.getEndI()
+            m.getWaypoints()
         );
     }
     
@@ -155,10 +149,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveUpdateMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getBegJ(),
-            m.getBegI(),
-            m.getEndJ(),
-            m.getEndI()
+            m.getWaypoints()
         );
     }
 
@@ -170,19 +161,23 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public static NewUnitMessage createNewUnitMessage(Unit unit) {
         return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI(), unit.getColor().getRed(), unit.getColor().getGreen(), unit.getColor().getBlue());
     }
+
+    public static SyncErrorMessage createSyncErrorMessage(long unitId) {
+        return new SyncErrorMessage(unitId);
+    }
     
     /**
      * Обработчик разрыва соединения клиента с сервером.
      */
     @Override
     public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-        boolean res = clientManager.markDisconnected(ctx.getChannel());
-        if (ClientManager.isLoggingEnabled()) {
-            if (res) {
-                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " помечен как отключенный.");
-            } else {
-                logger.info(ServerMainLoop.getStep() + ": Связь с клиентом потеряна. Клиент channel=" + ctx.getChannel() + " не найден, поэтому не может быть помечен как отключенный.");
-            }
+        clientManager.addDisctonnectedClient(ctx.getChannel());
+        if (MessageManager.isLoggingEnabled()) {
+            logger.log(
+                Level.INFO,
+                "{0}: Связь с клиентом потеряна. Клиент channel={1} будет помечен как отключенный.",
+                new Object[] {ServerMainLoop.getStep(), ctx.getChannel()}
+            );
         }
     }
 
@@ -219,6 +214,27 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     break;
                 case "STATE":
                     long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
+                    Client client;
+                    
+                    if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Клиент отправитель отчёта не существует на сервере. Отчёт будет проигнорирован. Клиент channel=" + ctx.getChannel() + " не найден.");
+                        }
+                        break;
+                    }
+                    if (!client.isConnected() || !client.isInitialized()) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Отчёты от отключенных или не инициализированных клиентов не принимаются. Клиент id=" + client.getId() + " отключен или не инициализирован.");
+                        }
+                        break;
+                    }
+                    /*if (client.getLastReportedStep() != client.getLastConfirmedStep()) {
+                        if (MessageManager.isLoggingEnabled()) {
+                            logger.info(ServerMainLoop.getStep() + ": Последний отчёт не был подтверждён. Новые отчёты не принимаются. Клиент lastReportedStep=" + client.getLastReportedStep() + " lastConfirmedStep=" + client.getLastConfirmedStep());
+                        }
+                        break;
+                    }*/
+                    
                     JsonArray units = messageFields.get(2).getAsJsonArray();
                     JsonArray actions = messageFields.get(3).getAsJsonArray();
                     JsonArray unit;
@@ -227,7 +243,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     LinkedList<Message> unitsList = new LinkedList<>();
                     LinkedList<Message> actionsList = new LinkedList<>();
                     UnitMessage unitMessage;
-                    MoveMessage moveMessage;
+                    MoveRequestMessage moveRequestMessage;
                     String subType;
                     
                     boolean res;
@@ -250,9 +266,9 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         action = elem.getAsJsonArray();
                         subType = gson.fromJson(action.get(0), String.class);
                         switch (subType) {
-                            case "MOVE":
-                                moveMessage = gson.fromJson(action.get(1), MoveMessage.class);
-                                actionsList.add(moveMessage);
+                            case "MOVEREQ":
+                                moveRequestMessage = gson.fromJson(action.get(1), MoveRequestMessage.class);
+                                actionsList.add(moveRequestMessage);
                                 break;
                             default:
                                 //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
@@ -271,8 +287,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
                     break;
                 case "PING":
-                    PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
-                    Client client;
+                    /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (ClientManager.isLoggingEnabled()) {
                             logger.info(ServerMainLoop.getStep() + ": Сообщение PING не может быть обработано. Клиент channel=" + ctx.getChannel() + " не найден.");
@@ -280,11 +295,14 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         break;  // Не обрабатываем дальше это сообщение.
                     }
                     if (client.getClientPingTime() != 0) {
-                        if (pm.getTime() - client.getClientPingTime() > 200) {
-                            //logger.log(Level.SEVERE, "Client {0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
+                        if (pm.getTime() - client.getClientPingTime() > 500 && ClientManager.isLoggingEnabled()) {
+                            logger.log(Level.INFO, "Client id={0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
                         }
                     }
-                    clientManager.setClientPingTime(client.getId(), pm.getTime());
+                    if (!clientManager.setClientPingTime(client.getId(), pm.getTime()) && ClientManager.isLoggingEnabled()) {
+                        logger.info(ServerMainLoop.getStep() + ": Не удалось установить время последнего пинга. Клиент id=" + client.getId() + " не найден.");
+                    }*/
+                    ctx.getChannel().write(frame);
                     break;
             }
         }
@@ -315,8 +333,15 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         String jsonMessage = new ConfirmMessage(step, messages).toJSON();
         if (channel.isWritable()) {
             channel.write(new TextWebSocketFrame(jsonMessage));
-        } else if (isLoggingEnabled()) {
-            logger.warning(step + ": Невозможно отправить подтверждение хода. Channel=" + channel + " is not writable.");
+        } else {
+            clientManager.addDisctonnectedClient(channel);
+            if (MessageManager.isLoggingEnabled()) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Невозможно отправить сообщение. Связь с клиентом потеряна. Клиент channel={1} будет помечен как отключенный.",
+                    new Object[] {ServerMainLoop.getStep(), channel}
+                );
+            }
         }
     }
 

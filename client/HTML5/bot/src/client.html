@@ -6,7 +6,6 @@
     <script type="text/javascript" src="js/constants.js"></script>
     <script type="text/javascript" src="js/resources.js"></script>
     <script type="text/javascript" src="js/routines.js"></script>
-    
     <script type="text/javascript" src="js/Camera.js"></script>
     <script type="text/javascript" src="js/Unit.js"></script>
     <script type="text/javascript" src="js/SpriteLoader.js"></script>
@@ -17,8 +16,11 @@
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
     <script type="text/javascript" src="js/Sprite.js"></script>
     <script type="text/javascript" src="js/SpriteMovement.js"></script>
-    <script type="text/javascript" src="js/SpriteMovementWayPoint.js"></script>
     <script type="text/javascript" src="js/ActionManager.js"></script>
+    <script type="text/javascript" src="js/Point.js"></script>
+    <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
+    <script type="text/javascript" src="js/PathCache.js"></script>
+    <script type="text/javascript" src="js/Follow.js"></script>
 </head>
 <body>
 
@@ -28,152 +30,184 @@
  * Служебные переменные. *
  *************************/
 
-// debug
-var DEBUG = true;
+/**
+ * Включение дебага протокола обмена данными с сервером.
+ */
+var DEBUG_PROTOCOL = false;
 
-var DEBUG_PROTOCOL = true;
+/**
+ * Включение дебага юнитов.
+ */
+var DEBUG_UNITS = false;
 
-var DEBUG_UNITS = true;
+/**
+ * Включение дебага движения.
+ */
+var DEBUG_MOVEMENTS = false;
 
-var DEBUG_MOVEMENTS = true;
+/**
+ * Включение дебага преследования.
+ */
+var DEBUG_FOLLOW = false;
 
-// Список юнитов, принадлежащих клиенту.
+/**
+ * Список юнитов, принадлежащих клиенту.
+ */
 var self_units_list = new Array();
 
-// Список юнитов.
+/**
+ * Список юнитов.
+ */
 var units_list = new Array();
 
-// Карта.
+/**
+ * Карта.
+ */
 var map;
 
-// Сервер.
+/**
+ * Сервер.
+ */
 var server;
 
-// Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+/**
+ * Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+ */
 var camera;
 
-// Камера свободна или привязана к своему игроку.
+/**
+ * Камера свободна или привязана к своему игроку.
+ */
 var is_camera_free = false;
 
-// Буфер действий.
-var actions = new Array();
-
-// Действия, которые должны быть выполнены после получения подтверждения.
-var stored_actions;
-
-// Номер текущего хода.
+/**
+ * Номер текущего хода.
+ */
 var step;
 
-// Id этого клиента.
+/**
+ * Id этого клиента.
+ */
 var clientId;
 
-// Выделенные юниты.
+/**
+ * Выделенные юниты.
+ */
 var selected_units = new Array();
 
-// Клетка начала выделения.
+/**
+ * Клетка начала выделения.
+ */
 var selections_beg;
 
-// Прямоугольник выделения.
+/**
+ * Прямоугольник выделения.
+ */
 var selection_rect = null;
 
-// Менеджер движения.
+/**
+ * Менеджер движения.
+ */
 var movementManager = new MovementManager();
 
-// Менеджер действий.
+/**
+ * Менеджер действий.
+ */
 var actionManager = new ActionManager();
 
-// Получено ли начальное состояние.
-var is_initial_state_received = false;
-
-var frames = 0;
-var steps = 0;
-var framesPerStep = 3.9;
-
+/**
+ * Включает плавное движение юнитов.
+ */
 var smoothMovementEnabled = true;
 
-var prevDrawTime = null;
+/**
+ * Таймер цикла пинга сервера.
+ */
+var pingTimer = null;
 
-/************
- * Функции. *
- ************/
+/**
+ * Таймер цикла с AI бота.
+ */
+var aiTimer = null;
 
-function connect() {
-    server = new ServerInteraction();
-    server.connect("ws://localhost:8015/");
-}
+/**
+ * Таймер переподключения.
+ */
+var reconnectTimer = null;
 
-function disconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    } else {
-        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
-    }
-}
+/**
+ * Таймер подключения.
+ */
+var connectTimer = null;
 
-function reconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    } else {
-        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
-    }
-    setTimeout("connect();", 2000);
-}
+/**
+ * Включает переподключение при разрыве связи с сервером.
+ */
+var autoReconnect = true;
 
-function aiLoop() {
-    actionManager.createRandomMovementRequests();
-    if (Math.floor(Math.random() * 10) == 0) {
-        setTimeout("reconnect();", 2000);
-    } else {
-        setTimeout("aiLoop();", 2000);
-    }
-}
+/*
+ * Вероятность того, что бот проигнорирует сообщение CONFIRM от сервера. Это
+ * нужно для эмуляции лагов клиента. null означает, что игнорирование выключено.
+ */
+var ignoreConfirmProbability = 300;
 
-function syncLoop() {
-    var i, unit, actions;
+/*
+ * Вероятность того, что бот переподключится к серверу. null означает, что
+ * переподключение выключено.
+ */
+var reconnectProbability = 300;
+
+var followProbability = 20;
+
+/**
+ * Время начала текущего хода.
+ */
+var stepBegTime = null;
+
+/**
+ * Длительность предыдущего хода в миллисекундах.
+ */
+var prevStepTime = null;
+
+/**
+ * Пинг до сервера.
+ */
+var ping = null;
+
+/**
+ * Время начала первой итерации цикла рисования.
+ */
+var drawBegTime = null;
+
+/**
+ * Текущее количество итераций цикла рисования.
+ */
+var redraws = 0;
     
-    steps++;
-    
-    for (i in stored_actions) {
-        switch (stored_actions[i].type) {
-            case "MOVE":
-                unit = getUnitById(stored_actions[i].unitId);
-                if (movementManager.isUnitMove(unit)) {
-                    movementManager.updateMovement(
-                        step,
-                        unit,
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                } else {
-                    movementManager.startNewMovement(
-                        step,
-                        unit,
-                        unit.getJ(),
-                        unit.getI(),
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                    //console.log("Movement created on step ", step);
-                }
-                break;
-        }
-    }
-    
-    step++;
-    
-    movementManager.updatePositions(step);
+/**
+ * Кеш путей.
+ */
+var pathCache = new PathCache();
 
-    var unitMessages = new Array();
-    for (i in self_units_list) {
-        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
-    }
-    for (i in units_list) {
-        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
-    }
-    actions = actionManager.takeMovementRequests();
-    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
-    stored_actions = actions;
+/**
+ * Использовать кеш путей.
+ */
+var usePathCache = true;
+
+var scrollBarsHovered = {
+    left: false,
+    top: false,
+    right: false,
+    bottom: false
 }
+
+var camFollowEnabled = false;
+
+var followings = [];
+
+var followingsTimer = null;
+
+var followingEnabled = false;
 
 </script>
 

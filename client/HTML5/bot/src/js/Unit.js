@@ -28,7 +28,9 @@ function Unit(ownerId, id, j, i, color) {
             setPixel(this.unitMarkBackground, l, k, color.r, color.g, color.b, 128);
         }
     }
-
+    
+    this.history = new Array();
+    
     this.getOwnerId = function() {
         return this.ownerId;
     }
@@ -46,18 +48,49 @@ function Unit(ownerId, id, j, i, color) {
         var drawCoordinates;
         if (smoothMovementEnabled) {
             sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+            if (sprite == null) {
+                console.log("Спрайт " + this.spritePos.spriteName + " не найден.");
+                return;
+            }
+            drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
+        } else {
+            sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
+            drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
+        }
+        context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
+        if (DEBUG_UNITS) {
+            context.fillText(this.ownerId, drawCoordinates.x, drawCoordinates.y);
+        }
+        if (this.selected) {
+            sprite = this.sloader.getSpriteByName("peasant_selection");
+            context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
+        }
+        return;
+    }
+    this.drawColor = function(context, camera) {
+        var sprite;
+        var drawCoordinates;
+        if (smoothMovementEnabled) {
+            sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+            if (sprite == null) {
+                return;
+            }
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
             drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
         }
         context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
-        context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
-        if (this.selected) {
-            sprite = this.sloader.getSpriteByName("peasant_selection");
-            context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
-        }
         return;
+    }
+
+    this.toString = function() {
+        return "ownerId=" + this.ownerId + ",id=" + this.id + ",j=" + this.j + ",i=" + this.i;
+    }
+
+    this.isInSprite = function(mapX, mapY) {
+        var sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+        return mapX >= this.spritePos.x && mapX < this.spritePos.x + sprite.w && mapY >= this.spritePos.y && mapY < this.spritePos.y + sprite.h;
     }
 
     return this;

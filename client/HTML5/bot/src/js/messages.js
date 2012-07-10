@@ -64,7 +64,7 @@ function LogoutMessage() {
 /**
  * Требование хода.
  */
-function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
+function MoveRequestMessage(unitId, j, i) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -74,12 +74,7 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     /**
      * Тип сообщения.
      */
-    this.type = "MOVE";
-
-    /**
-     * Номер шага начала движения (игнорируется сервером).
-     */
-    this.begStep = begStep;
+    this.type = "MOVEREQ";
 
     /**
      * Идентификатор движущегося юнита.
@@ -87,30 +82,20 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     this.unitId = unitId;
 
     /**
-     * j-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begJ = begJ;
-
-    /**
-     * i-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begI = begI;
-
-    /**
      * j-индекс клетки назначения.
      */
-    this.endJ = endJ;
+    this.j = j;
 
     /**
      * i-индекс клетки назначения.
      */
-    this.endI = endI;
+    this.i = i;
 
     /**
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {unitId: this.unitId, begJ: this.begJ, begI: this.begI, endJ: this.endJ, endI: this.endI});
+        return new Array(this.type, {unitId: this.unitId, j: this.j, i: this.i});
     }
 
     return this;
@@ -261,61 +246,87 @@ function PingMessage(time) {
  * Обработчики сообщений.
  */
 var MESSAGE_HANDLERS = {
-    "ERROR": function (msg) {
-        // ["ERROR", "Some text"]
-        
-        alert(msg[1]);
+    "ERROR": function (message) {
+        // Format:
+        // ["ERROR", "error text"]
+
+        clearTimeouts();
         disconnect();
+        alert(message[1]);
+    },
+    "SYNCERROR": function (message) {
+        // ["SYNCERROR", {"unitId":123}]
+
+        var syncerrorMessage = message[1];
+        var unit = getUnitById(syncerrorMessage.unitId);
+
+        if (unit == null) {
+            console.log("Юнит id=" + syncerrorMessage.unitId + " не найден.");
+        }
+
+        autoReconnect = false;
+        clearTimeouts()
+        disconnect();
+        alert("Ошибка синхронизации. Юнит id=" + syncerrorMessage.unitId);
     },
     "WELCOME": function (msg) {
         // Format:
         // ["WELCOME",clientId,step,[units],[actions]]
-        
+
         var i;
-        
+
         clientId = msg[1];
-        step  = msg[2];
-        camera = new Camera();
+        document.title = "MINIMMORTS HTML5 bot " + clientId;
+        step = msg[2];
+        camera = new Camera(null);
         map = new Map(100, 100);
-        
+
         self_units_list = new Array();
         if (DEBUG_UNITS) {
             console.log("Все свои юниты удалены.");
         }
-        
+
         units_list = new Array();
         if (DEBUG_UNITS) {
             console.log("Все чужие юниты удалены.");
         }
-        
-        actions = new Array();
-        stored_actions = new Array();
+
         selected_units = new Array();
         movementManager = new MovementManager();
-        
+        actionManager = new ActionManager();
+
         /*
          * Создание юнитов.
          */
         for (i in msg[3]) {
             MESSAGE_HANDLERS[msg[3][i][0]](msg[3][i]);
         }
-        
+
         /*
          * Выполнение действий.
          */
         for (i in msg[4]) {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
-        
-        setTimeout("aiLoop();", 2000);
+
+        clearTimeouts();
+        aiTimer = setTimeout(aiLoop, 2000);
         syncLoop();
+        followingsTimer = setTimeout(followLoop, 500);
     },
     "CONFIRM": function (msg) {
+        if (ignoreConfirmProbability != null && getRandomInt(ignoreConfirmProbability) == 0) {
+            if (DEBUG_PROTOCOL) {
+                console.log("Эмуляция лагов. Сообщение CONFIRM будет проигнорировано.")
+            }
+            return;
+        }
+
         if (step == msg[1]) {
             for (var i in msg[2]) {
                 MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);
             }
-            
+
             syncLoop();
         } else {
             console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
@@ -330,7 +341,7 @@ var MESSAGE_HANDLERS = {
 
         if (clientId == unit.ownerId) {
             cur_units_list = self_units_list;
-            
+
             /*
              * Камера будет смотреть на последнего добавленного юнита игрока.
              */
@@ -355,45 +366,39 @@ var MESSAGE_HANDLERS = {
         }
     },
     "MOVE": function (message) {
-        // Example: ["MOVE",{"begStep":237,"unitId":5,"begJ":0,"begI":1,"endJ":13,"endI":10}]
+        // Example:
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
-        
+
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть создано.");
+            console.log("Движение не может быть создано. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
         movementManager.startNewMovement(
             moveMessage.begStep,
             unit,
-            moveMessage.begJ,
-            moveMessage.begI,
-            moveMessage.endJ,
-            moveMessage.endI
+            moveMessage.waypoints
         );
     },
     "MOVEUPDATE": function (message) {
-        // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
+        // Example: 
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
         
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть обновлено.");
+            console.log("Движение не может быть обновлено. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
-        if (moveMessage.begStep == step) {
-            movementManager.updateMovement(
-                moveMessage.begStep,
-                unit,
-                moveMessage.endJ,
-                moveMessage.endI
-            );
-        } else {
-            console.log("Получен запрос изменения не за текущий шаг! Текущий шаг " + step + " шаг изменения пути " + moveMessage.begStep + " Запрос проигнорирован.");
-        }
+        movementManager.updateMovement(
+            unit,
+            moveMessage.waypoints
+        );
+    },
+    "PING": function(message) {
+        ping = (new Date()).getTime() - message[0][1].time;
     }
 }

@@ -10,5 +10,8 @@
         <user>root</user>
         <password></password>
     </database>
+    <game>
+        <steptime>100</steptime>
+    </game>
 </config>
 

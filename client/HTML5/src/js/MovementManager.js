@@ -20,9 +20,12 @@ function MovementManager() {
      */
     this.spriteMovements = new Array();
 
+    /**
+     * Проверяет, движется ли юнит.
+     */
     this.isUnitMove = function(unit) {
-        for (var i in this.movements) {
-            if (this.movements[i].getUnit() == unit) {
+        for (var i = 0; i < this.movements.length; i++) {
+            if (this.movements[i].getUnit() == unit && !this.movements[i].isFinished()) {
                 return true;
             }
         }
@@ -30,143 +33,132 @@ function MovementManager() {
         return false;
     }
 
-    this.startNewMovement = function(step, unit, begJ, begI, endJ, endI) {
-        var path = getPath(new Cell(begI, begJ, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == false) {
-            console.log("Путь [" + begJ + ", " + begI + "]->[" + endJ + ", " + endI + "] не может быть построен. Новое движение не может быть создано.");
-            return;
+    /**
+     * 
+     */
+    this.getMovementDest = function(unit) {
+        if (this.isUnitMove(unit)) {
+            for (var i = 0; i < this.movements.length; i++) {
+                if (this.movements[i].getUnit() == unit) {
+                    var wp = this.movements[i].getWaypoints();
+                    return wp[wp.length - 1];
+                }
+            }
         }
-        var movement = new Movement(unit, begJ, begI, endJ, endI, DEFAULT_SPEED, path, step);
 
-        this.movements.push(movement);
-        this.spriteMovements.push(
-            new SpriteMovement(
-                unit,
-                path,
-                movement.getPosition(step)
-            )
-        );
+        return null;
     }
 
-    this.updateMovement = function(step, unit, endJ, endI) {
-        var existedMovement = null;
-        var existedSpriteMovement = null;
-        var nextPoint;
-        var updatedMovement;
-        var updatedSpriteMovement;
-        var path;
+    /**
+     * Создаёт новое движение.
+     */
+    this.startNewMovement = function(begStep, unit, waypoints) {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Создаётся новое движение юнита " + unit + " по точкам " + waypointsToString(waypoints));
+        }
 
-        for (var i in this.movements) {
+        var path = generatePath(map, waypoints, unit);
+        if (path == null) {
+            console.log(step + ": Путь движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " не найден.");
+            return;
+        }
+
+        var movement = new Movement(unit, DEFAULT_SPEED, begStep, waypoints, path);
+        this.movements.push(movement);
+
+        this.spriteMovements.push(new SpriteMovement(unit, movement));
+    }
+
+    /**
+     * Обновляет существующее движение.
+     */
+    this.updateMovement = function(unit, waypoints) {
+        var existedMovement = null;
+        for (var i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit() == unit) {
                 existedMovement = this.movements[i];
                 break;
             }
         }
         if (existedMovement == null) {
-            console.log("Movement not found.");
+            console.log(step + ": Движение юнита " + unit + " по точкам " + waypointsToString(waypoints) + ", которое следует обновить, не найдено.");
             return;
         }
-        for (var j in this.spriteMovements) {
-            if (this.spriteMovements[j].getUnit() == unit) {
-                existedSpriteMovement = this.spriteMovements[j];
-                break;
-            }
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Обновляется движение юнита " + unit + " по точкам " + waypointsToString(waypoints));
         }
-        if (existedSpriteMovement == null) {
-            console.log("Sprite movement not found. It's ok.");
-        }
-        if ( (nextPoint = existedMovement.getNextPathPoint(unit.getJ(), unit.getI())) == null) {
-            console.log("Next path point not found.");
-            return;
-        }
-        //console.log("Next point is", nextPoint);
-        path = getPath(new Cell(nextPoint.i, nextPoint.j, 0, 0, null), new Cell(endI, endJ, 0, 0, null));
-        if (path == false) {
-            console.log("Путь [" + nextPoint.j + ", " + nextPoint.i + "]->[" + endJ + ", " + endI + "] не может быть построен. Движение не может быть обновлено.");
-            return;
-        }
-        updatedMovement = new Movement(
-            existedMovement.getUnit(),
-            nextPoint.j,
-            nextPoint.i,
-            endJ,
-            endI,
-            DEFAULT_SPEED,
-            path,
-            step
-        );
-        if (updatedMovement == null) {
-            console.log("Cant create movement!");
-            return;
-        }
-        updatedSpriteMovement = new SpriteMovement(
-            existedSpriteMovement == null ? existedMovement.getUnit() : existedSpriteMovement.getUnit(),
-            path,
-            updatedMovement.getPosition(step)
-        );
-        if (updatedSpriteMovement == null) {
-            console.log("Cant create sprite movement!");
+        
+        var path = generatePath(map, waypoints, existedMovement.getUnit());
+        if (path == null) {
+            console.log(step + ": Путь движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " не найден.");
             return;
         }
 
-        this.movements.splice(i, 1);
-        this.movements.push(updatedMovement);
-        if (existedSpriteMovement != null) {
-            this.spriteMovements.splice(j, 1);
-        }
-        this.spriteMovements.push(updatedSpriteMovement);
+        existedMovement.setWaypoints(waypoints);
+        existedMovement.setPath(path);
     }
 
+    /**
+     * Обновляет позиции юнитов.
+     */
     this.updatePositions = function(step) {
-        var movementsInProgress = new Array();
-        var spriteMovementsInProgress = new Array();
-        var i, j;
-
-        for (i in this.movements) {
-            if (!this.movements[i].isStopped()) {
-                movementsInProgress.push(this.movements[i]);
-            } else {
-                //console.log("Movement of unit", this.movements[i].getUnit().getId(), "removed on step", step);
+        this.removeFinishedMovements(); // TODO В том чтобы удалять движения именно тут есть глубинный смысл, надо от него избавится.
+        for (var i = 0; i < this.movements.length; i++) {
+            if (!(this.movements[i] instanceof Movement)) {
+                throw new Error("Движение не является объектом типа Movement: " + this.movements[i]);
             }
-        }
-        this.movements = movementsInProgress;
-        
-        // TODO Движение спрайта каким-то образом может развершится позже движения самого юнита. Видимо не правильно вычисляется время движения.
-        for (j in this.spriteMovements) {
-            if (!(this.spriteMovements[j] instanceof SpriteMovement)) {
-                if (DEBUG_MOVEMENTS) {
-                    console.log(step + ": " + this.spriteMovements[j] + " не является движением спрайта юнита и будет проигнорировано.");
-                }
-                continue;
-            }
-            if (!this.spriteMovements[j].finished) {
-                spriteMovementsInProgress.push(this.spriteMovements[j]);
-                continue;
-            } else if (DEBUG_MOVEMENTS) {
-                console.log(step + ": Движение спрайта юнита id=" + this.spriteMovements[j].getUnit().getId() + " удалено.");
-            }
-        }
-        this.spriteMovements = spriteMovementsInProgress;
-
-        for (i in this.movements) {
             this.movements[i].updatePosition(step);
         }
     }
 
+    /**
+     * Обновляет позиции спрайтов юнитов.
+     */
     this.updateSpritePositions = function() {
-        for (var i in this.spriteMovements) {
+        for (var i = 0; i < this.spriteMovements.length; i++) {
             if (!(this.spriteMovements[i] instanceof SpriteMovement)) {
-                console.log(this.spriteMovements[i], "is not sprite movement. Ignore.");
-                continue;
+                throw new Error("Движение спрайта не является объектом типа SpriteMovement: " + this.spriteMovements[i]);
             }
             this.spriteMovements[i].updatePosition();
         }
     }
 
+    /**
+     * Удаляет завершенные движения.
+     */
+    this.removeFinishedMovements = function() {
+        var movementsInProgress = new Array();
+        for (var i = 0; i < this.movements.length; i++) {
+            if (!(this.movements[i] instanceof Movement)) {
+                throw new Error("Движение не является объектом типа Movement.");
+            }
+            if (!this.movements[i].isFinished()) {
+                movementsInProgress.push(this.movements[i]);
+            }
+        }
+        this.movements = movementsInProgress;
+    }
+
+    /**
+     * Удаляет завершенные движения спрайтов.
+     */
+    this.removeFinishedSpriteMovements = function() {
+        var spriteMovementsInProgress = new Array();
+        for (var i = 0; i < this.spriteMovements.length; i++) {
+            if (!(this.spriteMovements[i] instanceof SpriteMovement)) {
+                throw new Error("Движение спрайта не является объектом типа SpriteMovement.");
+            }
+            if (!this.spriteMovements[i].isFinished()) {
+                spriteMovementsInProgress.push(this.spriteMovements[i]);
+            }
+        }
+        this.spriteMovements = spriteMovementsInProgress;
+    }
+
     this.delMovementByUnitId = function(id) {
         var i;
 
-        for (i in this.movements) {
+        for (i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit().getId() == id) {
                 this.movements.splice(i, 1);
                 if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
@@ -175,7 +167,7 @@ function MovementManager() {
                 break;
             }
         }
-        for (i in this.spriteMovements) {
+        for (i = 0; i < this.spriteMovements.length; i++) {
             if (this.spriteMovements[i].getUnit().getId() == id) {
                 this.spriteMovements.splice(i, 1);
                 if (DEBUG_MOVEMENTS || DEBUG_UNITS) {
@@ -186,30 +178,34 @@ function MovementManager() {
         }
     }
 
-    this.getMovementOrientation = function(begJ, begI, endJ, endI) {
-        var jDiff = endJ - begJ;
-        var iDiff = endI - begI;
-
-        if (jDiff == 0 && iDiff == -1) {
-            return "N";
-        } else if (jDiff == 1 && iDiff == -1) {
-            return "NE";
-        } else if (jDiff == 1 && iDiff == 0) {
-            return "E";
-        } else if (jDiff == 1 && iDiff == 1) {
-            return "SE";
-        } else if (jDiff == 0 && iDiff == 1) {
-            return "S";
-        } else if (jDiff == -1 && iDiff == 1) {
-            return "SW";
-        } else if (jDiff == -1 && iDiff == 0) {
-            return "W";
-        } else if (jDiff == -1 && iDiff == -1) {
-            return "NW";
-        } else {
-            return null;
-        }
-    }
-
     return this;
+}
+
+/**
+ * Возвращает ориентацию движения между двумя точками или null, если
+ * ориентацию не удалось вычислить.
+ */
+MovementManager.getMovementOrientation = function(begJ, begI, endJ, endI) {
+    var jDiff = endJ - begJ;
+    var iDiff = endI - begI;
+
+    if (jDiff == 0 && iDiff == -1) {
+        return "N";
+    } else if (jDiff == 1 && iDiff == -1) {
+        return "NE";
+    } else if (jDiff == 1 && iDiff == 0) {
+        return "E";
+    } else if (jDiff == 1 && iDiff == 1) {
+        return "SE";
+    } else if (jDiff == 0 && iDiff == 1) {
+        return "S";
+    } else if (jDiff == -1 && iDiff == 1) {
+        return "SW";
+    } else if (jDiff == -1 && iDiff == 0) {
+        return "W";
+    } else if (jDiff == -1 && iDiff == -1) {
+        return "NW";
+    } else {
+        return null;
+    }
 }

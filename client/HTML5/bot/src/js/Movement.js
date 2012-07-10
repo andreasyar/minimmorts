@@ -1,127 +1,115 @@
-
-// Движение.
-
-function Movement (unit, begJ, begI, endJ, endI, speed, path, beg_step) {
+/**
+ * Движение юнита.
+ */
+function Movement (unit, speed, beg_step, waypoints, path) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-    
-    this.unit = unit;
-    this.begJ = begJ;
-    this.begI = begI;
-    this.endJ = endJ;
-    this.endI = endI;
-    this.speed = speed;
-    this.stopped = false;
-    
-    var path_array = new Array();
-    var cur_path_point = path;
-    do {
-        path_array.push(new Point(cur_path_point.j, cur_path_point.i));
-        cur_path_point = cur_path_point.parent;
-    } while (cur_path_point != null)
-    path_array.reverse();
-    //console.log(this.unit.getId(), step, path_array);
 
-    this.path = path_array;    
+    /**
+     * Юнит.
+     */
+    this.unit = unit;
+
+    /**
+     * Скорость движения в клетках в шаг.
+     */
+    this.speed = speed;
+
+    /**
+     * Путь движения.
+     */
+    this.path = path;
+
+    /**
+     * Номер хода, когда движение началось.
+     */
     this.beg_step = beg_step;
-    
+
+    /**
+     * Точки, по которым строится путь движения.
+     */
+    this.waypoints = waypoints;
+
+    /**
+     * Флаг окончания движения.
+     */
+    this.finished = false;
+
+    this.getBegJ = function() {
+        return this.waypoints[0].j;
+    }
+
+    this.getBegI = function() {
+        return this.waypoints[0].i;
+    }
+
+    this.getEndJ = function() {
+        return this.waypoints[this.waypoints.length - 1].j;
+    }
+
+    this.getEndI = function() {
+        return this.waypoints[this.waypoints.length - 1].i;
+    }
+
+    this.setPath = function(path) {
+        this.path = path;
+    }
+
+    this.setWaypoints = function(waypoints) {
+        this.waypoints = waypoints;
+    }
+
+    this.getWaypoints = function() {
+        return this.waypoints;
+    }
+
     this.updatePosition = function(step) {
         var n = Math.floor((step - this.beg_step) * this.speed);
+        if (this.path == null) {
+            console.log("Положение юнита id=" + this.unit.getId() + " не может быть обновлено. Путь - null");
+            return;
+        }
         if (n >= this.path.length - 1) {
-            //console.log("Unit id=", unit.getId(), "[", this.unit.j, ",", this.unit.i, "]->[", this.path[this.path.length - 1].j, ",", this.path[this.path.length - 1].i, "] on step", step, "Movement complete.");
+            if (DEBUG_MOVEMENTS) {
+                console.log(step + ": Юнит " + this.unit + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[this.path.length - 1].j + "," + this.path[this.path.length - 1].i + "] и движение звершилось.");
+            }
             this.unit.j = this.path[this.path.length - 1].j;
             this.unit.i = this.path[this.path.length - 1].i;
-            this.stopped = true;
+            this.finished = true;
+            //movementManager.removeFinishedMovements();
         } else {
-            //console.log("Unit id=", unit.getId(), "[", this.unit.j, ",", this.unit.i, "]->[", this.path[n].j, ",", this.path[n].i, "] on step", step);
+            if (DEBUG_MOVEMENTS) {
+                console.log(step + ": Юнит id=" + unit.getId() + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[n].j + "," + this.path[n].i + "]");
+            }
             this.unit.j = this.path[n].j;
             this.unit.i = this.path[n].i;
         }
     }
-    
-    this.getPosition = function(step) {
-        var n = Math.floor((step - this.beg_step) * this.speed);
-        if (n >= this.path.length - 1) {
-            return this.path[this.path.length - 1];
-        } else {
-            return this.path[n];
-        }
-    }
-    
+
     this.getUnit = function() {
         return this.unit;
     }
-    
+
     this.getBegStep = function() {
         return this.beg_step;
     }
-    
-    this.getNextPathPoint = function(j, i) {
-        for (var k = 0; k < this.path.length; k++) {
-            if (this.path[k].j == j && this.path[k].i == i) {
-                if (this.path[k + 1] != undefined) {
-                    return this.path[k + 1];
-                } else {
-                    return this.path[k];
-                }
-            }
-        }
-        
-        return null;
-    }
-    
-    this.isStopped = function() {
-        return this.stopped;
-    }
-    
-    this.getNextPathPointOrientation = function(j, i) {
-        var nextPathPoint = null;
-        
-        for (var k = 0; k < this.path.length; k++) {
-            if (this.path[k].j == j && this.path[k].i == i) {
-                if (this.path[k + 1] != undefined) {
-                    nextPathPoint = this.path[k + 1];
-                }
-            }
-        }
-        
-        if (nextPathPoint == null) {
-            return null;
-        }
-        
-        var jDiff = nextPathPoint.j - j;
-        var iDiff = nextPathPoint.i - i;
-        
-        if (jDiff == 0 && iDiff == -1) {
-            return "N";
-        } else if (jDiff == 1 && iDiff == -1) {
-            return "NE";
-        } else if (jDiff == 1 && iDiff == 0) {
-            return "E";
-        } else if (jDiff == 1 && iDiff == 1) {
-            return "SE";
-        } else if (jDiff == 0 && iDiff == 1) {
-            return "S";
-        } else if (jDiff == -1 && iDiff == 1) {
-            return "SW";
-        } else if (jDiff == -1 && iDiff == 0) {
-            return "W";
-        } else {
-            return "NW";
-        }
-    }
-    
-    return this;
-}
 
-function Point(j, i) {
-    this.j = j;
-    this.i = i;
-    /*this.toString = function () {
-        return "[" + this.j + "," + this.i + "]";
-    }*/
+    this.isFinished = function() {
+        return this.finished;
+    }
+
+    this.toString = function() {
+        return "{begJ=" + this.getBegJ() +
+               ",begI=" +this.getBegI() +
+               ",endJ=" +this.getEndJ() +
+               ",endI=" +this.getEndI() +
+               ",finished=" +this.isFinished() +
+               ",beg_step=" +this.getBegStep() +
+               "}";
+    }
+
     return this;
 }

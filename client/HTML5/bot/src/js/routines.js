@@ -517,19 +517,19 @@ function getNeighboursCells(cells) {
             if (neighbours[_i] == undefined) {
                 neighbours[_i] = {};
             }
-            neighbours[_i][_j] = {j: _j, i: _i};
+            neighbours[_i][_j] = new Point(_j, _i);
         }
     }
-    var i, j, result = new Array();
+    var i, j, result = cells;
     for (i in cells) {
-        checkCell(neighbours, cells[i].j - 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i - 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i + 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i + 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i + 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() + 1);
     }
     for (i in neighbours) {
         for (j in neighbours[i]) {
@@ -551,7 +551,6 @@ function getUnitById(id) {
         }
     }
     
-    console.log("Unit", id, "not found.")
     return null;
 }
 
@@ -560,6 +559,7 @@ function delUnitById(id) {
         if (self_units_list[i].getId() == id) {
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(self_units_list[i]);
             return true;
         }
     }
@@ -567,6 +567,7 @@ function delUnitById(id) {
         if (units_list[i].getId() == id) {
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(units_list[i]);
             return true;
         }
     }
@@ -574,27 +575,25 @@ function delUnitById(id) {
     return false;
 }
 
-function getFramesPerStep() {
-    if (steps >= 10) {
-        framesPerStep = frames / steps;
-        frames = 0;
-        steps = 0;
-    }
-    return framesPerStep;
-}
-
-function getPxIncrement(speed) {
-    var pixPerStep = CELL_W * speed;
-    //var framesPerStep = frames / steps;//Math.floor(frames / step);
-    //console.log(pixPerStep, frames, steps, framesPerStep, framesPerStep / pixPerStep);
-    return pixPerStep / framesPerStep;
-}
-
 function toggleSmoothMovement() {
     smoothMovementEnabled = smoothMovementEnabled ? false : true;
     document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
 }
 
+function toggleCamFollow() {
+    camFollowEnabled = camFollowEnabled ? false : true;
+    document.getElementById('toggleCamFollow').checked = camFollowEnabled;
+            
+    if (camFollowEnabled && selected_units.length > 0 && camera != undefined && !camera.isFollow()) {
+        camera.follow(selected_units[0]);
+    } else if (camera != undefined && camera.isFollow()) {
+        camera.unfollow();
+    }
+}
+
+/**
+ * Возвращает случайное число в диапазоне [0, n]
+ */
 function getRandomInt(n) {
     return Math.floor(Math.random() * (n + 1));
 }
@@ -605,4 +604,328 @@ function setPixel(imageData, x, y, r, g, b, a) {
     imageData.data[index+1] = g;
     imageData.data[index+2] = b;
     imageData.data[index+3] = a;
+}
+
+function clearTimeouts() {
+    clearTimeout(aiTimer);
+    clearTimeout(reconnectTimer);
+    clearTimeout(connectTimer);
+    clearTimeout(followingsTimer);
+}
+
+/**
+ * Преобразовывает путь-список, возвращаемый функцией getPath(), в путь массив
+ * точек. Требует для работы класс Point и Cell.
+ */
+function convertLinkedPathToArray(path) {
+    if (!(path instanceof Cell)) {
+        throw new Error("Путь не является объектом типа Cell.");
+    }
+    
+    var arrayPath = new Array();
+    var curCell = path;
+
+    do {
+        arrayPath.push(new Point(curCell.j, curCell.i));
+        curCell = curCell.parent;
+    } while (curCell != null);
+
+    return arrayPath.reverse();
+}
+
+/**
+ * Проверяет, является ли объект массивом.
+ */
+function isArray(obj) {
+    return obj.constructor == Array;
+}
+
+/**
+ * Преобразует путь массив точек в строку. Требует для работы класс Point.
+ */
+function pathToString(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var out = "";
+
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+        out += path[i];
+    }
+
+    return out;
+}
+
+/**
+ * Создаёт путь на карте по вейпоинтам.
+ */
+function generatePath(map, waypoints, unit) {
+    if (!(map instanceof Map)) {
+        throw new Error("Карта не является объектом типа Map.");
+    }
+    if (!(waypoints instanceof Array)) {
+        throw new Error("Вейпоинты не является массивом.");
+    }
+    
+    var generatedPath = new Array();
+    var path;
+    var cachedPathUsed = false;
+
+    for (var i = 1; i < waypoints.length; i++) {
+        if (usePathCache) {
+            if ( (path = pathCache.getCachedPath(waypoints[i - 1].j, waypoints[i - 1].i, waypoints[i].j, waypoints[i].i, unit)) == null) {
+        path = getPath(
+            new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+            new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+        );
+        if (path == false) {
+                    console.log(step + ": Путь через точки " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " не может быть построен.");
+            return null;
+        }
+        path = convertLinkedPathToArray(path);
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": Для движения юнита " + unit + " по участку пути " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " был создан путь " + pathToString(path));
+                }
+                
+                pathCache.cachePath(path);
+            } else {
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": Для движения юнита " + unit + " по участку пути " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " был взят из кеша путь " + pathToString(path));
+                }
+                if (path.length < 2) {
+                    console.log(pathCache.toString());
+                }
+                
+                cachedPathUsed = true;
+            }
+        } else {
+            path = getPath(
+                new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+            );
+            if (path == false) {
+                console.log(step + ": Путь через точки" + waypointsToString([waypoints[i - 1], waypoints[i]]) + " не может быть построен.");
+                return null;
+            }
+            path = convertLinkedPathToArray(path);
+        }
+        if (generatedPath.length > 0) {
+            path.splice(0, 1);
+        }
+        generatedPath = generatedPath.concat(path);
+    }
+
+    if (cachedPathUsed) {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Для движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " был сформирован путь частично или полностью взятый из кеша " + pathToString(generatedPath));
+        }
+    } else {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Для движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " был создан путь " + pathToString(generatedPath));
+        }
+    }
+
+    return generatedPath;
+}
+
+function connect() {
+    server = new ServerInteraction();
+    server.connect("ws://localhost:8015/");
+}
+
+function disconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close();
+    }
+}
+
+function syncLoop() {
+    var i, actions;
+    
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
+    
+    step++;
+    
+    movementManager.updatePositions(step);
+
+    var unitMessages = new Array();
+    for (i in self_units_list) {
+        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    }
+    for (i in units_list) {
+        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    }
+    actions = actionManager.takeMovementRequests();
+    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+}
+
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    pingTimer = setTimeout(pingLoop, 100);
+}
+
+function createId() {
+    return createId.id = createId.id == undefined ? 0 : createId.id + 1;
+}
+
+function clonePath(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var clone = new Array();
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+
+        clone.push(path[i]);
+    }
+    return clone;
+}
+
+function waypointsToString(waypoints) {
+    var out = "";
+
+    for (var i = 0; i < waypoints.length - 1; i++) {
+        out += "[" + waypoints[i].j + "," + waypoints[i].i + "]->";
+    }
+    if (waypoints.length > 0) {
+        out += "[" + waypoints[waypoints.length - 1].j + "," + waypoints[waypoints.length - 1].i + "]";
+    }
+
+    return out;
+}
+
+function cloneArray(array) {
+    var clone = [];
+    for (var i = 0; i < array.length; i++) {
+        clone.push(array[i]);
+    }
+    return clone;
+}
+
+function removeByValue(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            //var old = cloneArray(array);
+            array.splice(i, 1)
+            //var _new = cloneArray(array);
+            //console.log(old, value, i, _new)
+            //return _new;
+            return array;
+        }
+    }
+    
+    return array;
+}
+
+function indexOf(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
+function followLoop() {
+    var object;
+    var target;
+    var objectDest;
+    var targetPos;
+    
+    for (var i = 0; i < followings.length; i++) {
+        object = followings[i].getObject();
+        target = followings[i].getTarget();
+        if ( (objectDest = movementManager.getMovementDest(object)) == null) {
+            objectDest = new Point(object.getJ(), object.getI());
+        }
+        targetPos = new Point(target.getJ(), target.getI());
+        
+        if (!targetPos.equals(objectDest)) {
+            actionManager.moveUnit(object, targetPos);
+        }
+    }
+    
+    followingsTimer = setTimeout(followLoop, 500);
+}
+
+function removeFollowing(object) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            followings.splice(i, 1);
+            break;
+        }
+    }
+    followingEnabled = false;
+}
+
+function removeFollowingByTarget(target) {
+    var found = false;
+    do {
+        for (var i = 0; i < followings.length; i++) {
+            if (followings[i].getTarget() == target) {
+                followings.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        found = false;
+    } while (found);
+    followingEnabled = false;
+}
+
+function addFollowing(object, target) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            if (DEBUG_FOLLOW) {
+                console.log(step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
+            }
+            followings[i].setTarget(target);
+            return true;
+        }
+    }
+    
+    followings.push(new Follow(object, target));
+    if (DEBUG_FOLLOW) {
+        console.log(step + ": Юнит " + object + " начал преследовать цель " + target);
+    }
+    return true;
+}
+
+function reconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close()
+    } else {
+        console.log("Отключение от сервера не удалось: север не создан или сокет не инициализирован.")
+    }
+    
+    connectTimer = setTimeout(connect, 2000);
+}
+
+function aiLoop() {
+    if (followProbability != null && getRandomInt(followProbability) == 0 && units_list.length > 0) {
+        for (var i = 0; i < self_units_list.length; i++) {
+            addFollowing(self_units_list[i], units_list[getRandomInt(units_list.length - 1)]);
+        }
+        followingEnabled = true;
+    }
+    if (!followingEnabled) {
+        actionManager.createRandomMovementRequests();
+    }
+    if (reconnectProbability != null && getRandomInt(reconnectProbability) == 0) {
+        reconnectTimer = setTimeout(reconnect, 2000);
+        console.log("Переподключение.");
+    } else {
+        aiTimer = setTimeout(aiLoop, 2000);
+    }
 }

@@ -108,7 +108,7 @@ function throughCorner(cur, i, j) {
     if (cur.i - i == 0 || cur.j - j == 0) {
         return false
     }
-    
+
     return false
 
     //[c][ ]
@@ -157,7 +157,7 @@ function getPath(beg, end) {
         close: 0,
         corner: 0
     }
-    
+
     if (beg.j == end.j && beg.i == end.i) {
         console.log("Нет смысла строить путь, когда клетка отправления и клетка назначения равны.");
         return false;
@@ -321,7 +321,7 @@ function chatToggle(type) {
 // Отправляет сообщение на сервер.
 function chatSend() {
     var input = document.getElementById("chat_input")
-        
+
     if (input.value != "") {
         server.sendMessage(new NewchatMessage(input.value))
         setCaretToPos(input, input.value.length)
@@ -489,13 +489,13 @@ function createSelectionRect(x1, y1, x2, y2) {
         end: {x: Math.max(x1, x2), y: Math.max(y1, y2), j: null, i: null},
         draw: function(context, camera) {
             context.beginPath();
-            
+
             context.moveTo(this.beg.x, this.beg.y);
             context.lineTo(this.end.x, this.beg.y);
             context.lineTo(this.end.x, this.end.y);
             context.lineTo(this.beg.x, this.end.y);
             context.lineTo(this.beg.x, this.beg.y);
-            
+
             context.closePath();
             context.stroke();
         }
@@ -506,7 +506,7 @@ function createSelectionRect(x1, y1, x2, y2) {
     rect.beg.i = Map.getCellJOnMap(tAxis1.y);
     rect.end.j = Map.getCellJOnMap(tAxis2.x);
     rect.end.i = Map.getCellJOnMap(tAxis2.y);
-    
+
     return rect;
 }
 
@@ -517,19 +517,19 @@ function getNeighboursCells(cells) {
             if (neighbours[_i] == undefined) {
                 neighbours[_i] = {};
             }
-            neighbours[_i][_j] = {j: _j, i: _i};
+            neighbours[_i][_j] = new Point(_j, _i);
         }
     }
-    var i, j, result = new Array();
+    var i, j, result = cells;
     for (i in cells) {
-        checkCell(neighbours, cells[i].j - 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i - 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i - 1);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i);
-        checkCell(neighbours, cells[i].j - 1, cells[i].i + 1);
-        checkCell(neighbours, cells[i].j    , cells[i].i + 1);
-        checkCell(neighbours, cells[i].j + 1, cells[i].i + 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() - 1);
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI());
+        checkCell(neighbours, cells[i].getJ() - 1, cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ()    , cells[i].getI() + 1);
+        checkCell(neighbours, cells[i].getJ() + 1, cells[i].getI() + 1);
     }
     for (i in neighbours) {
         for (j in neighbours[i]) {
@@ -550,8 +550,7 @@ function getUnitById(id) {
             return units_list[i];
         }
     }
-    
-    console.log("Unit", id, "not found.")
+
     return null;
 }
 
@@ -560,6 +559,7 @@ function delUnitById(id) {
         if (self_units_list[i].getId() == id) {
             self_units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(self_units_list[i]);
             return true;
         }
     }
@@ -567,32 +567,35 @@ function delUnitById(id) {
         if (units_list[i].getId() == id) {
             units_list.splice(i, 1);
             movementManager.delMovementByUnitId(id);
+            removeFollowingByTarget(units_list[i]);
             return true;
         }
     }
-    
+
     return false;
-}
-
-function getFramesPerStep() {
-    if (steps >= 10) {
-        framesPerStep = frames / steps;
-        frames = 0;
-        steps = 0;
-    }
-    return framesPerStep;
-}
-
-function getPxIncrement(speed) {
-    var pixPerStep = CELL_W * speed;
-    //var framesPerStep = frames / steps;//Math.floor(frames / step);
-    //console.log(pixPerStep, frames, steps, framesPerStep, framesPerStep / pixPerStep);
-    return pixPerStep / framesPerStep;
 }
 
 function toggleSmoothMovement() {
     smoothMovementEnabled = smoothMovementEnabled ? false : true;
     document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
+}
+
+function toggleCamFollow() {
+    camFollowEnabled = camFollowEnabled ? false : true;
+    document.getElementById('toggleCamFollow').checked = camFollowEnabled;
+            
+    if (camFollowEnabled && selected_units.length > 0 && camera != undefined && !camera.isFollow()) {
+        camera.follow(selected_units[0]);
+    } else if (camera != undefined && camera.isFollow()) {
+        camera.unfollow();
+    }
+}
+
+/**
+ * Возвращает случайное число в диапазоне [0, n]
+ */
+function getRandomInt(n) {
+    return Math.floor(Math.random() * (n + 1));
 }
 
 function setPixel(imageData, x, y, r, g, b, a) {
@@ -601,4 +604,421 @@ function setPixel(imageData, x, y, r, g, b, a) {
     imageData.data[index+1] = g;
     imageData.data[index+2] = b;
     imageData.data[index+3] = a;
+}
+
+function clearTimeouts() {
+    clearTimeout(drawTimer);
+    clearTimeout(pingTimer);
+    clearTimeout(followingsTimer);
+}
+
+/**
+ * Преобразовывает путь-список, возвращаемый функцией getPath(), в путь массив
+ * точек. Требует для работы класс Point и Cell.
+ */
+function convertLinkedPathToArray(path) {
+    if (!(path instanceof Cell)) {
+        throw new Error("Путь не является объектом типа Cell.");
+    }
+
+    var arrayPath = new Array();
+    var curCell = path;
+
+    do {
+        arrayPath.push(new Point(curCell.j, curCell.i));
+        curCell = curCell.parent;
+    } while (curCell != null);
+
+    return arrayPath.reverse();
+}
+
+/**
+ * Проверяет, является ли объект массивом.
+ */
+function isArray(obj) {
+    return obj.constructor == Array;
+}
+
+/**
+ * Преобразует путь массив точек в строку. Требует для работы класс Point.
+ */
+function pathToString(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var out = "";
+
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+        out += path[i];
+    }
+
+    return out;
+}
+
+/**
+ * Создаёт путь на карте по вейпоинтам.
+ */
+function generatePath(map, waypoints, unit) {
+    if (!(map instanceof Map)) {
+        throw new Error("Карта не является объектом типа Map.");
+    }
+    if (!(waypoints instanceof Array)) {
+        throw new Error("Вейпоинты не является массивом.");
+    }
+
+    var generatedPath = new Array();
+    var path;
+    var cachedPathUsed = false;
+
+    for (var i = 1; i < waypoints.length; i++) {
+        if (usePathCache) {
+            if ( (path = pathCache.getCachedPath(waypoints[i - 1].j, waypoints[i - 1].i, waypoints[i].j, waypoints[i].i, unit)) == null) {
+                path = getPath(
+                    new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                    new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+                );
+                if (path == false) {
+                    console.log(step + ": Путь через точки " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " не может быть построен.");
+                    return null;
+                }
+                path = convertLinkedPathToArray(path);
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": Для движения юнита " + unit + " по участку пути " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " был создан путь " + pathToString(path));
+                }
+                
+                pathCache.cachePath(path);
+            } else {
+                if (DEBUG_MOVEMENTS) {
+                    console.log(step + ": Для движения юнита " + unit + " по участку пути " + waypointsToString([waypoints[i - 1], waypoints[i]]) + " был взят из кеша путь " + pathToString(path));
+                }
+                if (path.length < 2) {
+                    console.log(pathCache.toString());
+                }
+                
+                cachedPathUsed = true;
+            }
+        } else {
+            path = getPath(
+                new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+            );
+            if (path == false) {
+                console.log(step + ": Путь через точки" + waypointsToString([waypoints[i - 1], waypoints[i]]) + " не может быть построен.");
+                return null;
+            }
+            path = convertLinkedPathToArray(path);
+        }
+        if (generatedPath.length > 0) {
+            path.splice(0, 1);
+        }
+        generatedPath = generatedPath.concat(path);
+    }
+    
+    if (cachedPathUsed) {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Для движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " был сформирован путь частично или полностью взятый из кеша " + pathToString(generatedPath));
+        }
+    } else {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Для движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " был создан путь " + pathToString(generatedPath));
+        }
+    }
+
+    return generatedPath;
+}
+
+function connect() {
+    server = new ServerInteraction();
+    server.connect(document.getElementById('host').value);
+    return false;
+}
+
+function disconnect() {
+    if (server != undefined && server.socket != null) {
+        server.socket.close();
+    }
+}
+
+function syncLoop() {
+    var i, actions;
+
+    if (stepBegTime != null) {
+        prevStepTime = (new Date()).getTime() - stepBegTime;
+    }
+    stepBegTime = (new Date()).getTime();
+
+    step++;
+
+    movementManager.updatePositions(step);
+    map.updateMinimap();
+
+    var unitMessages = new Array();
+    for (i in self_units_list) {
+        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    }
+    for (i in units_list) {
+        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    }
+    actions = actionManager.takeMovementRequests();
+    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+}
+
+function pingLoop() {
+    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    pingTimer = setTimeout(pingLoop, 100);
+}
+
+function createId() {
+    return createId.id = createId.id == undefined ? 0 : createId.id + 1;
+}
+
+function clonePath(path) {
+    if (!(path instanceof Array)) {
+        throw new Error("Путь не является массивом.");
+    }
+
+    var clone = new Array();
+    for (var i = 0; i < path.length; i++) {
+        if (!(path[i] instanceof Point)) {
+            throw new Error("Точка пути не является объектом типа Point.");
+        }
+
+        clone.push(path[i]);
+    }
+    return clone;
+}
+
+function waypointsToString(waypoints) {
+    var out = "";
+
+    for (var i = 0; i < waypoints.length - 1; i++) {
+        out += "[" + waypoints[i].j + "," + waypoints[i].i + "]->";
+    }
+    if (waypoints.length > 0) {
+        out += "[" + waypoints[waypoints.length - 1].j + "," + waypoints[waypoints.length - 1].i + "]";
+    }
+
+    return out;
+}
+
+function cloneArray(array) {
+    var clone = [];
+    for (var i = 0; i < array.length; i++) {
+        clone.push(array[i]);
+    }
+    return clone;
+}
+
+function removeByValue(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            //var old = cloneArray(array);
+            array.splice(i, 1)
+            //var _new = cloneArray(array);
+            //console.log(old, value, i, _new)
+            //return _new;
+            return array;
+        }
+    }
+    
+    return array;
+}
+
+function indexOf(array, value) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i] == value) {
+            return i;
+        }
+    }
+    
+    return -1;
+}
+
+function drawLoop() {
+    if (drawBegTime == null) {
+        drawBegTime = (new Date()).getTime();
+    }
+    redraws++;
+
+    var scr_context = scr.getContext('2d');
+    var units_context = units_buffer.getContext('2d');
+    var map_context = map_buffer.getContext('2d');
+    var unitcolors_context = unitcolors_buffer.getContext('2d');
+    var i;
+
+    // Фон.
+    scr_context.fillStyle = "#FFFFEE";
+    scr_context.fillRect(0, 0, scr.width, scr.height);
+
+    // Пока что будем очищать весь холст целиком, а не только область, в которой было что-то нарисовано.
+    units_context.clearRect(0, 0, units_buffer.width, units_buffer.height);
+    unitcolors_context.clearRect(0, 0, unitcolors_buffer.width, unitcolors_buffer.height);
+    map_context.clearRect(0, 0, map_buffer.width, map_buffer.height);
+
+    // Нарисуем карту.
+    map.draw(map_context, camera);
+
+    // Обновим позиции спрайтов юнитов.
+    movementManager.updateSpritePositions();
+
+    // Нарисуем юнитов, принадлежащих клиенту.
+    for (i = 0; i < self_units_list.length; i++) {
+        self_units_list[i].draw(units_context, camera);
+        self_units_list[i].drawColor(unitcolors_context, camera);
+    }
+
+    // Нарисуем остальных юнитов.
+    for (i = 0; i < units_list.length; i++) {
+        units_list[i].draw(units_context, camera);
+        units_list[i].drawColor(unitcolors_context, camera);
+    }
+
+    if (selection_rect != null) {
+        selection_rect.draw(units_context, camera);
+    }
+
+    units_context.putImageData(
+        map.miniMap,
+        10,
+        10
+    );
+
+    // Нарисуем карту и юнитов на основном холсте.
+    scr_context.drawImage(map_buffer, 0, 0);
+    scr_context.drawImage(unitcolors_buffer, 0, 0);
+    scr_context.drawImage(units_buffer, 0, 0);
+
+    if (ping != null) {
+        scr_context.fillText("Ping: " + ping, 30, 130);
+        scr_context.fillText("FPS: " + Math.floor(((new Date()).getTime() - drawBegTime) / redraws), 30, 145);
+    }
+    
+    scr_context.beginPath();
+    scr_context.moveTo(0, 0);
+    scr_context.lineTo(24, 24);
+    scr_context.lineTo(24, SCR_H - 1 - 24);
+    scr_context.lineTo(0, SCR_H - 1);
+    scr_context.lineTo(0, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.left) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(0, 0);
+    scr_context.lineTo(24, 24);
+    scr_context.lineTo(SCR_W - 1 - 24, 24);
+    scr_context.lineTo(SCR_W - 1, 0);
+    scr_context.lineTo(0, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.top) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(SCR_W - 1, 0);
+    scr_context.lineTo(SCR_W - 1, SCR_H - 1);
+    scr_context.lineTo(SCR_W - 1 - 24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1 - 24, 24);
+    scr_context.lineTo(SCR_W - 1, 0);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.right) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+    
+    scr_context.beginPath();
+    scr_context.moveTo(SCR_W - 1, SCR_H - 1);
+    scr_context.lineTo(0, SCR_H - 1);
+    scr_context.lineTo(24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1 - 24, SCR_H - 1 - 24);
+    scr_context.lineTo(SCR_W - 1, SCR_H - 1);
+    scr_context.closePath();
+    scr_context.lineWidth = 1;
+    scr_context.strokeStyle = "red";
+    if (scrollBarsHovered.bottom) {
+        scr_context.fillStyle = "rgba(100, 0, 0, 0.5)";
+        scr_context.fill();
+    }
+    scr_context.stroke();
+
+    drawTimer = setTimeout(drawLoop, 1000 / FPS);
+}
+
+function followLoop() {
+    var object;
+    var target;
+    var objectDest;
+    var targetPos;
+    
+    for (var i = 0; i < followings.length; i++) {
+        object = followings[i].getObject();
+        target = followings[i].getTarget();
+        if ( (objectDest = movementManager.getMovementDest(object)) == null) {
+            objectDest = new Point(object.getJ(), object.getI());
+        }
+        targetPos = new Point(target.getJ(), target.getI());
+        
+        if (!targetPos.equals(objectDest)) {
+            actionManager.moveUnit(object, targetPos);
+        }
+    }
+    
+    followingsTimer = setTimeout(followLoop, 500);
+}
+
+function removeFollowing(object) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            followings.splice(i, 1);
+            break;
+        }
+    }
+}
+
+function removeFollowingByTarget(target) {
+    var found = false;
+    do {
+        for (var i = 0; i < followings.length; i++) {
+            if (followings[i].getTarget() == target) {
+                followings.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+        found = false;
+    } while (found);
+}
+
+function addFollowing(object, target) {
+    for (var i = 0; i < followings.length; i++) {
+        if (followings[i].getObject() == object) {
+            if (DEBUG_FOLLOW) {
+                console.log(step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
+            }
+            followings[i].setTarget(target);
+            return true;
+        }
+    }
+    
+    followings.push(new Follow(object, target));
+    if (DEBUG_FOLLOW) {
+        console.log(step + ": Юнит " + object + " начал преследовать цель " + target);
+    }
+    return true;
 }

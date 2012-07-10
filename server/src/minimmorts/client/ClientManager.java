@@ -42,6 +42,13 @@ public class ClientManager {
      */
     private final ConcurrentHashMap<Channel, Client> clientsByChannel = new ConcurrentHashMap();
 
+    /**
+     * Список отключившихся клиентов, ожидающих пометки.
+     */
+    private final LinkedList<Channel> disconnectedClients = new LinkedList<>();
+    
+    private static final int MAX_REINITIALIZATION_ATTEMPTS = 5;
+
     public static void enableLogging() {
         ClientManager.loggingEnabled = true;
     }
@@ -150,11 +157,11 @@ public class ClientManager {
      * @return возвращает <b>true</b>, если клиент был успешно помечен как отключенный
      * или <b>false</b>, если клиент не был найден по своему идентификатору в хеше клиентов
      */
-    public boolean markDisconnected(long clientId) {
+    public boolean setDisconnected(long clientId) {
         Client client;
 
         if ( (client = clientsById.get(clientId)) != null) {
-            client.markDisconnected();
+            client.setDisconnected();
             return true;
         } else {
             return false;
@@ -167,11 +174,11 @@ public class ClientManager {
      * @return возвращает <b>true</b>, если клиент был успешно помечен как отключенный
      * или <b>false</b>, если клиент не был найден по своему каналу в хеше каналов
      */
-    public boolean markDisconnected(Channel channel) {
+    public boolean setDisconnected(Channel channel) {
         Client client;
 
         if ( (client = clientsByChannel.get(channel)) != null) {
-            client.markDisconnected();
+            client.setDisconnected();
             return true;
         } else {
             return false;
@@ -179,8 +186,7 @@ public class ClientManager {
     }
 
     /**
-     * Помечает клиента как инициализированного. С этого момента от клиента требуется
-     * отправка отчётов на сервер.
+     * Помечает клиента как инициализированного.
      * @param clientId идентификатор клиента
      * @return возвращает <b>true</b>, если клиент был успешно помечен как инициализированный
      * или <b>false</b>, если клиент не был найден по своему идентификатору с хеше клиентов
@@ -271,7 +277,7 @@ public class ClientManager {
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (client.isDisconnected()) {
+            if (!client.isConnected()) {
                 disconnectedClients.add(client);
             }
         }
@@ -299,13 +305,30 @@ public class ClientManager {
 
         return uninitializedClients;
     }
+    
+    public LinkedList<Client> getUnreportedClients() {
+        LinkedList<Client> unreportedClients = new LinkedList<>();
+        Entry pair;
+        Client client;
+
+        Iterator i = clientsById.entrySet().iterator();
+        while (i.hasNext()) {
+            pair = (Entry) i.next();
+            client = (Client) pair.getValue();
+            if (!client.isReported()) {
+                unreportedClients.add(client);
+            }
+        }
+
+        return unreportedClients;
+    }
 
     /**
-     * Возвращает активных клиентов, которые не помеченны как отключенные и
-     * как неинициализированные.
+     * Возвращает активных клиентов - подключенных и инициализированных. Если
+     * таковых нет, то возвращается пустой список.
      * @return список активных клиентов
      */
-    public LinkedList<Client> getClients() {
+    public LinkedList<Client> getActiveClients() {
         LinkedList<Client> clients = new LinkedList<>();
         Entry pair;
         Client client;
@@ -314,7 +337,7 @@ public class ClientManager {
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (!client.isDisconnected() && client.isInitialized()) {
+            if (client.isConnected() && client.isInitialized()) {
                 clients.add(client);
             }
         }
@@ -330,7 +353,7 @@ public class ClientManager {
         while (i.hasNext()) {
             pair = (Entry) i.next();
             client = (Client) pair.getValue();
-            if (!client.isDisconnected() && client.isInitialized() && client.getLastReportedStep() != step) {
+            if (client.getLastReportedStep() != step && client.isConnected()) {
                 return false;
             }
         }
@@ -365,12 +388,105 @@ public class ClientManager {
             }
         }
     }
+    
+    /**
+     * Добавляет клиента в список отключившихся клиентов, ожидающих пометки.
+     */
+    public void addDisctonnectedClient(Channel c) {
+        synchronized (disconnectedClients) {
+            disconnectedClients.add(c);
+        }
+    }
+    
+    /**
+     * Помечает отключенными всех клиентов, ожидающих пометки и очищает их
+     * список.
+     */
+    public void markDisconnectedClients() {
+        synchronized (disconnectedClients) {
+            for (Channel c : disconnectedClients) {
+                setDisconnected(c);
+            }
+            disconnectedClients.clear();
+        }
+    }
+    
+    public void markUnreportedClients(long step) {
+        Entry pair;
+        Client client;
 
-    public boolean setClientPingTime(long clientId, long time) {
+        Iterator i = clientsById.entrySet().iterator();
+        while (i.hasNext()) {
+            pair = (Entry) i.next();
+            client = (Client) pair.getValue();
+            if (client.getLastReportedStep() != step && client.isConnected()) {
+                if (client.getReinitializationAttempts() >= MAX_REINITIALIZATION_ATTEMPTS) {
+                    client.setDisconnected();
+                } else {
+                    client.setUnreported();
+                }
+            }
+        }
+    }
+
+    public boolean setConnected(long clientId) {
         Client client;
 
         if ( (client = clientsById.get(clientId)) != null) {
-            client.setClientPingTime(time);
+            client.setConnected();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean setReported(long clientId) {
+        Client client;
+
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.setReported();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean incReinitializationAttempts(long clientId) {
+        Client client;
+
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.incReinitializationAttempts();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean clearReinitializationAttempts(long clientId) {
+        Client client;
+
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.clearReinitializationAttempts();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Добавляет клиента в список отключившихся клиентов, ожидающих пометки.
+     */
+    public void addDisctonnectedClient(Client client) {
+        synchronized (disconnectedClients) {
+            disconnectedClients.add(client.getChannel());
+        }
+    }
+
+    public boolean setClientPingTime(long clientId, long clientPingTime) {
+        Client client;
+
+        if ( (client = clientsById.get(clientId)) != null) {
+            client.setClientPingTime(clientPingTime);
             return true;
         } else {
             return false;

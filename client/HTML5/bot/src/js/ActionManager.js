@@ -16,43 +16,15 @@ function ActionManager() {
     };
     
     /**
-     * Добавляет запрос движения. Не проверялось, работает или нет!
-     */
-    this.createMovementRequest = function(clickX, clickY, camera) {
-        var tAxis = camera.reTranslateAxis(clickX, clickY);
-        var neighbourCells = new Array({j: Map.getCellJOnMap(tAxis.x), i: Map.getCellIOnMap(tAxis.y)});
-        while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
-            neighbourCells = getNeighboursCells(neighbourCells);
-        }
-        for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
-            if (selected_units[i].getJ() == neighbourCells[i].j && selected_units[i].getI() == neighbourCells[i].i) {
-                continue;
-            }
-            this.actions.MOVEMENT.push(
-                new MoveMessage(
-                    step,
-                    selected_units[i].getId(),
-                    -1,
-                    -1,
-                    neighbourCells[i].j,
-                    neighbourCells[i].i
-                )
-            );
-        }
-    }
-    
-    /**
      * Добавляет запросы движения от всех своих юнитов в случайные клетки.
      */
     this.createRandomMovementRequests = function() {
         this.actions.MOVEMENT = new Array();
+        
         for (var i = 0; i < self_units_list.length; i++) {
             this.actions.MOVEMENT.push(
-                new MoveMessage(
-                    step,
+                new MoveRequestMessage(
                     self_units_list[i].getId(),
-                    -1,
-                    -1,
                     getRandomInt(map.w - 1),
                     getRandomInt(map.h - 1)
                 )
@@ -60,6 +32,41 @@ function ActionManager() {
         }
     }
     
+    /**
+     * Добавляет запросы движения выделенных юнитов в заданную точку (клетку).
+     * @param dest - точка назначения
+     */
+    this.moveSelectedUnits = function(dest) {
+        if (!(dest instanceof Point)) {
+            throw new Error("Точка назначения не является объектом типа Point.");
+        }
+
+        this.actions.MOVEMENT = new Array();
+        
+        var neighbourCells = [dest];
+        while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
+            neighbourCells = getNeighboursCells(neighbourCells);
+        }
+        for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
+            if (selected_units[i].getJ() == neighbourCells[i].getJ() && selected_units[i].getI() == neighbourCells[i].getI()) {
+                continue;
+            }
+            this.actions.MOVEMENT.push(new MoveRequestMessage(selected_units[i].getId(), neighbourCells[i].getJ(), neighbourCells[i].getI()));
+            removeFollowing(selected_units[i]);
+        }
+    }
+
+    this.moveUnit = function(unit, dest) {
+        if (!(dest instanceof Point)) {
+            throw new Error("Точка назначения не является объектом типа Point.");
+        }
+        if (!(unit instanceof Unit)) {
+            throw new Error("Юнит назначения не является объектом типа Unit.");
+        }
+
+        this.actions.MOVEMENT.push(new MoveRequestMessage(unit.getId(), dest.getJ(), dest.getI()));
+    }
+
     /**
      * Возывращает запросы движения и очищает массив запросов движения.
      */

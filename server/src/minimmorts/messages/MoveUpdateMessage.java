@@ -1,5 +1,8 @@
 package minimmorts.messages;
 
+import java.util.LinkedList;
+import minimmorts.movement.Point;
+
 /**
  *
  * @author Sorc
@@ -7,18 +10,12 @@ package minimmorts.messages;
 public class MoveUpdateMessage implements Message {
     private long begStep;
     private long unitId;
-    private int begJ;
-    private int begI;
-    private int endJ;
-    private int endI;
+    private final LinkedList<Point> waypoints;
 
-    MoveUpdateMessage(long begStep, long unitId, int begJ, int begI, int endJ, int endI) {
+    MoveUpdateMessage(long begStep, long unitId, LinkedList<Point> waypoints) {
         this.begStep = begStep;
         this.unitId = unitId;
-        this.begJ = begJ;
-        this.begI = begI;
-        this.endJ = endJ;
-        this.endI = endI;
+        this.waypoints = waypoints;
     }
 
     public long getBegStep() {
@@ -29,29 +26,15 @@ public class MoveUpdateMessage implements Message {
         return unitId;
     }
 
-    public int getBegJ() {
-        return begJ;
-    }
-
-    public int getBegI() {
-        return begI;
-    }
-
-    public int getEndJ() {
-        return endJ;
-    }
-
-    public int getEndI() {
-        return endI;
-    }
-
     @Override
     public String toJSON() {
-        return "[\"MOVEUPDATE\",{\"begStep\":" + begStep
-                       + ",\"unitId\":" + unitId
-                       + ",\"begJ\":" + begJ
-                       + ",\"begI\":" + begI
-                       + ",\"endJ\":" + endJ
-                       + ",\"endI\":" + endI + "}]";
+        String out = "[\"MOVEUPDATE\",{\"begStep\":" + begStep
+                     + ",\"unitId\":" + unitId
+                     + ",\"waypoints\":[";
+        for (int i = 0; i < waypoints.size() - 1; i++) {
+            out += "{\"j\":" + waypoints.get(i).getJ() + ",\"i\":" + waypoints.get(i).getI() + "},";
+        }
+        out += "{\"j\":" + waypoints.getLast().getJ() + ",\"i\":" + waypoints.getLast().getI() + "}]}]";
+        return out;
     }
 }

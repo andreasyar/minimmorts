@@ -49,4 +49,4 @@ var CELL_HH = CELL_H / 2;
 /**
  * Скорость юнитов по-умолчанию.
  */
-var DEFAULT_SPEED = 0.4;
+var DEFAULT_SPEED = 0.3;

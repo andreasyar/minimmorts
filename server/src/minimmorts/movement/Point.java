@@ -23,6 +23,15 @@ public class Point {
 
     @Override
     public String toString() {
-        return "[" + j + ", " + i + "]";
+        return "[" + j + "," + i + "]";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Point) {
+            Point p = (Point) obj;
+            return p.getJ() == j && p.getI() == i;
+        }
+        return false;
     }
 }

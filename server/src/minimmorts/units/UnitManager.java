@@ -7,12 +7,12 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import minimmorts.ErrnoErrorService;
-import minimmorts.GlobalLogFile;
-import minimmorts.IdGenerator;
+import minimmorts.*;
 import minimmorts.client.Client;
 import minimmorts.messages.Message;
+import minimmorts.messages.MessageManager;
 import minimmorts.messages.UnitMessage;
+import minimmorts.server.ServerMainLoop;
 
 /**
  *
@@ -174,7 +174,7 @@ public class UnitManager {
      * Возвращает всех юнитов, не помеченных на удаление.
      * @return копия списока юнитов
      */
-    public LinkedList<Unit> getAllUnits() {
+    public LinkedList<Unit> getAllActiveUnits() {
         LinkedList<Unit> clone = new LinkedList<>();
         
         synchronized (allUnits) {
@@ -186,5 +186,82 @@ public class UnitManager {
         }
         
         return clone;
+    }
+
+    /**
+     * Возвращает список копий юнитов, не отмеченных на удаление. Если таковых
+     * нет, то возвращается пустой список.
+     */
+    public LinkedList<Unit> cloneUnits() throws CloneNotSupportedException {
+        LinkedList<Unit> clone = new LinkedList<>();
+        
+        synchronized (allUnits) {
+            for (Unit u : allUnits) {
+                if (!u.isDeleted()) {
+                    clone.add(u.clone());
+                }
+            }
+        }
+        
+        return clone;
+    }
+
+    public boolean isStateValid(LinkedList<Unit> serverUnits, LinkedList<Message> clientUnits) throws NullPointerException {
+        if (serverUnits == null) {
+            throw new NullPointerException("List of server units is null.");
+        }
+        if (clientUnits == null) {
+            throw new NullPointerException("List of client reported units is null.");
+        }
+        
+        UnitMessage m;
+        int i;
+        Unit u;
+        
+        for (Message um : clientUnits) {
+            m = (UnitMessage) um;
+            
+            if ( (i = serverUnits.indexOf(m)) != -1) {
+                u = serverUnits.get(i);
+                
+                if (u.getOwnerId() != m.getOwnerId() || u.getJ() != m.getJ() || u.getI() != m.getI()) {
+                    if (isLoggingEnabled()) {
+                        logger.info(ServerMainLoop.getStep() + ": Неверное состояние юнита id=" + u.getId() + 
+                                    " Server: ownerId=" + u.getOwnerId() + ",j=" + u.getJ() + ",i=" + u.getI() +
+                                    " Client: ownerId=" + m.getOwnerId() + ",j=" + m.getJ() + ",i=" + m.getI());
+                    }
+                    LastErrorService.setLastError(MessageManager.createSyncErrorMessage(m.getId()));
+                    return false;
+                }
+            } else {
+                String errorText = "Неверное состояние. Юнит id=" + m.getId() +
+                                   " существует в отчёте клиента, но не найден на сервере.";
+                LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
+                return false;
+            }
+        }
+        
+        for (Unit u2 : serverUnits) {
+            if ( (i = clientUnits.indexOf(u2)) == -1) {
+                String errorText = "Неверное состояние. Юнит id=" + u2.getId() +
+                                   " существует на сервере, но не найден в отчёте клиента.";
+                LastErrorService.setLastError(MessageManager.createErrorMessage(errorText));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean isClientHasUnit(long clientId, long unitId) {
+        synchronized (allUnits) {
+            for (Unit u : allUnits) {
+                if (u.getId() == unitId && u.getOwnerId() == clientId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

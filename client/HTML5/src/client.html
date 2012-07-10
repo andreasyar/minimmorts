@@ -6,7 +6,6 @@
     <script type="text/javascript" src="js/constants.js"></script>
     <script type="text/javascript" src="js/resources.js"></script>
     <script type="text/javascript" src="js/routines.js"></script>
-    
     <script type="text/javascript" src="js/Camera.js"></script>
     <script type="text/javascript" src="js/Unit.js"></script>
     <script type="text/javascript" src="js/SpriteLoader.js"></script>
@@ -17,7 +16,11 @@
     <script type="text/javascript" src="js/ServerInteraction.js"></script>
     <script type="text/javascript" src="js/Sprite.js"></script>
     <script type="text/javascript" src="js/SpriteMovement.js"></script>
-    <script type="text/javascript" src="js/SpriteMovementWayPoint.js"></script>
+    <script type="text/javascript" src="js/ActionManager.js"></script>
+    <script type="text/javascript" src="js/Point.js"></script>
+    <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
+    <script type="text/javascript" src="js/PathCache.js"></script>
+    <script type="text/javascript" src="js/Follow.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -47,11 +50,10 @@ scr.id = "scr";
 scr.width = SCR_W;
 scr.height = SCR_H;
 scr.oncontextmenu = function() {
-    return false;  
+    return false;
 }
-// Добавление обработчика щелчка мышью происходит при запуске игры.
-var body = document.getElementsByTagName('body')[0];
-body.appendChild(scr);
+// Добавление обработчиков нажатий клавиш мыши происходит при запуске игры.
+document.body.appendChild(scr);
 
 // Холст для рисования карты.
 
@@ -65,145 +67,171 @@ var units_buffer = document.createElement('canvas');
 units_buffer.width = SCR_W;
 units_buffer.height = SCR_H;
 
+// Холст для рисования цвета игроков (цветных квадратиков под юнитами).
+
+var unitcolors_buffer = document.createElement('canvas');
+unitcolors_buffer.width = SCR_W;
+unitcolors_buffer.height = SCR_H;
+
 /*************************
  * Служебные переменные. *
  *************************/
 
-// debug
-var DEBUG = false;
+/**
+ * Включение дебага протокола обмена данными с сервером.
+ */
+var DEBUG_PROTOCOL = false;
 
+/**
+ * Включение дебага юнитов.
+ */
 var DEBUG_UNITS = false;
 
-var DEBUG_MOVEMENTS = true;
+/**
+ * Включение дебага движения.
+ */
+var DEBUG_MOVEMENTS = false;
 
-// Список юнитов, принадлежащих клиенту.
+/**
+ * Включение дебага преследования.
+ */
+var DEBUG_FOLLOW = false;
+
+var ENABLE_GC = false;
+
+var MEGAARRAY = new Array();
+
+/**
+ * Список юнитов, принадлежащих клиенту.
+ */
 var self_units_list = new Array();
 
-// Список юнитов.
+/**
+ * Список юнитов.
+ */
 var units_list = new Array();
 
-// Карта.
+/**
+ * Карта.
+ */
 var map;
 
-// Сервер.
+/**
+ * Сервер.
+ */
 var server;
 
-// Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+/**
+ * Камера. В её объекиве находится место, которое будет нарисовано на основном холсте.
+ */
 var camera;
 
-// Камера свободна или привязана к своему игроку.
+/**
+ * Камера свободна или привязана к своему игроку.
+ */
 var is_camera_free = false;
 
-// Буфер действий.
-var actions = new Array();
-
-// Действия, которые должны быть выполнены после получения подтверждения.
-var stored_actions;
-
-// Номер текущего хода.
+/**
+ * Номер текущего хода.
+ */
 var step;
 
-// Id этого клиента.
+/**
+ * Id этого клиента.
+ */
 var clientId;
 
-// Выделенные юниты.
+/**
+ * Выделенные юниты.
+ */
 var selected_units = new Array();
 
-// Клетка начала выделения.
+/**
+ * Клетка начала выделения.
+ */
 var selections_beg;
 
-// Прямоугольник выделения.
+/**
+ * Прямоугольник выделения.
+ */
 var selection_rect = null;
 
-// Менеджер движения.
+/**
+ * Менеджер движения.
+ */
 var movementManager = new MovementManager();
 
-// Получено ли начальное состояние.
-var is_initial_state_received = false;
+/**
+ * Менеджер действий.
+ */
+var actionManager = new ActionManager();
 
-var frames = 0;
-var steps = 0;
-var framesPerStep = 3.9;
-
+/**
+ * Включает плавное движение юнитов.
+ */
 var smoothMovementEnabled = true;
 
-var prevDrawTime = null;
+/**
+ * Таймер цикла пинга сервера.
+ */
+var pingTimer = null;
+
+/**
+ * Таймер цикла рисования.
+ */
+var drawTimer = null;
+
+/**
+ * Время начала текущего хода.
+ */
+var stepBegTime = null;
+
+/**
+ * Длительность предыдущего хода в миллисекундах.
+ */
+var prevStepTime = null;
+
+/**
+ * Пинг до сервера.
+ */
+var ping = null;
+
+/**
+ * Время начала первой итерации цикла рисования.
+ */
+var drawBegTime = null;
+
+/**
+ * Текущее количество итераций цикла рисования.
+ */
+var redraws = 0;
+    
+/**
+ * Кеш путей.
+ */
+var pathCache = new PathCache();
+
+/**
+ * Использовать кеш путей.
+ */
+var usePathCache = true;
+
+var scrollBarsHovered = {
+    left: false,
+    top: false,
+    right: false,
+    bottom: false
+}
+
+var camFollowEnabled = false;
+
+var followings = [];
+
+var followingsTimer = null;
 
 /************
  * Функции. *
  ************/
-
-function connect() {
-    if (server == undefined) {
-        server = new ServerInteraction()
-        server.connect(document.getElementById('host').value)
-    } else if (server.socket.readyState == WebSocket.OPEN) {
-        server.sendMessage(new LoginMessage(getLogin(), getPassword()))
-    } else {
-        server.connect(document.getElementById('host').value)
-    }
-        
-    return false
-}
-
-function disconnect() {
-    if (server != undefined && server.socket != null) {
-        server.socket.close()
-    }
-}
-
-function drawLoop() {
-    var scr_context = scr.getContext('2d');
-    var units_context = units_buffer.getContext('2d');
-    var map_context = map_buffer.getContext('2d');
-    var i;
-    
-    frames++;
-
-    // Фон.
-    scr_context.fillStyle = "#FFFFEE";
-    scr_context.fillRect(0, 0, scr.width, scr.height);
-
-    // Пока что будем очищать весь холст целиком, а не только область, в которой было что-то нарисовано.
-    units_context.clearRect(0, 0, units_buffer.width, units_buffer.height);
-    map_context.clearRect(0, 0, map_buffer.width, map_buffer.height);
-
-    // Нарисуем карту.
-    map.draw(map_context, camera);
-    
-    // Обновим позиции спрайтов юнитов.
-    movementManager.updateSpritePositions();
-
-    // Нарисуем юнитов, принадлежащих клиенту.
-    for (i in self_units_list) {
-        self_units_list[i].draw(units_context, camera);
-        //self_units_list[i].drawPath(units_context, camera);
-    }
-
-    // Нарисуем остальных юнитов.
-    for (i in units_list) {
-        units_list[i].draw(units_context, camera);
-        //units_list[i].drawPath(units_context, camera);
-    }
-    
-    if (selection_rect != null) {
-        selection_rect.draw(units_context, camera);
-    }
-    
-    units_context.putImageData(
-        map.miniMap,
-        10,
-        10
-    );
-
-    // Нарисуем карту и юнитов на основном холсте.
-    scr_context.drawImage(map_buffer, 0, 0);
-    scr_context.drawImage(units_buffer, 0, 0);
-    //scr_context.fillText("FPStep=" + getFramesPerStep(), 100, 100);
-    //scr_context.fillText("PXIncr=" + getPxIncrement(0.4), 100, 110);
-
-    setTimeout("drawLoop();", 1000 / FPS);
-}
 
 function scrOnMousedown(e) {
     var x;
@@ -217,16 +245,19 @@ function scrOnMousedown(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
-    if (e.button == 0) {
+
+    camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+
+    if (e.button == 0 && !camMove) {
         selections_beg = {x1: x, y1: y}
-        scr.addEventListener("mousemove", scrOnMousemove, false);
+        //scr.addEventListener("mousemove", scrOnMousemove, false);
     }
 }
 
 function scrOnMouseup(e) {
     var x;
     var y;
+    var camMove = false;
     if (e.pageX != undefined && e.pageY != undefined) {
         x = e.pageX;
         y = e.pageY;
@@ -236,45 +267,80 @@ function scrOnMouseup(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
+
     if (e.button == 0) {
-        selected_units = new Array();
-        selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
         
-        for (var i in self_units_list) {
-            if (self_units_list[i].j >= selection_rect.beg.j
-                    && self_units_list[i].j <= selection_rect.end.j
-                    && self_units_list[i].i >= selection_rect.beg.i
-                    && self_units_list[i].i <= selection_rect.end.i) {
-                
-                self_units_list[i].selected = true;
-                selected_units.push(self_units_list[i]);
-            } else {
-                self_units_list[i].selected = false;
+        /*
+         * Движение камеры при кликах на панельках по бокам экрана.
+         */
+        if (scrollBarsHovered.top) {
+            camera.y -= 1 * CELL_H;
+        }
+        if (scrollBarsHovered.bottom) {
+            camera.y += 1 * CELL_H;
+        }
+        if (scrollBarsHovered.left) {
+            camera.x -= 1 * CELL_W;
+        }
+        if (scrollBarsHovered.right) {
+            camera.x += 1 * CELL_W;
+        }
+        camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+        
+        if (!camMove) {
+            selected_units = new Array();
+            selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
+
+            for (var i = 0; i < self_units_list.length; i++) {
+                if (self_units_list[i].j >= selection_rect.beg.j
+                        && self_units_list[i].j <= selection_rect.end.j
+                        && self_units_list[i].i >= selection_rect.beg.i
+                        && self_units_list[i].i <= selection_rect.end.i) {
+
+                    self_units_list[i].selected = true;
+                    selected_units.push(self_units_list[i]);
+                } else {
+                    self_units_list[i].selected = false;
+                }
+            }
+            //scr.removeEventListener("mousemove", scrOnMousemove, false);
+            selection_rect = null;
+            selections_beg = null;
+            
+            if (camFollowEnabled && selected_units.length > 0 && !camera.isFollow()) {
+                camera.follow(selected_units[0]);
+            } else if (camera.isFollow()) {
+                camera.unfollow();
             }
         }
-        scr.removeEventListener("mousemove", scrOnMousemove, false);
-        selection_rect = null;
     } else if (e.button == 2) {
         var tAxis = camera.reTranslateAxis(x, y);
-        var neighbourCells = new Array({j: Map.getCellJOnMap(tAxis.x), i: Map.getCellIOnMap(tAxis.y)});
-        while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
-            neighbourCells = getNeighboursCells(neighbourCells);
-        }
-        for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
-            if (selected_units[i].getJ() == neighbourCells[i].j && selected_units[i].getI() == neighbourCells[i].i) {
-                continue;
+        var follow = false;
+        var i, j, k;
+        for (i = 0; i < self_units_list.length; i++) {
+            for (j = 0; j < selected_units.length; j++) {
+                if (self_units_list[i] != selected_units[j] && self_units_list[i].isInSprite(tAxis.x, tAxis.y)) {
+                    for (k = 0; k < selected_units.length; k++) {
+                        addFollowing(selected_units[k], self_units_list[i]);
+                    }
+                    follow = true;
+                    break;
+                }
             }
-            actions.push(
-                new MoveMessage(
-                    step,
-                    selected_units[i].getId(),
-                    -1,
-                    -1,
-                    neighbourCells[i].j,
-                    neighbourCells[i].i
-                )
-            );
+        }
+        for (i = 0; !follow && i < units_list.length; i++) {
+            for (j = 0; j < selected_units.length; j++) {
+                if (units_list[i] != selected_units[j] && units_list[i].isInSprite(tAxis.x, tAxis.y)) {
+                    for (k = 0; k < selected_units.length; k++) {
+                        addFollowing(selected_units[k], units_list[i]);
+                    }
+                    follow = true;
+                    break;
+                }
+            }
+        }
+        if (!follow) {
+            actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)));
         }
     }
 }
@@ -291,61 +357,31 @@ function scrOnMousemove(e) {
     }
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
-    
-    selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
-}
 
-function syncLoop() {
-    var i, unit;
-    
-    steps++;
-    
-    for (i in stored_actions) {
-        switch (stored_actions[i].type) {
-            case "MOVE":
-                unit = getUnitById(stored_actions[i].unitId);
-                if (movementManager.isUnitMove(unit)) {
-                    movementManager.updateMovement(
-                        step,
-                        unit,
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                } else {
-                    movementManager.startNewMovement(
-                        step,
-                        unit,
-                        unit.getJ(),
-                        unit.getI(),
-                        stored_actions[i].endJ,
-                        stored_actions[i].endI
-                    );
-                    //console.log("Movement created on step ", step);
-                }
-                break;
-        }
+    if (selections_beg != null) {
+        selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
     }
     
-    step++;
-    
-    movementManager.updatePositions(step);
-    map.updateMinimap();
-
-    var unitMessages = new Array();
-    for (i in self_units_list) {
-        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    if (y >= 0 && y <= 24) {
+        scrollBarsHovered.top = true;
+        scrollBarsHovered.bottom = false;
+    } else if (y >= SCR_H - 1 - 24 && y <= SCR_H - 1) {
+        scrollBarsHovered.top = false;
+        scrollBarsHovered.bottom = true;
+    } else {
+        scrollBarsHovered.top = false;
+        scrollBarsHovered.bottom = false;
     }
-    for (i in units_list) {
-        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    if (x >= 0 && x <= 24) {
+        scrollBarsHovered.left = true;
+        scrollBarsHovered.right = false;
+    } else if (x >= SCR_W - 1 - 24 && x <= SCR_W - 1) {
+        scrollBarsHovered.left = false;
+        scrollBarsHovered.right = true;
+    } else {
+        scrollBarsHovered.left = false;
+        scrollBarsHovered.right = false;
     }
-    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
-    stored_actions = actions;
-    actions = new Array();
-}
-
-function pingLoop() {
-    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
-    setTimeout("pingLoop();", 100);
 }
 
 </script>
@@ -362,19 +398,23 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <input type="checkbox" id="toggleSmoothMovement" onclick="toggleSmoothMovement();" checked>
 <b>Плавное движение</b> (юнит двигается плавно, но при этом, в случае лагов, может отображаться не в том месте, где на самом деле находся)<br>
 
+<br>
+<input type="checkbox" id="toggleCamFollow" onclick="toggleCamFollow();">
+<b>Слежение за юнитами</b> (камера движется вслед за выделенными юнитами)<br>
+
 <script type="text/javascript">
 showLoginForm();
 document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
-    
+
 document.onkeydown = function(event) {
     var events = event || window.event
     if (events.keyCode == 116) {    // F5
         disconnect();
     }
-    if (camera != undefined && camera.target == undefined && events.keyCode == 37) {    // left arrow 
+    if (camera != undefined && camera.target == undefined && events.keyCode == 37) {    // left arrow
         camera.x -= 1 * CELL_W;
     }
-    if (camera != undefined && camera.target == undefined && events.keyCode == 38) {    // up arrow 
+    if (camera != undefined && camera.target == undefined && events.keyCode == 38) {    // up arrow
         camera.y -= 1 * CELL_H;
     }
     if (camera != undefined && camera.target == undefined && events.keyCode == 39) {    // right arrow
@@ -383,6 +423,28 @@ document.onkeydown = function(event) {
     if (camera != undefined && camera.target == undefined && events.keyCode == 40) {    // down arrow
         camera.y += 1 * CELL_H;
     }
+}
+
+var _tripleClickTimer = 0;
+scr.ondblclick = function(evt) {
+    ClearSelection();
+    window.clearTimeout(_tripleClickTimer);
+
+    //handle triple click selecting whole paragraph
+    scr.onclick = function() {
+        ClearSelection();
+    };
+
+    _tripleClickTimer = window.setTimeout(function() {
+           document.onclick = null; 
+    }, 100);
+};
+
+function ClearSelection() {
+    if (window.getSelection)
+        window.getSelection().removeAllRanges();
+    else if (document.selection)
+        document.selection.empty();
 }
 </script>
 

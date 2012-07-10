@@ -2,18 +2,12 @@ package minimmorts;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.sql.SQLException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import minimmorts.client.ClientManager;
-import minimmorts.db.DBWorker;
 import minimmorts.messages.MessageManager;
-import minimmorts.movement.Movement;
 import minimmorts.movement.MovementManager;
 import minimmorts.server.ServerMainLoop;
 import minimmorts.units.UnitManager;
@@ -28,10 +22,11 @@ import org.xml.sax.SAXException;
  */
 public class ServerLauncher {
     private static final Logger logger = Logger.getLogger(ServerLauncher.class.getName());
+    
+    public static ScheduledFuture<?> handle;
 
     public static void main(String[] args) {
         ServerConfig config = null;
-        DBWorker dbworker = null;
         ClientManager clientManager = null;
         MessageManager messageManager = null;
         MovementManager movementManager = null;
@@ -48,17 +43,6 @@ public class ServerLauncher {
         }
         logger.log(Level.INFO, "Configuration readed.");
         
-        // Connect to database.
-
-        //dbworker = new DBWorker(config.getDbHost(), config.getDbPort(), config.getDatabaseName(), config.getDbUser(), config.getDbPassword());
-        //try {
-        //    dbworker.connect();
-        //} catch (SQLException ex) {
-        //    logger.log(Level.SEVERE, null, ex);
-        //    return;
-        //}
-        //logger.log(Level.INFO, "DB connected.");
-        
         // Create game server.
         
         try {
@@ -66,7 +50,10 @@ public class ServerLauncher {
             //ClientManager.enableLogging();
             
             messageManager = new MessageManager(clientManager);
+            //MessageManager.enableLogging();
+            
             movementManager = new MovementManager();
+            //MovementManager.enableLogging();
             
             unitManager = new UnitManager();
             //UnitManager.enableLogging();
@@ -91,7 +78,13 @@ public class ServerLauncher {
         // Start game server main loop.
         
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
+        handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, Integer.parseInt(config.getStepTime()), TimeUnit.MILLISECONDS);
         logger.log(Level.INFO, "Game server main loop scheduled.");
+        
+        try {
+            handle.get();
+        } catch (ExecutionException | InterruptedException ex) {
+            logger.log(Level.SEVERE, null, ex);
+        }
     }
 }

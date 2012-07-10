@@ -64,7 +64,7 @@ function LogoutMessage() {
 /**
  * Требование хода.
  */
-function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
+function MoveRequestMessage(unitId, j, i) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
@@ -74,12 +74,7 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     /**
      * Тип сообщения.
      */
-    this.type = "MOVE";
-
-    /**
-     * Номер шага начала движения (игнорируется сервером).
-     */
-    this.begStep = begStep;
+    this.type = "MOVEREQ";
 
     /**
      * Идентификатор движущегося юнита.
@@ -87,30 +82,20 @@ function MoveMessage(begStep, unitId, begJ, begI, endJ, endI) {
     this.unitId = unitId;
 
     /**
-     * j-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begJ = begJ;
-
-    /**
-     * i-индекс клетки отправления (игнорируется сервером).
-     */
-    this.begI = begI;
-
-    /**
      * j-индекс клетки назначения.
      */
-    this.endJ = endJ;
+    this.j = j;
 
     /**
      * i-индекс клетки назначения.
      */
-    this.endI = endI;
+    this.i = i;
 
     /**
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {unitId: this.unitId, begJ: this.begJ, begI: this.begI, endJ: this.endJ, endI: this.endI});
+        return new Array(this.type, {unitId: this.unitId, j: this.j, i: this.i});
     }
 
     return this;
@@ -261,12 +246,27 @@ function PingMessage(time) {
  * Обработчики сообщений.
  */
 var MESSAGE_HANDLERS = {
-    "ERROR": function (msg) {
+    "ERROR": function (message) {
         // Format:
         // ["ERROR", "error text"]
         
-        alert(msg[1]);
+        clearTimeouts();
         disconnect();
+        alert(message[1]);
+    },
+    "SYNCERROR": function (message) {
+        // ["SYNCERROR", {"unitId":123}]
+        
+        var syncerrorMessage = message[1];
+        var unit = getUnitById(syncerrorMessage.unitId);
+            
+        if (unit == null) {
+            console.log("Юнит id=" + syncerrorMessage.unitId + " не найден.");
+        }
+        
+        clearTimeouts()
+        disconnect();
+        alert("Ошибка синхронизации. Юнит id=" + syncerrorMessage.unitId);
     },
     "WELCOME": function (msg) {
         // Format:
@@ -275,8 +275,8 @@ var MESSAGE_HANDLERS = {
         var i;
         
         clientId = msg[1];
-        step  = msg[2];
-        camera = new Camera();
+        step = msg[2];
+        camera = new Camera(null);
         map = new Map(100, 100);
         
         self_units_list = new Array();
@@ -289,10 +289,9 @@ var MESSAGE_HANDLERS = {
             console.log("Все чужие юниты удалены.");
         }
         
-        actions = new Array();
-        stored_actions = new Array();
         selected_units = new Array();
         movementManager = new MovementManager();
+        actionManager = new ActionManager();
         
         /*
          * Создание юнитов.
@@ -308,11 +307,14 @@ var MESSAGE_HANDLERS = {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
         
-        setTimeout("drawLoop();", 1000 / FPS);
-        setTimeout("pingLoop();", 100);
+        clearTimeouts();
+        drawTimer = setTimeout(drawLoop, 1000 / FPS);
         syncLoop();
+        pingTimer = setTimeout(pingLoop, 100);
+        followingsTimer = setTimeout(followLoop, 500);
         scr.addEventListener("mousedown", scrOnMousedown, false);
         scr.addEventListener("mouseup", scrOnMouseup, false);
+        scr.addEventListener("mousemove", scrOnMousemove, false);
         hideLoginForm();
     },
     "CONFIRM": function (msg) {
@@ -324,47 +326,6 @@ var MESSAGE_HANDLERS = {
             syncLoop();
         } else {
             console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
-        }
-    },
-    "STATE": function (msg) {
-        // [["STATE",3349,[["UNIT",{"ownerId":13,"id":14,"j":4,"i":4,"r":128,"g":0,"b":0}],["UNIT",{"ownerId":13,"id":15,"j":5,"i":5,"r":128,"g":0,"b":0}]],[["MOVE",{"unitId":14,"j":6,"i":9}],["MOVE",{"unitId":15,"j":7,"i":9}]]]]
-        
-        if (!is_initial_state_received) {
-            is_initial_state_received = true;
-            setTimeout("drawLoop();", 1000 / FPS);
-            setTimeout("syncLoop();", 100);
-            scr.addEventListener("mousedown", scrOnMousedown, false);
-            scr.addEventListener("mouseup", scrOnMouseup, false);
-            camera = new Camera();
-            map = new Map(100, 100);
-        }
-        self_units_list = new Array();
-        units_list = new Array();
-        actions = new Array();
-
-        step = msg[1];
-        var units = msg[2];
-        var recv_actions = msg[3];
-        var cur_units_list;
-        var action_type;
-        var i;
-
-        for (i in units) {
-            if (clientId == units[i][1].ownerId) {
-                cur_units_list = self_units_list;
-            } else {
-                cur_units_list = units_list;
-            }
-            cur_units_list.push(new Unit(units[i][1].ownerId, units[i][1].id, units[i][1].j, units[i][1].i, {r:units[i][1].r,g:units[i][1].g,b:units[i][1].b}));
-        }
-
-        for (i in recv_actions) {
-            action_type = recv_actions[i][0];
-            switch (action_type) {
-                case "MOVE":
-                    
-                    break;
-            }
         }
     },
     "NEWUNIT": function (msg) {
@@ -407,39 +368,33 @@ var MESSAGE_HANDLERS = {
         var unit = getUnitById(moveMessage.unitId);
         
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть создано.");
+            console.log("Движение не может быть создано. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
         movementManager.startNewMovement(
             moveMessage.begStep,
             unit,
-            moveMessage.begJ,
-            moveMessage.begI,
-            moveMessage.endJ,
-            moveMessage.endI
+            moveMessage.waypoints
         );
     },
     "MOVEUPDATE": function (message) {
-        // Example: ["MOVEUPDATE",{"begStep":16776,"unitId":35,"begJ":9,"begI":7,"endJ":3,"endI":9}]
+        // Example: 
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
         
         if (unit == null) {
-            console.log("Юнит id=" + moveMessage.unitId + " не найден. Движение не может быть обновлено.");
+            console.log("Движение не может быть обновлено. Юнит id=" + moveMessage.unitId + " не найден.");
             return;
         }
 
-        if (moveMessage.begStep == step) {
-            movementManager.updateMovement(
-                moveMessage.begStep,
-                unit,
-                moveMessage.endJ,
-                moveMessage.endI
-            );
-        } else {
-            console.log("Получен запрос изменения не за текущий шаг! Текущий шаг " + step + " шаг изменения пути " + moveMessage.begStep + " Запрос проигнорирован.");
-        }
+        movementManager.updateMovement(
+            unit,
+            moveMessage.waypoints
+        );
+    },
+    "PING": function(message) {
+        ping = (new Date()).getTime() - message[0][1].time;
     }
 }
