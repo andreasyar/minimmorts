@@ -78,7 +78,7 @@ public class ServerLauncher {
         // Start game server main loop.
         
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, 100, TimeUnit.MILLISECONDS);
+        handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, Integer.parseInt(config.getStepTime()), TimeUnit.MILLISECONDS);
         logger.log(Level.INFO, "Game server main loop scheduled.");
         
         try {

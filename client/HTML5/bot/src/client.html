@@ -20,6 +20,7 @@
     <script type="text/javascript" src="js/Point.js"></script>
     <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
     <script type="text/javascript" src="js/PathCache.js"></script>
+    <script type="text/javascript" src="js/Follow.js"></script>
 </head>
 <body>
 
@@ -43,6 +44,11 @@ var DEBUG_UNITS = false;
  * Включение дебага движения.
  */
 var DEBUG_MOVEMENTS = false;
+
+/**
+ * Включение дебага преследования.
+ */
+var DEBUG_FOLLOW = false;
 
 /**
  * Список юнитов, принадлежащих клиенту.
@@ -151,6 +157,8 @@ var ignoreConfirmProbability = 300;
  */
 var reconnectProbability = 300;
 
+var followProbability = 20;
+
 /**
  * Время начала текущего хода.
  */
@@ -185,6 +193,21 @@ var pathCache = new PathCache();
  * Использовать кеш путей.
  */
 var usePathCache = true;
+
+var scrollBarsHovered = {
+    left: false,
+    top: false,
+    right: false,
+    bottom: false
+}
+
+var camFollowEnabled = false;
+
+var followings = [];
+
+var followingsTimer = null;
+
+var followingEnabled = false;
 
 </script>
 

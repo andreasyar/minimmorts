@@ -95,7 +95,11 @@ var DEBUG_MOVEMENTS = false;
 /**
  * Включение дебага преследования.
  */
-var DEBUG_FOLLOW = true;
+var DEBUG_FOLLOW = false;
+
+var ENABLE_GC = false;
+
+var MEGAARRAY = new Array();
 
 /**
  * Список юнитов, принадлежащих клиенту.
@@ -336,7 +340,7 @@ function scrOnMouseup(e) {
             }
         }
         if (!follow) {
-            actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)), true);
+            actionManager.moveSelectedUnits(new Point(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)));
         }
     }
 }

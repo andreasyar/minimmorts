@@ -278,7 +278,7 @@ var MESSAGE_HANDLERS = {
         clientId = msg[1];
         document.title = "MINIMMORTS HTML5 bot " + clientId;
         step = msg[2];
-        camera = new Camera();
+        camera = new Camera(null);
         map = new Map(100, 100);
 
         self_units_list = new Array();
@@ -312,6 +312,7 @@ var MESSAGE_HANDLERS = {
         clearTimeouts();
         aiTimer = setTimeout(aiLoop, 2000);
         syncLoop();
+        followingsTimer = setTimeout(followLoop, 500);
     },
     "CONFIRM": function (msg) {
         if (ignoreConfirmProbability != null && getRandomInt(ignoreConfirmProbability) == 0) {

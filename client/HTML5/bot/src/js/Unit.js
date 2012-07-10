@@ -85,7 +85,12 @@ function Unit(ownerId, id, j, i, color) {
     }
 
     this.toString = function() {
-        return "{ownerId=" + this.ownerId + ",id=" + this.id + ",j=" + this.j + ",i=" + this.i + "}";
+        return "ownerId=" + this.ownerId + ",id=" + this.id + ",j=" + this.j + ",i=" + this.i;
+    }
+
+    this.isInSprite = function(mapX, mapY) {
+        var sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
+        return mapX >= this.spritePos.x && mapX < this.spritePos.x + sprite.w && mapY >= this.spritePos.y && mapY < this.spritePos.y + sprite.h;
     }
 
     return this;

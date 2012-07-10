@@ -141,7 +141,6 @@ function PathCache() {
         while (pathCache.length > 0 && used < 1000000) {
             for (i = 0; i < pathCache.length; i++) {
                 if (pathCache[i].getValue() == used) {
-                    console.log("i=" + i);
                     return pathCache[i];
                 }
             }

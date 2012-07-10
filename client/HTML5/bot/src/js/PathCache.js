@@ -9,7 +9,7 @@ function PathCache() {
         throw new Error("Constructor called like a simple function!");
     }
     
-    PathCache.MAX_CACHE_SIZE = 1000;
+    PathCache.MAX_CACHE_SIZE = 100;
     
     this.pathCache = [];
     
@@ -30,6 +30,9 @@ function PathCache() {
             if (pathCache.length == PathCache.MAX_CACHE_SIZE) {
                 var oldPair = this.getRarestUsedPath();
                 i = indexOf(pathCache, oldPair);
+                if (DEBUG_MOVEMENTS) {
+                    console.log("Кеш путей заполнился. Удаляем", i, oldPair, newPair);
+                }
                 this.cleanPathMap(oldPair.getKey(), i);
                 pathCache[i] = newPair;
             } else {
@@ -38,7 +41,7 @@ function PathCache() {
             }
             
             /*
-             * Отметим на карте путей клетки, через которых проходит добавленный путь.
+             * Отметим на карте путей клетки, через которые проходит добавленный путь.
              */
             for (var j = 0; j < path.length; j++) {
                 curJ = path[j].getJ();
@@ -98,7 +101,10 @@ function PathCache() {
                             }*/
                             return null;
                         } else {
-                            console.log(step + ": В кеше найден нужный путь для юнита " + unit + " " + pathToString(path));
+                            if (DEBUG_MOVEMENTS) {
+                                console.log(step + ": В кеше найден нужный путь для юнита " + unit + " " + k + ":" + pathToString(path) + " проходящий через точки " + waypointsToString([new Point(begJ, begI), new Point(endJ, endI)]));
+                            }
+                            doSave = false;
                             for (k = 0; k < path.length; k++) {
                                 if (path[k].getJ() == begJ && path[k].getI() == begI) {
                                     doSave = true;
@@ -164,6 +170,27 @@ function PathCache() {
         for (var j = 0; j < path.length; j++) {
             this.pathMap[path[j].getI()][path[j].getJ()] = removeByValue(this.pathMap[path[j].getI()][path[j].getJ()], i);
         }
+    }
+    
+    this.toString = function() {
+        var pathMap = this.pathMap;
+        var out = "";
+        for (var i = 0; i < pathMap.length; i++) {
+            if (pathMap[i] != undefined) {
+                out += "\n" + i + "[";
+                for (var j = 0; j < pathMap[i].length; j++) {
+                    if (pathMap[i][j] != undefined) {
+                        out += j + "[";
+                        for (var k = 0; k < pathMap[i][j].length; k++) {
+                            out += pathMap[i][j][k] + ",";
+                        }
+                        out += "],";
+                    }
+                }
+                out += "]";
+            }
+        }
+        return out;
     }
 }
 

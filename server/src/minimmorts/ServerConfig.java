@@ -24,6 +24,7 @@ class ServerConfig {
     private String databaseName;
     private String dbUser;
     private String dbPassword;
+    private String stepTime;
 
     public ServerConfig(String confName) throws ParserConfigurationException, SAXException, IOException, NullPointerException {
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -54,6 +55,10 @@ class ServerConfig {
         } else {
             dbPassword = "";
         }
+        
+        Element gameElement = (Element) configElement.getElementsByTagName("game").item(0);
+        Element stepTimeElement = (Element) gameElement.getElementsByTagName("steptime").item(0);
+        stepTime = ((Node) stepTimeElement.getChildNodes().item(0)).getNodeValue().trim();
     }
 
     public String getWebPort() {
@@ -78,5 +83,9 @@ class ServerConfig {
 
     public String getDbPassword() {
         return dbPassword;
+    }
+
+    public String getStepTime() {
+        return stepTime;
     }
 }

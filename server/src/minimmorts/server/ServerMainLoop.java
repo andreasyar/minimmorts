@@ -13,7 +13,6 @@ import java.util.logging.SimpleFormatter;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
 import minimmorts.LastErrorService;
-import minimmorts.ServerLauncher;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.map.Map;
@@ -174,7 +173,7 @@ public class ServerMainLoop implements Runnable {
          * Создаёт два новых юнита для новых клиентов клиентов.
          */
         createNewUnits();
-
+        
         /*
          * Отправим CONFIRM (исходящие сообщения) всем активным клиентам.
          */
@@ -745,11 +744,11 @@ public class ServerMainLoop implements Runnable {
                     continue;
                 }
                 if (!client.isConnected()) {
-                    /*logger.log(
+                    logger.log(
                         Level.SEVERE,
                         "{0}: Отчёт не может быть обработан. Его отправитель клиент {1} отключен.",
                         new Object[] {ServerMainLoop.getStep(), client}
-                    );*/
+                    );
                     continue;
                 }
                 

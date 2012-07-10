@@ -34,21 +34,38 @@ function MovementManager() {
     }
 
     /**
+     * 
+     */
+    this.getMovementDest = function(unit) {
+        if (this.isUnitMove(unit)) {
+            for (var i = 0; i < this.movements.length; i++) {
+                if (this.movements[i].getUnit() == unit) {
+                    var wp = this.movements[i].getWaypoints();
+                    return wp[wp.length - 1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Создаёт новое движение.
      */
     this.startNewMovement = function(begStep, unit, waypoints) {
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Создаётся новое движение юнита " + unit + " по точкам " + waypointsToString(waypoints));
+        }
+
         var path = generatePath(map, waypoints, unit);
         if (path == null) {
-            console.log("Путь null. Движение не может быть создано.");
+            console.log(step + ": Путь движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " не найден.");
             return;
-        }
-        if (DEBUG_MOVEMENTS) {
-            console.log(step + ": Создан путь юнита " + unit + " " + pathToString(path));
         }
 
         var movement = new Movement(unit, DEFAULT_SPEED, begStep, waypoints, path);
-
         this.movements.push(movement);
+        
     }
 
     /**
@@ -63,17 +80,17 @@ function MovementManager() {
             }
         }
         if (existedMovement == null) {
-            console.log("Движение не найдено. Движение не может быть обновлено.");
+            console.log(step + ": Движение юнита " + unit + " по точкам " + waypointsToString(waypoints) + ", которое следует обновить, не найдено.");
             return;
+        }
+        if (DEBUG_MOVEMENTS) {
+            console.log(step + ": Обновляется движение юнита " + unit + " по точкам " + waypointsToString(waypoints));
         }
         
         var path = generatePath(map, waypoints, existedMovement.getUnit());
         if (path == null) {
-            console.log("Путь null. Движение не может быть обновлено.");
+            console.log(step + ": Путь движения юнита " + unit + " по точкам " + waypointsToString(waypoints) + " не найден.");
             return;
-        }
-        if (DEBUG_MOVEMENTS) {
-            console.log(step + ": Обновлён путь юнита " + unit + " " + pathToString(path));
         }
 
         existedMovement.setWaypoints(waypoints);

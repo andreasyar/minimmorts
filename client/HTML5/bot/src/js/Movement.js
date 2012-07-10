@@ -74,7 +74,7 @@ function Movement (unit, speed, beg_step, waypoints, path) {
         }
         if (n >= this.path.length - 1) {
             if (DEBUG_MOVEMENTS) {
-                console.log(step + ": Юнит id=" + unit.getId() + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[this.path.length - 1].j + "," + this.path[this.path.length - 1].i + "] и движение звершилось.");
+                console.log(step + ": Юнит " + this.unit + " сходил [" + this.unit.j + "," + this.unit.i + "]->[" + this.path[this.path.length - 1].j + "," + this.path[this.path.length - 1].i + "] и движение звершилось.");
             }
             this.unit.j = this.path[this.path.length - 1].j;
             this.unit.i = this.path[this.path.length - 1].i;

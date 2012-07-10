@@ -3,22 +3,25 @@
  */
 function ActionManager() {
 
-    // Эту функцию можно вызвать только как конструктор (с new).
+    /*
+     * Эту функцию можно вызвать только как конструктор (с new).
+     */
     if (this.constructor !== arguments.callee) {
-        throw new Error("Constructor called like a simple function!");
+        throw new Error("Конструктор не может быть вызван как обычная функция.");
     }
 
     /**
-     * Запросы действий пользователем.
+     * Запросы действий пользователя.
      */
     this.actions = {
         MOVEMENT: new Array()
     };
 
     /**
-     * Добавляет запросы движения от всех своих юнитов в случайные клетки.
+     * Добавляет запросы движения от всех своих юнитов в случайные клетки. При
+     * этом все существующие запросы движения удаляются.
      */
-    this.createRandomMovementRequests = function() {
+    this.randomMoveUnits = function() {
         this.actions.MOVEMENT = new Array();
         
         for (var i = 0; i < self_units_list.length; i++) {
@@ -33,13 +36,13 @@ function ActionManager() {
     }
 
     /**
-     * Добавляет запросы движения выделенных юнитов в заданную точку (клетку).
-     * @param dest - точка назначения
-     * @param removeFollows - удалять преследования или нет
+     * Добавляет запросы движения выделенных юнитов в заданную клетку.
+     * При этом все существующие запросы движения удаляются.
+     * @param dest - клетка назначения
      */
-    this.moveSelectedUnits = function(dest, removeFollows) {
+    this.moveSelectedUnits = function(dest) {
         if (!(dest instanceof Point)) {
-            throw new Error("Точка назначения не является объектом типа Point.");
+            throw new Error("Клетка назначения не является объектом типа Point.");
         }
 
         this.actions.MOVEMENT = new Array();
@@ -50,26 +53,37 @@ function ActionManager() {
         }
         for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
             if (selected_units[i].getJ() == neighbourCells[i].getJ() && selected_units[i].getI() == neighbourCells[i].getI()) {
-                continue;
+                continue;   // В себя не ходим.
             }
-            this.actions.MOVEMENT.push(new MoveRequestMessage(selected_units[i].getId(), neighbourCells[i].getJ(), neighbourCells[i].getI()));
+            this.actions.MOVEMENT.push(
+                new MoveRequestMessage(
+                    selected_units[i].getId(),
+                    neighbourCells[i].getJ(),
+                    neighbourCells[i].getI()
+                )
+            );
             removeFollowing(selected_units[i]);
         }
     }
     
+    /**
+     * Добавляет запрос движения юнита в заданную клетку.
+     * @param unit - юнит
+     * @param dest - клетка назначения
+     */
     this.moveUnit = function(unit, dest) {
         if (!(dest instanceof Point)) {
-            throw new Error("Точка назначения не является объектом типа Point.");
+            throw new Error("Клетка назначения не является объектом типа Point.");
         }
         if (!(unit instanceof Unit)) {
-            throw new Error("Юнит назначения не является объектом типа Unit.");
+            throw new Error("Юнит не является объектом типа Unit.");
         }
 
         this.actions.MOVEMENT.push(new MoveRequestMessage(unit.getId(), dest.getJ(), dest.getI()));
     }
 
     /**
-     * Возывращает запросы движения и очищает массив запросов движения.
+     * Возвращает запросы движения и очищает массив запросов движения.
      */
     this.takeMovementRequests = function() {
         var tmp = this.actions.MOVEMENT;

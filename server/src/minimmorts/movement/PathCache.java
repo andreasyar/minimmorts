@@ -49,7 +49,9 @@ class PathCache {
              * Если нужно, освободим место в кеше под путь.
              */
             if (pathCache.size() == PathCache.MAX_CACHE_SIZE) {
-                logger.log(Level.INFO, "{0}: Кеш путей достиг максимума.", ServerMainLoop.getStep());
+                if (MovementManager.isLoggingEnabled()) {
+                    logger.log(Level.INFO, "{0}: Кеш путей достиг максимума.", ServerMainLoop.getStep());
+                }
                 Pair oldPair = getRarestUsedPath();
                 if ( (i = pathCache.indexOf(oldPair)) == -1) {
                     throw new NoSuchElementException("Just found pair not found in list :O");
