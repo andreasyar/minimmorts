@@ -229,6 +229,14 @@ var followings = [];
 
 var followingsTimer = null;
 
+var stepEndTime = null;
+
+var syncTimer = null;
+
+var confirmsCache = [];
+
+var idleMode = false;
+
 /************
  * Функции. *
  ************/
@@ -246,9 +254,9 @@ function scrOnMousedown(e) {
     x -= scr.offsetLeft;
     y -= scr.offsetTop;
 
-    camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+    //camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
 
-    if (e.button == 0 && !camMove) {
+    if (e.button == 0/* && !camMove*/) {
         selections_beg = {x1: x, y1: y}
         //scr.addEventListener("mousemove", scrOnMousemove, false);
     }
@@ -257,7 +265,7 @@ function scrOnMousedown(e) {
 function scrOnMouseup(e) {
     var x;
     var y;
-    var camMove = false;
+    //var camMove = false;
     if (e.pageX != undefined && e.pageY != undefined) {
         x = e.pageX;
         y = e.pageY;
@@ -273,7 +281,7 @@ function scrOnMouseup(e) {
         /*
          * Движение камеры при кликах на панельках по бокам экрана.
          */
-        if (scrollBarsHovered.top) {
+        /*if (scrollBarsHovered.top) {
             camera.y -= 1 * CELL_H;
         }
         if (scrollBarsHovered.bottom) {
@@ -285,9 +293,9 @@ function scrOnMouseup(e) {
         if (scrollBarsHovered.right) {
             camera.x += 1 * CELL_W;
         }
-        camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;
+        camMove = scrollBarsHovered.top || scrollBarsHovered.bottom || scrollBarsHovered.left || scrollBarsHovered.right;*/
         
-        if (!camMove) {
+        if (true/*!camMove*/) {
             selected_units = new Array();
             selection_rect = createSelectionRect(selections_beg.x1, selections_beg.y1, x, y);
 
@@ -363,24 +371,56 @@ function scrOnMousemove(e) {
     }
     
     if (y >= 0 && y <= 24) {
+        clearInterval(scrollBarsHovered.bottomTimer);
+        clearInterval(scrollBarsHovered.topTimer);
+        scrollBarsHovered.topTimer = setInterval(camMove, camMoveSpeed);
         scrollBarsHovered.top = true;
         scrollBarsHovered.bottom = false;
     } else if (y >= SCR_H - 1 - 24 && y <= SCR_H - 1) {
+        clearInterval(scrollBarsHovered.bottomTimer);
+        clearInterval(scrollBarsHovered.topTimer);
+        scrollBarsHovered.bottomTimer = setInterval(camMove, camMoveSpeed);
         scrollBarsHovered.top = false;
         scrollBarsHovered.bottom = true;
     } else {
+        clearInterval(scrollBarsHovered.bottomTimer);
+        clearInterval(scrollBarsHovered.topTimer);
         scrollBarsHovered.top = false;
         scrollBarsHovered.bottom = false;
     }
     if (x >= 0 && x <= 24) {
+        clearInterval(scrollBarsHovered.rightTimer);
+        clearInterval(scrollBarsHovered.leftTimer);
+        scrollBarsHovered.leftTimer = setInterval(camMove, camMoveSpeed);
         scrollBarsHovered.left = true;
         scrollBarsHovered.right = false;
     } else if (x >= SCR_W - 1 - 24 && x <= SCR_W - 1) {
+        clearInterval(scrollBarsHovered.rightTimer);
+        clearInterval(scrollBarsHovered.leftTimer);
+        scrollBarsHovered.rightTimer = setInterval(camMove, camMoveSpeed);
         scrollBarsHovered.left = false;
         scrollBarsHovered.right = true;
     } else {
+        clearInterval(scrollBarsHovered.rightTimer);
+        clearInterval(scrollBarsHovered.leftTimer);
         scrollBarsHovered.left = false;
         scrollBarsHovered.right = false;
+    }
+}
+
+var camMoveSpeed = 60;
+function camMove() {
+    if (scrollBarsHovered.top) {
+        camera.y -= 1 * CELL_H;
+    }
+    if (scrollBarsHovered.bottom) {
+        camera.y += 1 * CELL_H;
+    }
+    if (scrollBarsHovered.left) {
+        camera.x -= 1 * CELL_W;
+    }
+    if (scrollBarsHovered.right) {
+        camera.x += 1 * CELL_W;
     }
 }
 
@@ -439,6 +479,16 @@ scr.ondblclick = function(evt) {
            document.onclick = null; 
     }, 100);
 };
+scr.onmouseout = function(e) {
+    clearInterval(scrollBarsHovered.bottomTimer);
+    clearInterval(scrollBarsHovered.topTimer);
+    clearInterval(scrollBarsHovered.rightTimer);
+    clearInterval(scrollBarsHovered.leftTimer);
+    scrollBarsHovered.top = false;
+    scrollBarsHovered.bottom = false;
+    scrollBarsHovered.left = false;
+    scrollBarsHovered.right = false;
+}
 
 function ClearSelection() {
     if (window.getSelection)
@@ -446,6 +496,49 @@ function ClearSelection() {
     else if (document.selection)
         document.selection.empty();
 }
+
+(function() {
+    var hidden, change, vis = {
+            hidden: "visibilitychange",
+            mozHidden: "mozvisibilitychange",
+            webkitHidden: "webkitvisibilitychange",
+            msHidden: "msvisibilitychange",
+            oHidden: "ovisibilitychange" /* not currently supported */
+        };             
+    for (var hidden in vis) {
+        if (vis.hasOwnProperty(hidden) && hidden in document) {
+            change = vis[hidden];
+            break;
+        }
+    }
+    if (change)
+        document.addEventListener(change, onchange);
+    else if (/*@cc_on!@*/false) // IE 9 and lower
+        document.onfocusin = document.onfocusout = onchange
+    else
+        window.onfocus = window.onblur = onchange;
+
+    function onchange (evt) {
+        var body = document.body;
+        evt = evt || window.event;
+
+        if (evt.type == "focus" || evt.type == "focusin") {
+            body.className = "visible";
+        } else if (evt.type == "blur" || evt.type == "focusout") {
+            body.className = "hidden";
+        } else {
+            body.className = this[hidden] ? "hidden" : "visible";
+        }
+        
+        if (body.className == "hidden") {
+            idleModeOn();
+            console.log(step + ": Игра перешла в фоновый режим.");
+        } else if (body.className == "visible") {
+            idleModeOff();
+            console.log(step + ": Игра вышла из фонового режима.");
+        }
+    }
+})();
 </script>
 
 </body>

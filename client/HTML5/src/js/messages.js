@@ -309,7 +309,7 @@ var MESSAGE_HANDLERS = {
         
         clearTimeouts();
         drawTimer = setTimeout(drawLoop, 1000 / FPS);
-        syncLoop();
+        syncTimer = setInterval(syncLoop, clientLoopFreq);
         pingTimer = setTimeout(pingLoop, 100);
         followingsTimer = setTimeout(followLoop, 500);
         scr.addEventListener("mousedown", scrOnMousedown, false);
@@ -318,14 +318,18 @@ var MESSAGE_HANDLERS = {
         hideLoginForm();
     },
     "CONFIRM": function (msg) {
-        if (step == msg[1]) {
-            for (var i in msg[2]) {
-                MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);
+        if (idleMode) {
+            if (step == msg[1]) {
+                for (var i in msg[2]) {
+                    MESSAGE_HANDLERS[msg[2][i][0]](msg[2][i]);
+                }
+
+                syncLoop();
+            } else {
+                console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
             }
-            
-            syncLoop();
         } else {
-            console.log("Cant wake up. Step", msg[1], "confirmed but we are waiting for confirmation of step", step);
+            addConfirm(msg);
         }
     },
     "NEWUNIT": function (msg) {

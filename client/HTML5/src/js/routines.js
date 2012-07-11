@@ -610,6 +610,7 @@ function clearTimeouts() {
     clearTimeout(drawTimer);
     clearTimeout(pingTimer);
     clearTimeout(followingsTimer);
+    clearInterval(syncTimer);
 }
 
 /**
@@ -743,8 +744,32 @@ function disconnect() {
     }
 }
 
+var firstClientStep = true;
+var clientLoopFreq = 100;
+var slowDown = false;
+var speedUp = false;
+
 function syncLoop() {
     var i, actions;
+    
+    if (!firstClientStep) {
+        var confirm = takeConfirm(step);
+        if (confirm != null) {
+            confirm = confirm[0];
+            for (var m = 0; m < confirm[2].length; m++) {
+                MESSAGE_HANDLERS[confirm[2][m][0]](confirm[2][m]);
+            }
+            console.log(step + ": Confirm found! Cache: " + confirmsCacheToString());
+        } else {
+            console.log(step + ": Confirm not found. " + confirmsCacheToString());
+            if (!idleMode) {
+                return;
+            }
+        }
+    } else {
+        firstClientStep = false;
+        console.log(step + ": first step");
+    }
 
     if (stepBegTime != null) {
         prevStepTime = (new Date()).getTime() - stepBegTime;
@@ -765,6 +790,26 @@ function syncLoop() {
     }
     actions = actionManager.takeMovementRequests();
     server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+
+    if (!idleMode) {
+        if (!firstClientStep) {
+            if (confirmsCache.length > 3 && (speedUp || (!slowDown && !speedUp))) {
+                // Overflow.
+                clearInterval(syncTimer); 
+                syncTimer = setInterval(syncLoop, clientLoopFreq - 3);
+                slowDown = true;
+                speedUp = false;
+                console.log(step + ": Slow down client loop.");
+            } else if (confirmsCache.length < 2 && (slowDown || (!slowDown && !speedUp))) {
+                // Underflow.
+                clearInterval(syncTimer); 
+                syncTimer = setInterval(syncLoop, clientLoopFreq + 3);
+                slowDown = false;
+                speedUp = true;
+                console.log(step + ": Speed up client loop.");
+            }
+        }
+    }
 }
 
 function pingLoop() {
@@ -1021,4 +1066,54 @@ function addFollowing(object, target) {
         console.log(step + ": Юнит " + object + " начал преследовать цель " + target);
     }
     return true;
+}
+
+function addConfirm(confirm) {
+    confirmsCache.push(confirm);
+}
+
+function takeConfirm(step) {
+    for (var i = 0; i < confirmsCache.length; i++) {
+        if (confirmsCache[i][1] == step) {
+            return confirmsCache.splice(i, 1);
+        }
+    }
+    
+    return null;
+}
+
+function confirmsCacheToString() {
+    var out = "";
+    
+    for (var i = 0; i < confirmsCache.length; i++) {
+        out += confirmsCache[i][1] + ","
+    }
+    
+    return out;
+}
+
+function idleModeOn() {
+    if (clientId != undefined) {
+        idleMode = true;
+        clearInterval(syncTimer);
+        slowDown = false;
+        speedUp = false;
+
+        while (confirmsCache.length > 0) {
+            console.log(step + "clean!");
+            syncLoop();
+        }
+        console.log(step + "clean done!");
+    }
+}
+
+function idleModeOff() {
+    if (clientId != undefined) {
+        idleMode = false;
+        clearInterval(syncTimer);
+        slowDown = false;
+        speedUp = false;
+
+        syncTimer = setInterval(syncLoop, clientLoopFreq);
+    }
 }
