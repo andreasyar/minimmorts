@@ -97,6 +97,11 @@ var DEBUG_MOVEMENTS = false;
  */
 var DEBUG_FOLLOW = false;
 
+/**
+ * Включение дебага режимов и их изменения.
+ */
+var DEBUG_MODES = false;
+
 var ENABLE_GC = false;
 
 var MEGAARRAY = new Array();
@@ -443,7 +448,13 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <b>Слежение за юнитами</b> (камера движется вслед за выделенными юнитами)<br>
 
 <script type="text/javascript">
-showLoginForm();
+document.body.onload = function(e) {
+    if (/chrome/.test(navigator.userAgent.toLowerCase())) {
+        showLoginForm();
+    } else {
+        alert("Latest version of Chrome required to play.");
+    }
+}
 document.getElementById('toggleSmoothMovement').checked = smoothMovementEnabled;
 
 document.onkeydown = function(event) {

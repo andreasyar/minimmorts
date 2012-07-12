@@ -759,16 +759,22 @@ function syncLoop() {
             for (var m = 0; m < confirm[2].length; m++) {
                 MESSAGE_HANDLERS[confirm[2][m][0]](confirm[2][m]);
             }
-            console.log(step + ": Confirm found! Cache: " + confirmsCacheToString());
+            if (DEBUG_MODES) {
+                console.log(step + ": Действия за данный ход найдены. Кеш действий: " + confirmsCacheToString());
+            }
         } else {
-            console.log(step + ": Confirm not found. " + confirmsCacheToString());
+            if (DEBUG_MODES) {
+                console.log(step + ": Действия за данный ход не найдены. Кеш действий: " + confirmsCacheToString());
+            }
             if (!idleMode) {
                 return;
             }
         }
     } else {
         firstClientStep = false;
-        console.log(step + ": first step");
+        if (DEBUG_MODES) {
+            console.log(step + ": Первая итерация главного цикла.");
+        }
     }
 
     if (stepBegTime != null) {

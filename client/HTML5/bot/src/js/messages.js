@@ -294,6 +294,7 @@ var MESSAGE_HANDLERS = {
         selected_units = new Array();
         movementManager = new MovementManager();
         actionManager = new ActionManager();
+        followings = [];
 
         /*
          * Создание юнитов.
@@ -400,5 +401,8 @@ var MESSAGE_HANDLERS = {
     },
     "PING": function(message) {
         ping = (new Date()).getTime() - message[0][1].time;
+    },
+    "STEPTIME": function(message) {
+        console.log(step + ": Время хода должно измениться на " + message[1]);
     }
 }

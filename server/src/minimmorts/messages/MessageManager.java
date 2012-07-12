@@ -162,6 +162,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new NewUnitMessage(unit.getOwnerId(), unit.getId(), unit.getJ(), unit.getI(), unit.getColor().getRed(), unit.getColor().getGreen(), unit.getColor().getBlue());
     }
 
+    public static StepTimeMessage createStepTimeMessage(long newTime) {
+        return new StepTimeMessage(newTime);
+    }
+
     public static SyncErrorMessage createSyncErrorMessage(long unitId) {
         return new SyncErrorMessage(unitId);
     }

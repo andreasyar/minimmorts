@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,6 +14,7 @@ import java.util.logging.SimpleFormatter;
 import minimmorts.GlobalLogFile;
 import minimmorts.IdGenerator;
 import minimmorts.LastErrorService;
+import minimmorts.ServerLauncher;
 import minimmorts.client.Client;
 import minimmorts.client.ClientManager;
 import minimmorts.map.Map;
@@ -79,6 +81,10 @@ public class ServerMainLoop implements Runnable {
      *
      */
     private final LinkedList<State> states = new LinkedList();
+    
+    private final int stepTime;
+    
+    private int curStepTime;
 
     public static void enableLogging() {
         ServerMainLoop.loggingEnabled = true;
@@ -96,7 +102,7 @@ public class ServerMainLoop implements Runnable {
         return step;
     }
 
-    public ServerMainLoop(UnitManager unitManager, MovementManager movementManager, MessageManager messageManager, ClientManager clientManager) throws IOException {
+    public ServerMainLoop(UnitManager unitManager, MovementManager movementManager, MessageManager messageManager, ClientManager clientManager, int stepTime) throws IOException {
         if (ServerMainLoop.logger == null) {
             ServerMainLoop.logger = Logger.getLogger(ServerMainLoop.class.getName());
             FileHandler h = new FileHandler(ServerMainLoop.class.getName() + ".txt");
@@ -111,13 +117,17 @@ public class ServerMainLoop implements Runnable {
         this.messageManager = messageManager;
         this.clientManager = clientManager;
         this.map = new Map(100, 100);
+        
+        this.stepTime = stepTime;
+        this.curStepTime = stepTime;
     }
 
     @Override
     public void run() {
         Iterator clientsIterator;
-
         Client client;
+        
+        long stepBegTime = System.currentTimeMillis();
         
         /*
          * Пометим всех отключившихся клиентов.
@@ -195,6 +205,33 @@ public class ServerMainLoop implements Runnable {
          * Обновим позиции юнитов.
          */
         movementManager.updatePositions(getStep());
+        
+        long stepDiffTime = System.currentTimeMillis() - stepBegTime;
+        logger.log(
+            Level.INFO,
+            "{0}: diff={1}",
+            new Object[] {ServerMainLoop.getStep(), stepDiffTime}
+        );
+        if (stepDiffTime <= curStepTime) {
+            return;
+        }
+        
+        int newStepTime = (int) Math.ceil((double) stepDiffTime / 50.0d);
+        newStepTime *= 50;
+        logger.log(
+            Level.INFO,
+            "{0}: Время хода изменяется c {1} на {2}. diff={3}",
+            new Object[] {ServerMainLoop.getStep(), curStepTime, newStepTime, stepDiffTime}
+        );
+        curStepTime = newStepTime;
+        
+        clientsIterator = clientManager.getActiveClients().iterator();
+        while (clientsIterator.hasNext()) {
+            client = (Client) clientsIterator.next();
+            messageManager.sendMessage(clientManager.getClientChannel(client.getId()), MessageManager.createStepTimeMessage(curStepTime));
+        }
+        
+        ServerLauncher.restartServerMainLoop(0, curStepTime, TimeUnit.MILLISECONDS);
     }
 
     /**

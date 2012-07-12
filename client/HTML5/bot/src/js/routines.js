@@ -734,7 +734,7 @@ function generatePath(map, waypoints, unit) {
 
 function connect() {
     server = new ServerInteraction();
-    server.connect("ws://localhost:8015/");
+    server.connect("ws://192.168.0.1:8015/");
 }
 
 function disconnect() {

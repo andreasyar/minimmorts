@@ -23,7 +23,11 @@ import org.xml.sax.SAXException;
 public class ServerLauncher {
     private static final Logger logger = Logger.getLogger(ServerLauncher.class.getName());
     
-    public static ScheduledFuture<?> handle;
+    private static ServerMainLoop serverMainLoop = null;
+    
+    private static ScheduledExecutorService serverMainLoopScheduler = null;
+    
+    private static ScheduledFuture<?> serverMainLoopHandler = null;
 
     public static void main(String[] args) {
         ServerConfig config = null;
@@ -31,7 +35,6 @@ public class ServerLauncher {
         MessageManager messageManager = null;
         MovementManager movementManager = null;
         UnitManager unitManager = null;
-        ServerMainLoop serverMainLoop = null;
 
         // Read config.
         
@@ -58,7 +61,7 @@ public class ServerLauncher {
             unitManager = new UnitManager();
             //UnitManager.enableLogging();
             
-            serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager);
+            serverMainLoop = new ServerMainLoop(unitManager, movementManager, messageManager, clientManager, Integer.parseInt(config.getStepTime()));
             //ServerMainLoop.enableLogging();
             
             logger.log(Level.INFO, "Game server created.");
@@ -77,14 +80,52 @@ public class ServerLauncher {
         
         // Start game server main loop.
         
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        handle = scheduler.scheduleAtFixedRate(serverMainLoop, 0, Integer.parseInt(config.getStepTime()), TimeUnit.MILLISECONDS);
-        logger.log(Level.INFO, "Game server main loop scheduled.");
+        serverMainLoopScheduler = Executors.newScheduledThreadPool(1);
+        serverMainLoopHandler = serverMainLoopScheduler.scheduleAtFixedRate(
+            serverMainLoop,
+            Integer.parseInt(config.getStepTime()),
+            Integer.parseInt(config.getStepTime()),
+            TimeUnit.MILLISECONDS
+        );
+        logger.log(Level.INFO, "Главный цикл сервера запущен.");
         
-        try {
-            handle.get();
-        } catch (ExecutionException | InterruptedException ex) {
-            logger.log(Level.SEVERE, null, ex);
-        }
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.schedule(
+            new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        serverMainLoopHandler.get();
+                    } catch (ExecutionException | InterruptedException ex) {
+                        logger.log(Level.SEVERE, null, ex);
+                    }
+                }
+            },
+            0,
+            TimeUnit.MILLISECONDS
+        );
+    }
+    
+    public static void restartServerMainLoop(long initialDelay, long period, TimeUnit timeUnit) {
+        serverMainLoopHandler.cancel(false);
+        serverMainLoopScheduler = Executors.newScheduledThreadPool(1);
+        serverMainLoopHandler = serverMainLoopScheduler.scheduleAtFixedRate(serverMainLoop, initialDelay, period, timeUnit);
+        logger.log(Level.INFO, "Главный цикл сервера перезапущен.");
+        
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.schedule(
+            new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        serverMainLoopHandler.get();
+                    } catch (ExecutionException | InterruptedException ex) {
+                        logger.log(Level.SEVERE, null, ex);
+                    }
+                }
+            },
+            0,
+            TimeUnit.MILLISECONDS
+        );
     }
 }
