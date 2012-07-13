@@ -207,11 +207,11 @@ public class ServerMainLoop implements Runnable {
         movementManager.updatePositions(getStep());
         
         long stepDiffTime = System.currentTimeMillis() - stepBegTime;
-        logger.log(
+        /*logger.log(
             Level.INFO,
             "{0}: diff={1}",
             new Object[] {ServerMainLoop.getStep(), stepDiffTime}
-        );
+        );*/
         if (stepDiffTime <= curStepTime) {
             return;
         }
@@ -724,6 +724,7 @@ public class ServerMainLoop implements Runnable {
                     new WelcomeMessage(
                         client.getId(),
                         getStep(),
+                        curStepTime,
                         MessageManager.createAllNewUnitMessage(unitManager.getAllActiveUnits()),
                         MessageManager.createAllMoveMessage(movementManager.getAllActiveMovements())
                     )

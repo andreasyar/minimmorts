@@ -292,7 +292,6 @@ var MESSAGE_HANDLERS = {
         selected_units = new Array();
         movementManager = new MovementManager();
         actionManager = new ActionManager();
-        followings = [];
         
         /*
          * Создание юнитов.
@@ -308,6 +307,8 @@ var MESSAGE_HANDLERS = {
             MESSAGE_HANDLERS[msg[4][i][0]](msg[4][i]);
         }
         
+        clientLoopFreq = msg[5];
+        console.log(clientLoopFreq);
         clearTimeouts();
         drawTimer = setTimeout(drawLoop, 1000 / FPS);
         syncTimer = setInterval(syncLoop, clientLoopFreq);

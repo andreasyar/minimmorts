@@ -1020,13 +1020,14 @@ function followLoop() {
     for (var i = 0; i < followings.length; i++) {
         object = followings[i].getObject();
         target = followings[i].getTarget();
-        if ( (objectDest = movementManager.getMovementDest(object)) == null) {
+        if ( (objectDest = followings[i].getObjectDest()) == null) {
             objectDest = new Point(object.getJ(), object.getI());
         }
         targetPos = new Point(target.getJ(), target.getI());
         
         if (!targetPos.equals(objectDest)) {
             actionManager.moveUnit(object, targetPos);
+            followings[i].setObjectDest(targetPos);
         }
     }
     
@@ -1121,5 +1122,5 @@ function idleModeOff() {
         speedUp = false;
 
         syncTimer = setInterval(syncLoop, clientLoopFreq);
-    }
+    }   
 }

@@ -81,6 +81,12 @@ function ServerInteraction() {
     this.sendMessage = function(message) {
         if (this.socket == null || this.socket.readyState != WebSocket.OPEN) {
             console.log("Cant send message. Connection not established.");
+            if (autoReconnect) {
+                clearTimeouts();
+                var ms = 3000 + 1000 * getRandomInt(17);
+                connectTimer = setTimeout(connect, ms);
+                console.log("Переподключение через " + ms + " милисекунд.");
+            }
         } else {
             message = JSON.stringify(message);
             if (DEBUG_PROTOCOL) {

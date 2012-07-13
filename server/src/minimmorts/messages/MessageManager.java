@@ -204,6 +204,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         JsonArray jsonMessageArray = parser.parse(request).getAsJsonArray();
         JsonArray messageFields;
         String type;
+        Client client;
 
         for (JsonElement jsonMessage : jsonMessageArray) {
             messageFields = jsonMessage.getAsJsonArray();
@@ -217,8 +218,11 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     }
                     break;
                 case "STATE":
+                    if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
+                        return;
+                    }
+                    
                     long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
-                    Client client;
                     
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (MessageManager.isLoggingEnabled()) {
@@ -291,6 +295,10 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
 
                     break;
                 case "PING":
+                    if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
+                        return;
+                    }
+                    
                     /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
                     if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
                         if (ClientManager.isLoggingEnabled()) {

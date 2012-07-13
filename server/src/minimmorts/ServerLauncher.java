@@ -89,7 +89,7 @@ public class ServerLauncher {
         );
         logger.log(Level.INFO, "Главный цикл сервера запущен.");
         
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        /*ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.schedule(
             new Runnable() {
                 @Override
@@ -103,7 +103,7 @@ public class ServerLauncher {
             },
             0,
             TimeUnit.MILLISECONDS
-        );
+        );*/
     }
     
     public static void restartServerMainLoop(long initialDelay, long period, TimeUnit timeUnit) {
@@ -112,7 +112,7 @@ public class ServerLauncher {
         serverMainLoopHandler = serverMainLoopScheduler.scheduleAtFixedRate(serverMainLoop, initialDelay, period, timeUnit);
         logger.log(Level.INFO, "Главный цикл сервера перезапущен.");
         
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        /*ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.schedule(
             new Runnable() {
                 @Override
@@ -126,6 +126,6 @@ public class ServerLauncher {
             },
             0,
             TimeUnit.MILLISECONDS
-        );
+        );*/
     }
 }

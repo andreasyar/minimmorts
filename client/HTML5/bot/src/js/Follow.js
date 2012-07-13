@@ -17,6 +17,8 @@ function Follow(object, target) {
     
     this.target = target;
     
+    this.objectDest = null;
+    
     this.getObject = function() {
         return this.object;
     }
@@ -27,6 +29,14 @@ function Follow(object, target) {
     
     this.setTarget = function(target) {
         this.target = target;
+    }
+    
+    this.getObjectDest = function() {
+        return this.objectDest;
+    }
+    
+    this.setObjectDest = function(objectDest) {
+        this.objectDest = objectDest;
     }
     
     return this;

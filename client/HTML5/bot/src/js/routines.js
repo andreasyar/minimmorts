@@ -734,7 +734,7 @@ function generatePath(map, waypoints, unit) {
 
 function connect() {
     server = new ServerInteraction();
-    server.connect("ws://192.168.0.1:8015/");
+    server.connect("ws://localhost:8015/");
 }
 
 function disconnect() {
@@ -846,13 +846,14 @@ function followLoop() {
     for (var i = 0; i < followings.length; i++) {
         object = followings[i].getObject();
         target = followings[i].getTarget();
-        if ( (objectDest = movementManager.getMovementDest(object)) == null) {
+        if ( (objectDest = followings[i].getObjectDest()) == null) {
             objectDest = new Point(object.getJ(), object.getI());
         }
         targetPos = new Point(target.getJ(), target.getI());
         
         if (!targetPos.equals(objectDest)) {
             actionManager.moveUnit(object, targetPos);
+            followings[i].setObjectDest(targetPos);
         }
     }
     

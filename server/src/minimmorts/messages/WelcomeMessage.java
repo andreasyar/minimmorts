@@ -9,12 +9,14 @@ import java.util.LinkedList;
 public class WelcomeMessage implements Message {
     private long clientId;
     private long step;
+    private long stepTime;
     private LinkedList<Message> units;
     private LinkedList<Message> actions;
 
-    public WelcomeMessage(long clientId, long step, LinkedList<Message> units, LinkedList<Message> actions) {
+    public WelcomeMessage(long clientId, long step, long stepTime, LinkedList<Message> units, LinkedList<Message> actions) {
         this.clientId = clientId;
         this.step = step;
+        this.stepTime = stepTime;
         this.units = units;
         this.actions = actions;
     }
@@ -34,9 +36,9 @@ public class WelcomeMessage implements Message {
             for (int i = 0; i < actions.size() - 1; i++) {
                 out += actions.get(i).toJSON() + ",";
             }
-            out += actions.get(actions.size() - 1).toJSON() + "]]";
+            out += actions.get(actions.size() - 1).toJSON() + "]," + stepTime + "]";
         } else {
-            out += "]]";
+            out += "]," + stepTime + "]";
         }
         return out;
     }

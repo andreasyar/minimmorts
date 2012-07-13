@@ -149,15 +149,19 @@ var autoReconnect = true;
  * Вероятность того, что бот проигнорирует сообщение CONFIRM от сервера. Это
  * нужно для эмуляции лагов клиента. null означает, что игнорирование выключено.
  */
-var ignoreConfirmProbability = null;
+var ignoreConfirmProbability = 300;
 
 /*
  * Вероятность того, что бот переподключится к серверу. null означает, что
  * переподключение выключено.
  */
-var reconnectProbability = null;
+var reconnectProbability = 300;
 
-var followProbability = 20;
+/*
+ * Вероятность того, что бот перейдёт в режим преследования. null означает, что
+ * переход в режим преследования выключен.
+ */
+var followProbability = null;
 
 /**
  * Время начала текущего хода.
@@ -212,7 +216,13 @@ var followingEnabled = false;
 </script>
 
 <script type="text/javascript">
-connect();
+document.body.onload = function(e) {
+    if (/chrome/.test(navigator.userAgent.toLowerCase())) {
+        connect();
+    } else {
+        alert("Latest version of Chrome required to play.");
+    }
+}
 </script>
 
 </body>
