@@ -14,6 +14,7 @@ var SPRITES = new Array(
     {id: 8, name: "peasant_NE", src: "sprites/peasant_NE.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
     {id: 9, name: "peasant_NW", src: "sprites/peasant_NW.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
     {id: 10, name: "peasant_selection", src: "sprites/peasant_selection.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
+    {id: 10, name: "peasant_follow", src: "sprites/peasant_follow.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
     {id: 2, name: "peasant_S_walk_0", src: "sprites/peasant_S_walk_0.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
     {id: 2, name: "peasant_S_walk_1", src: "sprites/peasant_S_walk_1.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},
     {id: 2, name: "peasant_S_walk_2", src: "sprites/peasant_S_walk_2.png", image: null, base: {x: 36, y: 33}, w: 72, h: 72, sprite: null},

@@ -254,6 +254,7 @@ public class Movement {
         Point p;
         int s = (int) ((float) m / speed);
         int wpCount;
+        boolean found;
         
         while (begStep + s <= ServerMainLoop.getStep()) {
             /*logger.log(
@@ -264,12 +265,17 @@ public class Movement {
             subList = path.subList(0, m);
             
             wpCount = 0;
-            for (int i = wpCount; i < subList.size(); i++) {
-                for (int j = wpCount; j < Math.min(subList.size(), waypoints.size()); j++) {
+            for (int j = wpCount; j < Math.min(subList.size(), waypoints.size()); j++) {
+                found = false;
+                for (int i = wpCount; i < subList.size(); i++) {
                     if (subList.get(i).equals(waypoints.get(j))) {
                         wpCount++;
+                        found = true;
                         break;
                     }
+                }
+                if (!found) {
+                    break;
                 }
             }
             

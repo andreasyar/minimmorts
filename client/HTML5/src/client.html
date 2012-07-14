@@ -21,6 +21,7 @@
     <script type="text/javascript" src="js/SpriteMovementAnimation.js"></script>
     <script type="text/javascript" src="js/PathCache.js"></script>
     <script type="text/javascript" src="js/Follow.js"></script>
+    <script type="text/javascript" src="js/FollowBlinkAnimation.js"></script>
     <style type="text/css" >
     #scr {
         border: 1px solid #000000;
@@ -241,6 +242,8 @@ var syncTimer = null;
 var confirmsCache = [];
 
 var idleMode = false;
+
+var freeAnimation = [];
 
 /************
  * Функции. *

@@ -937,6 +937,10 @@ function drawLoop() {
         10,
         10
     );
+    
+    for (i = 0; i < freeAnimation.length; i++) {
+        freeAnimation[i].draw(units_context, camera);
+    }
 
     // Нарисуем карту и юнитов на основном холсте.
     scr_context.drawImage(map_buffer, 0, 0);
@@ -1072,6 +1076,7 @@ function addFollowing(object, target) {
     if (DEBUG_FOLLOW) {
         console.log(step + ": Юнит " + object + " начал преследовать цель " + target);
     }
+    freeAnimation.push(new FollowBlinkAnimation(target));
     return true;
 }
 
