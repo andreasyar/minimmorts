@@ -71,7 +71,7 @@ function MovementManager() {
     /**
      * Обновляет существующее движение.
      */
-    this.updateMovement = function(unit, waypoints) {
+    this.updateMovement = function(begStep, unit, waypoints) {
         var existedMovement = null;
         for (var i = 0; i < this.movements.length; i++) {
             if (this.movements[i].getUnit() == unit) {
@@ -86,6 +86,7 @@ function MovementManager() {
         if (DEBUG_MOVEMENTS) {
             console.log(step + ": Обновляется движение юнита " + unit + " по точкам " + waypointsToString(waypoints));
         }
+        existedMovement.setBegStep(begStep);
         
         var path = generatePath(map, waypoints, existedMovement.getUnit());
         if (path == null) {

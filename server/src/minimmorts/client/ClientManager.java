@@ -410,24 +410,6 @@ public class ClientManager {
             disconnectedClients.clear();
         }
     }
-    
-    public void markUnreportedClients(long step) {
-        Entry pair;
-        Client client;
-
-        Iterator i = clientsById.entrySet().iterator();
-        while (i.hasNext()) {
-            pair = (Entry) i.next();
-            client = (Client) pair.getValue();
-            if (client.getLastReportedStep() != step && client.isConnected()) {
-                if (client.getReinitializationAttempts() >= MAX_REINITIALIZATION_ATTEMPTS) {
-                    client.setDisconnected();
-                } else {
-                    client.setUnreported();
-                }
-            }
-        }
-    }
 
     public boolean setConnected(long clientId) {
         Client client;

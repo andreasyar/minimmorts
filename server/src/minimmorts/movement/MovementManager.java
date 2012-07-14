@@ -136,6 +136,7 @@ public class MovementManager {
             return null;
         }
         existedMovement.setPath(newPath);
+        existedMovement.shrink();
         
         return existedMovement;
     }

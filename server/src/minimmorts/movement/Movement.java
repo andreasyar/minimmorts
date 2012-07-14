@@ -3,6 +3,7 @@ package minimmorts.movement;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -83,6 +84,9 @@ public class Movement {
         this.path = path;
         this.begStep = begStep;
         this.stopped = false;
+
+        Q = (int) (this.speed * 10.0f);
+        m = Q / gcd(Q, 10);
     }
 
     public Unit getUnit() {
@@ -178,7 +182,7 @@ public class Movement {
     }
 
     void update(int endJ, int endI) throws IndexOutOfBoundsException, NoSuchElementException, NullPointerException {
-        Point nextPathPoint = null;
+        Point nextPathPoint;
         String derp = this.waypointsToString();
         int n = (int) Math.floor(((double) ServerMainLoop.getStep() - (double) this.begStep) * (double) this.speed);
         if (n >= this.path.size() - 1) {
@@ -224,6 +228,14 @@ public class Movement {
         }
         return out;
     }
+    
+    public String pathToString() {
+        String out = "";
+        for (int i = 0; i < path.size(); i++) {
+            out += path.get(i);
+        }
+        return out;
+    }
 
     private boolean haveSameWaypoints() {
         Point cur = waypoints.getFirst();
@@ -235,5 +247,67 @@ public class Movement {
             }
         }
         return false;
+    }
+
+    void shrink() {
+        List<Point> subList;
+        Point p;
+        int s = (int) ((float) m / speed);
+        int wpCount;
+        
+        while (begStep + s <= ServerMainLoop.getStep()) {
+            /*logger.log(
+                Level.INFO,
+                "{0}: Урезание пути юнита {1} m={2},s={3},path={4},wp={5}",
+                new Object[] {ServerMainLoop.getStep(), unit, m, s, pathToString(), waypointsToString()}
+            );*/
+            subList = path.subList(0, m);
+            
+            wpCount = 0;
+            for (int i = wpCount; i < subList.size(); i++) {
+                for (int j = wpCount; j < Math.min(subList.size(), waypoints.size()); j++) {
+                    if (subList.get(i).equals(waypoints.get(j))) {
+                        wpCount++;
+                        break;
+                    }
+                }
+            }
+            
+            /*logger.log(
+                Level.INFO,
+                "{0}: Урезание пути юнита {1} Удалим {2} точек пути.",
+                new Object[] {ServerMainLoop.getStep(), unit, wpCount}
+            );*/
+            waypoints.subList(0, wpCount).clear();
+            p = new Point(path.get(m).getJ(), path.get(m).getI());
+            if (!waypoints.getFirst().equals(p)) {
+                waypoints.addFirst(p);
+            }
+            
+            subList.clear();
+            
+            begStep += s;
+            /*logger.log(
+                Level.INFO,
+                "{0}: Урезание пути юнита {1} завершено path={2},wp={3}",
+                new Object[] {ServerMainLoop.getStep(), unit, pathToString(), waypointsToString()}
+            );*/
+        }
+    }
+
+    private int Q;
+
+    private int m;
+
+    private static int gcd(int a, int b) {
+        int temp;
+        
+        while (b > 0) {
+            temp = b;
+            b = a % b;
+            a = temp;
+        }
+        
+        return a;
     }
 }

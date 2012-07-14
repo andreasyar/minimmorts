@@ -384,7 +384,7 @@ var MESSAGE_HANDLERS = {
         );
     },
     "MOVEUPDATE": function (message) {
-        // Example: 
+        // Example: ["MOVEUPDATE",{"begStep":68,"unitId":43,"waypoints":[{"j":53,"i":83},{"j":52,"i":82},{"j":96,"i":89}]}]
 
         var moveMessage = message[1];
         var unit = getUnitById(moveMessage.unitId);
@@ -395,6 +395,7 @@ var MESSAGE_HANDLERS = {
         }
 
         movementManager.updateMovement(
+            moveMessage.begStep,
             unit,
             moveMessage.waypoints
         );

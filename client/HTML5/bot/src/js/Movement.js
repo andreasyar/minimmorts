@@ -97,6 +97,10 @@ function Movement (unit, speed, beg_step, waypoints, path) {
         return this.beg_step;
     }
 
+    this.setBegStep = function(begStep) {
+        this.beg_step = begStep;
+    }
+
     this.isFinished = function() {
         return this.finished;
     }
