@@ -85,6 +85,10 @@ public class ServerMainLoop implements Runnable {
     private final int stepTime;
     
     private int curStepTime;
+    
+    private int decraseValue;
+    
+    private int decraseCounter;
 
     public static void enableLogging() {
         ServerMainLoop.loggingEnabled = true;
@@ -212,26 +216,55 @@ public class ServerMainLoop implements Runnable {
             "{0}: diff={1}",
             new Object[] {ServerMainLoop.getStep(), stepDiffTime}
         );*/
-        if (stepDiffTime <= curStepTime) {
+        if (stepDiffTime <= stepTime) {
             return;
         }
         
-        int newStepTime = (int) Math.ceil((double) stepDiffTime / 50.0d);
-        newStepTime *= 50;
-        logger.log(
-            Level.INFO,
-            "{0}: Время хода изменяется c {1} на {2}. diff={3}",
-            new Object[] {ServerMainLoop.getStep(), curStepTime, newStepTime, stepDiffTime}
-        );
-        curStepTime = newStepTime;
-        
-        clientsIterator = clientManager.getActiveClients().iterator();
-        while (clientsIterator.hasNext()) {
-            client = (Client) clientsIterator.next();
-            messageManager.sendMessage(clientManager.getClientChannel(client.getId()), MessageManager.createStepTimeMessage(curStepTime));
+        if (stepDiffTime < curStepTime) {
+            decraseCounter++;
+            if (decraseCounter > 100) {
+                logger.log(
+                    Level.INFO,
+                    "{0}: Время хода изменяется c {1} на {2}",
+                    new Object[] {ServerMainLoop.getStep(), curStepTime, decraseValue}
+                );
+
+                curStepTime = decraseValue;
+                if (decraseValue > stepTime) {
+                    decraseValue -= 50;
+                }
+                decraseCounter = 0;
+
+                clientsIterator = clientManager.getActiveClients().iterator();
+                while (clientsIterator.hasNext()) {
+                    client = (Client) clientsIterator.next();
+                    messageManager.sendMessage(clientManager.getClientChannel(client.getId()), MessageManager.createStepTimeMessage(curStepTime));
+                }
+
+                ServerLauncher.restartServerMainLoop(0, curStepTime, TimeUnit.MILLISECONDS);
+            }
+        } else if (stepDiffTime > curStepTime) {
+            int newStepTime = (int) Math.ceil((double) stepDiffTime / 50.0d);
+            newStepTime *= 50;
+            logger.log(
+                Level.INFO,
+                "{0}: Время хода изменяется c {1} на {2}. diff={3}",
+                new Object[] {ServerMainLoop.getStep(), curStepTime, newStepTime, stepDiffTime}
+            );
+            curStepTime = newStepTime;
+            decraseValue = curStepTime - 50;
+            decraseCounter = 0;
+
+            clientsIterator = clientManager.getActiveClients().iterator();
+            while (clientsIterator.hasNext()) {
+                client = (Client) clientsIterator.next();
+                messageManager.sendMessage(clientManager.getClientChannel(client.getId()), MessageManager.createStepTimeMessage(curStepTime));
+            }
+
+            ServerLauncher.restartServerMainLoop(0, curStepTime, TimeUnit.MILLISECONDS);
+        } else {
+            decraseCounter = 0;
         }
-        
-        ServerLauncher.restartServerMainLoop(0, curStepTime, TimeUnit.MILLISECONDS);
     }
 
     /**
