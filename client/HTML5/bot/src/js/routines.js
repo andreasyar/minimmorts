@@ -744,7 +744,7 @@ function disconnect() {
 }
 
 function syncLoop() {
-    var i, actions;
+    var i;
     
     if (stepBegTime != null) {
         prevStepTime = (new Date()).getTime() - stepBegTime;
@@ -755,19 +755,31 @@ function syncLoop() {
     
     movementManager.updatePositions(step);
 
-    var unitMessages = new Array();
-    for (i in self_units_list) {
-        unitMessages.push(new UnitMessage(self_units_list[i].getOwnerId(), self_units_list[i].getId(), self_units_list[i].getJ(), self_units_list[i].getI()));
+    var unitsCount = self_units_list.length + units_list.length;
+    var unitsString = "";
+    for (i = 0; i < self_units_list.length; i++) {
+        unitsString += self_units_list[i].toProtocol1() + ",";
     }
-    for (i in units_list) {
-        unitMessages.push(new UnitMessage(units_list[i].getOwnerId(), units_list[i].getId(), units_list[i].getJ(), units_list[i].getI()));
+    for (i = 0; i < units_list.length; i++) {
+        unitsString += units_list[i].toProtocol1() + ",";
     }
-    actions = actionManager.takeMovementRequests();
-    server.sendMessage(new MessagePacket(new StateReportMessage(step, unitMessages, actions)));
+    if (self_units_list.length > 0 || units_list.length > 0) {
+        unitsString = unitsString.substring(0, unitsString.length - 1);
+    }
+    var actions = actionManager.takeMovementRequests();
+    var actionsCount = actions.length;
+    var actionsString = "";
+    for (i = 0; i < actions.length; i++) {
+        actionsString += actions[i].toProtocol1() + ",";
+    }
+    if (actions.length > 0) {
+        actionsString = actionsString.substring(0, actionsString.length - 1);
+    }
+    server.sendMessage(new StateReportMessage(step, unitsCount, unitsString, actionsCount, actionsString).toProtocol1());
 }
 
 function pingLoop() {
-    server.sendMessage(new MessagePacket(new PingMessage((new Date()).getTime())));
+    server.sendMessage(new PingMessage((new Date()).getTime()).toProtocol1());
     pingTimer = setTimeout(pingLoop, 100);
 }
 

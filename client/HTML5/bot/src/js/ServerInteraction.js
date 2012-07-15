@@ -41,11 +41,15 @@ function ServerInteraction() {
             if (DEBUG_PROTOCOL) {
                 console.log("<- " + event.data);
             }
-            var obj = JSON.parse(event.data)
-            for (var key in MESSAGE_HANDLERS) {
-                if ((obj[0] != undefined && obj[0] == key) || (obj[0] != undefined && obj[0][0] != undefined && obj[0][0] == key)) {
-                    MESSAGE_HANDLERS[key](obj);
-                    break;
+            if (event.data.indexOf("PING") == 0) {
+                MESSAGE_HANDLERS["PING"](event.data);
+            } else {
+                var obj = JSON.parse(event.data)
+                for (var key in MESSAGE_HANDLERS) {
+                    if ((obj[0] != undefined && obj[0] == key) || (obj[0] != undefined && obj[0][0] != undefined && obj[0][0] == key)) {
+                        MESSAGE_HANDLERS[key](obj);
+                        break;
+                    }
                 }
             }
         }
@@ -56,7 +60,7 @@ function ServerInteraction() {
          */
         this.socket.onopen = function(event) {
             console.log("Web Socket opened.");
-            server.sendMessage(new MessagePacket(new LoginMessage("herp", "derp")));
+            server.sendMessage(new LoginMessage("herp", "derp").toProtocol1());
         };
 
         /**
@@ -88,7 +92,7 @@ function ServerInteraction() {
                 console.log("Переподключение через " + ms + " милисекунд.");
             }
         } else {
-            message = JSON.stringify(message);
+            //message = JSON.stringify(message);
             if (DEBUG_PROTOCOL) {
                 console.log("-> " + message);
             }

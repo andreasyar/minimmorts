@@ -1,9 +1,5 @@
 package minimmorts.messages;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.logging.FileHandler;
@@ -42,11 +38,6 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     private final LinkedList<InboxMessage> commonInbox = new LinkedList<>();
 
     private final ClientManager clientManager;
-    
-    /**
-     * Кодировщик и декодировщик сообщений в JSON.
-     */
-    private final Gson gson = new Gson();
 
     public static void enableLogging() {
         MessageManager.loggingEnabled = true;
@@ -192,144 +183,92 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         Object frame = e.getMessage();
         String request = ((TextWebSocketFrame) frame).getText();
-        JsonParser parser = new JsonParser();
-
-        /*
-         * Распарсим сообщение, все сообщения представляют собой массив [],
-         * который содержит массивы с сообщениями. Эти массивы с сообщениями
-         * имеют формат ["TYPE", ...]. Нулевой элемент задаёт тип сообщения,
-         * дальше идут различные поля, которые зависят от типа сообщения.
-         * [["TYPE", ...], ["TYPE", ...], ...]
-         */
-        JsonArray jsonMessageArray = parser.parse(request).getAsJsonArray();
-        JsonArray messageFields;
-        String type;
+        if (!request.contains(",")) {
+            // TODO: Может быть добавить сообщение в лог или какую-то другую реакцию?
+            return;
+        }
+        
+        String[] messageArray = request.split(",");
+        String type = messageArray[0];
         Client client;
 
-        for (JsonElement jsonMessage : jsonMessageArray) {
-            messageFields = jsonMessage.getAsJsonArray();
-            type = gson.fromJson(messageFields.get(0), String.class);
+        switch (type) {
+            case "LOGIN":
+                // Example: LOGIN,test,test
 
-            switch (type) {
-                case "LOGIN":
-                    LoginMessage lm = gson.fromJson(messageFields.get(1), LoginMessage.class);
-                    synchronized (commonInbox) {
-                        commonInbox.add(new InboxMessage(ctx.getChannel(), lm));
-                    }
-                    break;
-                case "STATE":
-                    if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
-                        return;
-                    }
-                    
-                    long step = Long.parseLong(gson.fromJson(messageFields.get(1), String.class));
-                    
-                    if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
-                        if (MessageManager.isLoggingEnabled()) {
-                            logger.info(ServerMainLoop.getStep() + ": Клиент отправитель отчёта не существует на сервере. Отчёт будет проигнорирован. Клиент channel=" + ctx.getChannel() + " не найден.");
-                        }
-                        break;
-                    }
-                    if (!client.isConnected() || !client.isInitialized()) {
-                        if (MessageManager.isLoggingEnabled()) {
-                            logger.info(ServerMainLoop.getStep() + ": Отчёты от отключенных или не инициализированных клиентов не принимаются. Клиент id=" + client.getId() + " отключен или не инициализирован.");
-                        }
-                        break;
-                    }
-                    /*if (client.getLastReportedStep() != client.getLastConfirmedStep()) {
-                        if (MessageManager.isLoggingEnabled()) {
-                            logger.info(ServerMainLoop.getStep() + ": Последний отчёт не был подтверждён. Новые отчёты не принимаются. Клиент lastReportedStep=" + client.getLastReportedStep() + " lastConfirmedStep=" + client.getLastConfirmedStep());
-                        }
-                        break;
-                    }*/
-                    
-                    JsonArray units = messageFields.get(2).getAsJsonArray();
-                    JsonArray actions = messageFields.get(3).getAsJsonArray();
-                    JsonArray unit;
-                    JsonArray action;
+                synchronized (commonInbox) {
+                    commonInbox.add(new InboxMessage(ctx.getChannel(), new LoginMessage(messageArray[1], messageArray[2])));
+                }
+                break;
+            case "PING":
+                // Example: PING,1342373917083
 
-                    LinkedList<Message> unitsList = new LinkedList<>();
-                    LinkedList<Message> actionsList = new LinkedList<>();
-                    UnitMessage unitMessage;
-                    MoveRequestMessage moveRequestMessage;
-                    String subType;
-                    
-                    boolean res;
+                if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
+                    // TODO: Может быть добавить сообщение в лог или какую-то другую реакцию?
+                    return;
+                }
 
-                    String[] unitArray;
-                    for (JsonElement elem : units) {
-                        unitArray = elem.getAsString().split(",");
-                        subType = unitArray[0];
-                        switch (subType) {
-                            case "UNIT":
-                                unitsList.add(
-                                    new UnitMessage(
-                                        Long.parseLong(unitArray[1]),
-                                        Long.parseLong(unitArray[2]),
-                                        Integer.parseInt(unitArray[3]),
-                                        Integer.parseInt(unitArray[4])
-                                    )
-                                );
-                                break;
-                            default:
-                                //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
-                                break;
-                        }
-                    }
+                ctx.getChannel().write(frame);
+                break;
+            case "STATE":
+                // Example: STATE,65,2,1,2,69,54,1,3,70,55,2,MOVEREQ,2,68,58,MOVEREQ,3,67,57
 
-                    String[] actionArray;
-                    for (JsonElement elem : actions) {
-                        actionArray = elem.getAsString().split(",");
-                        subType = actionArray[0];
-                        switch (subType) {
+                if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
+                    // TODO: Может быть добавить сообщение в лог или какую-то другую реакцию?
+                    return;
+                }
+
+                long step = Long.parseLong(messageArray[1]);
+
+                int unitsCount = Integer.parseInt(messageArray[2]);
+                LinkedList<Message> unitsList = new LinkedList<>();
+                int u = 3;
+                for (int i = 0; i < unitsCount; i++, u += 4) {
+                    unitsList.add(
+                        new UnitMessage(
+                            Long.parseLong(messageArray[u + 0]),
+                            Long.parseLong(messageArray[u + 1]),
+                            Integer.parseInt(messageArray[u + 2]),
+                            Integer.parseInt(messageArray[u + 3])
+                        )
+                    );
+                }
+
+                int actionsCount = Integer.parseInt(messageArray[u]);
+                LinkedList<Message> actionsList = new LinkedList<>();
+                if (actionsCount > 0) {
+                    int a = u + 1;
+                    String actionType;
+                    for (int i = 0; i < actionsCount; i++) {
+                        actionType = messageArray[a + 0];
+                        switch (actionType) {
                             case "MOVEREQ":
                                 actionsList.add(
                                     new MoveRequestMessage(
-                                        Long.parseLong(actionArray[1]),
-                                        Integer.parseInt(actionArray[2]),
-                                        Integer.parseInt(actionArray[3])
+                                        Long.parseLong(messageArray[a + 1]),
+                                        Integer.parseInt(messageArray[a + 2]),
+                                        Integer.parseInt(messageArray[a + 3])
                                     )
                                 );
-                                break;
-                            default:
-                                //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
+                                a += 4;
                                 break;
                         }
                     }
-                    
-                    res = clientManager.setLastReportedStep(ctx.getChannel(), step);
-                    if (res) {
-                        synchronized (commonInbox) {
-                            commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
-                        }
-                    } else if (ClientManager.isLoggingEnabled()) {
-                        logger.info(ServerMainLoop.getStep() + ": Не удалось установить последний шаг клиента, за который он отчитался. Клиент channel=" + ctx.getChannel() + " не найден.");
-                    }
+                }
 
-                    break;
-                case "PING":
-                    if ( (client = clientManager.getClient(ctx.getChannel())) == null || !client.isConnected()) {
-                        return;
+                boolean res = clientManager.setLastReportedStep(ctx.getChannel(), step);
+                if (res) {
+                    synchronized (commonInbox) {
+                        commonInbox.add(new InboxMessage(ctx.getChannel(), new StateReportMessage(step, unitsList, actionsList)));
                     }
-                    
-                    /*PingMessage pm = gson.fromJson(messageFields.get(1), PingMessage.class);
-                    if ( (client = clientManager.getClient(ctx.getChannel())) == null) {
-                        if (ClientManager.isLoggingEnabled()) {
-                            logger.info(ServerMainLoop.getStep() + ": Сообщение PING не может быть обработано. Клиент channel=" + ctx.getChannel() + " не найден.");
-                        }
-                        break;  // Не обрабатываем дальше это сообщение.
-                    }
-                    if (client.getClientPingTime() != 0) {
-                        if (pm.getTime() - client.getClientPingTime() > 500 && ClientManager.isLoggingEnabled()) {
-                            logger.log(Level.INFO, "Client id={0} JS become extremely slow! {1}", new Object[] {client.getId(), pm.getTime() - client.getClientPingTime()});
-                        }
-                    }
-                    if (!clientManager.setClientPingTime(client.getId(), pm.getTime()) && ClientManager.isLoggingEnabled()) {
-                        logger.info(ServerMainLoop.getStep() + ": Не удалось установить время последнего пинга. Клиент id=" + client.getId() + " не найден.");
-                    }*/
-                    ctx.getChannel().write(frame);
-                    break;
-            }
+                } else {
+                    logger.log(
+                        Level.SEVERE,
+                        "{0}: Не удалось установить последний шаг клиента, за который он отчитался. Клиент channel={1} не найден.",
+                        new Object[] {ServerMainLoop.getStep(), ctx.getChannel()}
+                    );
+                }
+                break;
         }
     }
 

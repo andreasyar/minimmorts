@@ -1,8 +1,11 @@
-
-// Сообщения дла взаимодействия с сервером.
+/* *****************************************************************************
+ * Сообщения для обмена данными с сервером и обработчики сообщений от сервера. *
+ *******************************************************************************/
 
 /**
- * Сообщение входа в игру игрока.
+ * Запрос входа в игру.
+ * @param login Логин.
+ * @param password Пароль.
  */
 function LoginMessage(login, password) {
 
@@ -10,11 +13,6 @@ function LoginMessage(login, password) {
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-
-    /**
-     * Тип сообщения.
-     */
-    this.type = "LOGIN";
 
     /**
      * Логин.
@@ -27,35 +25,10 @@ function LoginMessage(login, password) {
     this.password = password;
 
     /**
-     * Преобразование в JSON.
+     * Преобразовывает сообщение в формат Protocol-1.
      */
-    this.toJSON = function() {
-        return new Array(this.type, {login:this.login, password:this.password})
-    }
-
-    return this;
-}
-
-/**
- * Сообщение о выходе игрока из игры.
- */
-function LogoutMessage() {
-
-    // Эту функцию можно вызвать только как конструктор (с new).
-    if (this.constructor !== arguments.callee) {
-        throw new Error("Constructor called like a simple function!");
-    }
-
-    /**
-     * Тип сообщения.
-     */
-    this.type = "LOGOUT";
-
-    /**
-     * Преобразование в JSON. Временно.
-     */
-    this.toJSON = function() {
-        return JSON.stringify(new Array(this.type))
+    this.toProtocol1 = function() {
+        return "LOGIN," + this.login + "," + this.password;
     }
 
     return this;
@@ -63,6 +36,9 @@ function LogoutMessage() {
 
 /**
  * Требование хода.
+ * @param unitId Идентификатор движущегося юнита.
+ * @param j j-индекс клетки назначения.
+ * @param i i-индекс клетки назначения.
  */
 function MoveRequestMessage(unitId, j, i) {
 
@@ -70,11 +46,6 @@ function MoveRequestMessage(unitId, j, i) {
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-
-    /**
-     * Тип сообщения.
-     */
-    this.type = "MOVEREQ";
 
     /**
      * Идентификатор движущегося юнита.
@@ -92,10 +63,10 @@ function MoveRequestMessage(unitId, j, i) {
     this.i = i;
 
     /**
-     * Преобразование в JSON.
+     * Преобразовывает сообщение в формат Protocol-1.
      */
-    this.toJSON = function() {
-        return this.type + "," + this.unitId + "," + this.j + "," + this.i;
+    this.toProtocol1 = function() {
+        return "MOVEREQ," + this.unitId + "," + this.j + "," + this.i;
     }
 
     return this;
@@ -104,20 +75,17 @@ function MoveRequestMessage(unitId, j, i) {
 /**
  * Отчёт о состоянии клиента.
  * @param step Номер шага.
- * @param units Массив сообщений с состоянием юнитов.
- * @param actions Массив действий.
+ * @param unitsCount Количество юнитов в строке юнитов.
+ * @param unitsString Строка юнитов.
+ * @param actionsCount Количество действий в строке действий.
+ * @param actionsString Строка действий.
  */
-function StateReportMessage(step, units, actions) {
+function StateReportMessage(step, unitsCount, unitsString, actionsCount, actionsString) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
-
-    /**
-     * Тип сообщения.
-     */
-    this.type = "STATE";
 
     /**
      * Номер шага.
@@ -125,95 +93,44 @@ function StateReportMessage(step, units, actions) {
     this.step = step;
 
     /**
-     * Список юнитов.
+     * Количество юнитов в строке юнитов.
      */
-    this.units = units;
+    this.unitsCount = unitsCount;
 
     /**
-     * Список действий.
+     * Строка юнитов.
      */
-    this.actions = actions;
+    this.unitsString = unitsString;
 
     /**
-     * Преобразование в JSON.
+     * Количество действий в строке действий.
      */
-    this.toJSON = function() {
-        return new Array(this.type, this.step, this.units, this.actions);
+    this.actionsCount = actionsCount;
+
+    /**
+     * Строка действий.
+     */
+    this.actionsString = actionsString;
+    
+    /**
+     * Преобразовывает сообщение в формат Protocol-1.
+     */
+    this.toProtocol1 = function() {
+        var out = "STATE," + this.step + "," + this.unitsCount;
+        if (this.unitsCount > 0) {
+            out += "," + this.unitsString;
+        }
+        out += "," + this.actionsCount;
+        if (this.actionsCount > 0) {
+            out += "," + this.actionsString;
+        }
+        return out;
     }
-}
-
-/**
- * Сообщение с состоянием юнита.
- */
-function UnitMessage(ownerId, id, j, i) {
-
-    // Эту функцию можно вызвать только как конструктор (с new).
-    if (this.constructor !== arguments.callee) {
-        throw new Error("Constructor called like a simple function!");
-    }
-
-    /**
-     * Тип сообщения.
-     */
-    this.type = "UNIT";
-
-    /**
-     * Идентификатор владельца (клиента) юнита.
-     */
-    this.ownerId = ownerId;
-
-    /**
-     * Идентификатор юнита.
-     */
-    this.id = id;
-
-    /**
-     * Номер клетки на карте по ширине, где находится юнит.
-     */
-    this.j = j;
-
-    /**
-     * Номер клетки на карте по высоте, где находится юнит.
-     */
-    this.i = i;
-
-    /**
-     * Преобразование в JSON.
-     */
-    this.toJSON = function() {
-        return this.type + "," + this.ownerId + "," + this.id + "," + this.j + "," + this.i;
-    }
-}
-
-/**
- * Пакет сообщений. Обёртка для одновременной отправки массива сообщений.
- * @param messages Массив сообщений.
- */
-function MessagePacket(messages) {
-
-    // Эту функцию можно вызвать только как конструктор (с new).
-    if (this.constructor !== arguments.callee) {
-        throw new Error("Constructor called like a simple function!");
-    }
-
-    /**
-     * Массив сообщений.
-     */
-    this.messages = messages;
-
-    /**
-     * Преобразование в JSON.
-     */
-    this.toJSON = function() {
-        return new Array(this.messages);
-    }
-
-    return this;
 }
 
 /**
  * Диагностическое сообщение.
- * @param time текущее время клиента
+ * @param time Время.
  */
 function PingMessage(time) {
 
@@ -223,20 +140,15 @@ function PingMessage(time) {
     }
 
     /**
-     * Тип сообщения.
-     */
-    this.type = "PING";
-
-    /**
-     * Текущее время клиента.
+     * Время.
      */
     this.time = time;
-
+    
     /**
-     * Преобразование в JSON.
+     * Преобразовывает сообщение в формат Protocol-1.
      */
-    this.toJSON = function() {
-        return new Array(this.type, {time: this.time});
+    this.toProtocol1 = function() {
+        return "PING," + this.time;
     }
 
     return this;
@@ -292,6 +204,7 @@ var MESSAGE_HANDLERS = {
         selected_units = new Array();
         movementManager = new MovementManager();
         actionManager = new ActionManager();
+        followings = [];
         
         /*
          * Создание юнитов.
@@ -402,7 +315,8 @@ var MESSAGE_HANDLERS = {
         );
     },
     "PING": function(message) {
-        ping = (new Date()).getTime() - message[0][1].time;
+        var messageArray = message.split(",");
+        ping = (new Date()).getTime() - messageArray[1];
     },
     "STEPTIME": function(message) {
         console.log(step + ": Время хода изменилось на " + message[1]);

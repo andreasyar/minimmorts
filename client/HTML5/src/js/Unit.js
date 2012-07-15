@@ -92,6 +92,10 @@ function Unit(ownerId, id, j, i, color) {
         var sprite = this.sloader.getSpriteByName(this.spritePos.spriteName);
         return mapX >= this.spritePos.x && mapX < this.spritePos.x + sprite.w && mapY >= this.spritePos.y && mapY < this.spritePos.y + sprite.h;
     }
+    
+    this.toProtocol1 = function() {
+        return this.ownerId + "," + this.id + "," + this.j + "," + this.i;
+    }
 
     return this;
 }
