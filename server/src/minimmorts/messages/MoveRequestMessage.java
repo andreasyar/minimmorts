@@ -9,6 +9,12 @@ public class MoveRequestMessage implements Message {
     private int j;
     private int i;
 
+    public MoveRequestMessage(long unitId, int j, int i) {
+        this.unitId = unitId;
+        this.j = j;
+        this.i = i;
+    }
+
     public long getUnitId() {
         return unitId;
     }

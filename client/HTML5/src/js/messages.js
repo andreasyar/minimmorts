@@ -95,7 +95,7 @@ function MoveRequestMessage(unitId, j, i) {
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {unitId: this.unitId, j: this.j, i: this.i});
+        return this.type + "," + this.unitId + "," + this.j + "," + this.i;
     }
 
     return this;
@@ -181,7 +181,7 @@ function UnitMessage(ownerId, id, j, i) {
      * Преобразование в JSON.
      */
     this.toJSON = function() {
-        return new Array(this.type, {ownerId: this.ownerId, id: this.id, j: this.j, i: this.i});
+        return this.type + "," + this.ownerId + "," + this.id + "," + this.j + "," + this.i;
     }
 }
 

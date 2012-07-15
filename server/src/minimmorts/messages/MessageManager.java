@@ -256,13 +256,20 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                     
                     boolean res;
 
+                    String[] unitArray;
                     for (JsonElement elem : units) {
-                        unit = elem.getAsJsonArray();
-                        subType = gson.fromJson(unit.get(0), String.class);
+                        unitArray = elem.getAsString().split(",");
+                        subType = unitArray[0];
                         switch (subType) {
                             case "UNIT":
-                                unitMessage = gson.fromJson(unit.get(1), UnitMessage.class);
-                                unitsList.add(unitMessage);
+                                unitsList.add(
+                                    new UnitMessage(
+                                        Long.parseLong(unitArray[1]),
+                                        Long.parseLong(unitArray[2]),
+                                        Integer.parseInt(unitArray[3]),
+                                        Integer.parseInt(unitArray[4])
+                                    )
+                                );
                                 break;
                             default:
                                 //logger.log(Level.SEVERE, "Unknown message type {0}", subType);
@@ -270,13 +277,19 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                         }
                     }
 
+                    String[] actionArray;
                     for (JsonElement elem : actions) {
-                        action = elem.getAsJsonArray();
-                        subType = gson.fromJson(action.get(0), String.class);
+                        actionArray = elem.getAsString().split(",");
+                        subType = actionArray[0];
                         switch (subType) {
                             case "MOVEREQ":
-                                moveRequestMessage = gson.fromJson(action.get(1), MoveRequestMessage.class);
-                                actionsList.add(moveRequestMessage);
+                                actionsList.add(
+                                    new MoveRequestMessage(
+                                        Long.parseLong(actionArray[1]),
+                                        Integer.parseInt(actionArray[2]),
+                                        Integer.parseInt(actionArray[3])
+                                    )
+                                );
                                 break;
                             default:
                                 //logger.log(Level.SEVERE, "Unknown message type {0}", subType);

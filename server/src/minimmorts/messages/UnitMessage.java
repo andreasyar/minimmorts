@@ -25,6 +25,16 @@ public class UnitMessage implements Message {
         this.b = b;
     }
 
+    public UnitMessage(long ownerId, long id, int j, int i) {
+        this.ownerId = ownerId;
+        this.id = id;
+        this.j = j;
+        this.i = i;
+        this.r = 0;
+        this.g = 0;
+        this.b = 0;
+    }
+
     public long getOwnerId() {
         return ownerId;
     }

@@ -1068,6 +1068,7 @@ function addFollowing(object, target) {
                 console.log(step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
             }
             followings[i].setTarget(target);
+            freeAnimation.push(new FollowBlinkAnimation(target));
             return true;
         }
     }
