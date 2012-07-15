@@ -1,6 +1,6 @@
 package minimmorts.messages;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import minimmorts.movement.Point;
 
 /**
@@ -10,17 +10,17 @@ import minimmorts.movement.Point;
 public class MoveMessage implements Message {
     private long begStep;
     private long unitId;
-    private final LinkedList<Point> waypoints;
+    private final ArrayList<Point> waypoints;
     
     public MoveMessage(long begStep, long unitId, int begJ, int begI, int endJ, int endI) {
         this.begStep = begStep;
         this.unitId = unitId;
-        waypoints = new LinkedList<>();
+        waypoints = new ArrayList<>();
         waypoints.add(new Point(begJ, begI));
         waypoints.add(new Point(endJ, endI));
     }
 
-    public MoveMessage(long begStep, long unitId, LinkedList<Point> waypoints) {
+    public MoveMessage(long begStep, long unitId, ArrayList<Point> waypoints) {
         this.begStep = begStep;
         this.unitId = unitId;
         this.waypoints = waypoints;
@@ -35,30 +35,45 @@ public class MoveMessage implements Message {
     }
     
     public int getBegJ() {
-        return waypoints.getFirst().getJ();
+        return waypoints.get(0).getJ();
     }
 
     public int getBegI() {
-        return waypoints.getFirst().getI();
+        return waypoints.get(0).getI();
     }
 
     public int getEndJ() {
-        return waypoints.getLast().getJ();
+        return waypoints.get(waypoints.size() - 1).getJ();
     }
 
     public int getEndI() {
-        return waypoints.getLast().getI();
+        return waypoints.get(waypoints.size() - 1).getI();
     }
 
     @Override
     public String toJSON() {
-        String out = "[\"MOVE\",{\"begStep\":" + begStep
-                     + ",\"unitId\":" + unitId
-                     + ",\"waypoints\":[";
-        for (int i = 0; i < waypoints.size() - 1; i++) {
-            out += "{\"j\":" + waypoints.get(i).getJ() + ",\"i\":" + waypoints.get(i).getI() + "},";
+        StringBuilder out = new StringBuilder();
+        out.append("[\"MOVE\",{\"begStep\":");
+        out.append(begStep);
+        out.append(",\"unitId\":");
+        out.append(unitId);
+        out.append(",\"waypoints\":[");
+        if (waypoints.size() > 0) {
+            for (int i = 0; i < waypoints.size() - 1; i++) {
+                out.append("{\"j\":");
+                out.append(waypoints.get(i).getJ());
+                out.append(",\"i\":");
+                out.append(waypoints.get(i).getI());
+                out.append("},");
+            }
+            out.append("{\"j\":");
+            out.append(waypoints.get(waypoints.size() - 1).getJ());
+            out.append(",\"i\":");
+            out.append(waypoints.get(waypoints.size() - 1).getI());
+            out.append("}]}]");
+        } else {
+            out.append("]}]");
         }
-        out += "{\"j\":" + waypoints.getLast().getJ() + ",\"i\":" + waypoints.getLast().getI() + "}]}]";
-        return out;
+        return out.toString();
     }
 }

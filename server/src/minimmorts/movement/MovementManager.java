@@ -1,6 +1,7 @@
 package minimmorts.movement;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -362,7 +363,7 @@ public class MovementManager {
         return 10 * (Math.abs(j - l) + Math.abs(i - k));
     }
 
-    private Cell getByIndex(LinkedList<Cell> list, int i, int j) {
+    private Cell getByIndex(ArrayList<Cell> list, int i, int j) {
         for (int n = 0; n < list.size(); n++) {
             if (list.get(n).getI() == i && list.get(n).getJ() == j) {
                 return list.get(n);
@@ -371,9 +372,9 @@ public class MovementManager {
         return null;
     }
 
-    private boolean isInList(LinkedList<Cell> list, int i, int j) {
+    private boolean isInList(ArrayList<Cell> list, int i, int j) {
         for (int n = 0; n < list.size(); n++) {
-            if (list.get(n).getI() == i && list.get(n).getJ() == j) {
+            if (list.get(n).equal(i, j)) {
                 return true;
             }
         }
@@ -381,8 +382,8 @@ public class MovementManager {
     }
 
     private LinkedList<Point> getPath(Map map, Cell beg, Cell end) {
-        LinkedList<Cell> open = new LinkedList<>();
-        LinkedList<Cell> closed = new LinkedList<>();
+        ArrayList<Cell> open = new ArrayList<>();
+        ArrayList<Cell> closed = new ArrayList<>();
         int i, j, g, h, n;
         int[] rows = new int[3], cols = new int[3];
         Cell cur, nei;
@@ -505,7 +506,7 @@ public class MovementManager {
     }
 
     public LinkedList<Movement> getAllActiveMovements() {
-        LinkedList<Movement> activeMovements = new LinkedList<>();;
+        LinkedList<Movement> activeMovements = new LinkedList<>();
         synchronized (movements) {
             for (Movement m : movements) {
                 if (!m.isStopped()) {

@@ -98,7 +98,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
                 new MoveMessage(
                     movement.getBegStep(),
                     movement.getUnit().getId(),
-                    movement.getWaypoints()
+                    movement.getWaypoints2()
                 )
             );
         }
@@ -127,7 +127,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getWaypoints()
+            m.getWaypoints2()
         );
     }
     
@@ -140,7 +140,7 @@ public class MessageManager extends SimpleChannelUpstreamHandler {
         return new MoveUpdateMessage(
             m.getBegStep(),
             m.getUnit().getId(),
-            m.getWaypoints()
+            m.getWaypoints2()
         );
     }
 

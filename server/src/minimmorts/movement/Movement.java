@@ -1,10 +1,7 @@
 package minimmorts.movement;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,6 +51,8 @@ public class Movement {
     
     private final LinkedList<Point> waypoints;
     
+    private ArrayList<Point> waypoints2;
+    
     public static void initLogging() {
         try {
             FileHandler fh = new FileHandler(Movement.class.getName() + ".txt");
@@ -87,6 +86,8 @@ public class Movement {
 
         Q = (int) (this.speed * 10.0f);
         m = Q / gcd(Q, 10);
+        
+        waypoints2 = new ArrayList(this.waypoints);
     }
 
     public Unit getUnit() {
@@ -164,6 +165,10 @@ public class Movement {
         return waypoints;
     }
 
+    public ArrayList<Point> getWaypoints2() {
+        return waypoints2;
+    }
+
     Point getNextPathPoint(int j, int i) {
         Iterator pathIterator = path.iterator();
         Point p;
@@ -210,15 +215,17 @@ public class Movement {
             waypoints.add(new Point(endJ, endI));
         }
         
-        if (haveSameWaypoints()) {
+        /*if (haveSameWaypoints()) {
             logger.log(
                 Level.SEVERE,
                 "{0}: {1} {2} {3} {4} {5} {6}",
                 new Object[] {ServerMainLoop.getStep(), n, nextPathPoint, lastPathPoint, this.waypointsToString(), n >= this.path.size() - 1, derp}
             );
             throw new NullPointerException("Попытка добавить вэйпоинт такой же как предыдущий.");
-        }
+        }*/
         // TODO Здесь должно быть пересоздание пути, но мы пока что поручим это вызывающему коду.
+        
+        waypoints2 = new ArrayList(waypoints);
     }
 
     public String waypointsToString() {
@@ -298,6 +305,8 @@ public class Movement {
                 "{0}: Урезание пути юнита {1} завершено path={2},wp={3}",
                 new Object[] {ServerMainLoop.getStep(), unit, pathToString(), waypointsToString()}
             );*/
+            
+            waypoints2 = new ArrayList(waypoints);
         }
     }
 
