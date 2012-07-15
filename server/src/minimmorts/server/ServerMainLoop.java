@@ -211,11 +211,13 @@ public class ServerMainLoop implements Runnable {
         movementManager.updatePositions(getStep());
         
         long stepDiffTime = System.currentTimeMillis() - stepBegTime;
-        /*logger.log(
-            Level.INFO,
-            "{0}: diff={1}",
-            new Object[] {ServerMainLoop.getStep(), stepDiffTime}
-        );*/
+        /*if (stepDiffTime > stepTime) {
+            logger.log(
+                Level.INFO,
+                "{0}: diff={1}",
+                new Object[] {ServerMainLoop.getStep(), stepDiffTime}
+            );
+        }*/
         if (stepDiffTime <= stepTime) {
             return;
         }
