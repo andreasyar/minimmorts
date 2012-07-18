@@ -1125,10 +1125,8 @@ function idleModeOn() {
         speedUp = false;
 
         while (confirmsCache.length > 0) {
-            console.log(step + "clean!");
             syncLoop();
         }
-        console.log(step + "clean done!");
     }
 }
 

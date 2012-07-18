@@ -106,13 +106,12 @@ function Movement (unit, speed, beg_step, waypoints, path) {
     }
 
     this.toString = function() {
-        return "{begJ=" + this.getBegJ() +
+        return "begJ=" + this.getBegJ() +
                ",begI=" +this.getBegI() +
                ",endJ=" +this.getEndJ() +
                ",endI=" +this.getEndI() +
                ",finished=" +this.isFinished() +
-               ",beg_step=" +this.getBegStep() +
-               "}";
+               ",beg_step=" +this.getBegStep();
     }
 
     return this;

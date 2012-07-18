@@ -27,7 +27,7 @@ function SpriteLoader(sprites) {
                 return this.sprites[i].image;
             }
         }
-        
+
         return null;
     }
 
@@ -54,7 +54,7 @@ function SpriteLoader(sprites) {
                 return this.sprites[i].sprite;
             }
         }
-        
+
         console.log("Sprite name=" + name + " not found.");
         return null;
     }
