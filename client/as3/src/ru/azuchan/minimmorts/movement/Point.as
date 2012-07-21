@@ -30,5 +30,9 @@ package ru.azuchan.minimmorts.movement {
             }
             return false;
         }
+        
+        public function equals2(j:int, i:int):Boolean {
+            return this.j == j && this.i == i;
+        }
     }
 }

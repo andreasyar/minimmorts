@@ -1,11 +1,10 @@
 package {
-
     import flash.display.Bitmap;
     import flash.display.BitmapData;
-    import flash.geom.Point;
     import flash.geom.Rectangle;
     import ru.azuchan.minimmorts.sprite.SpriteLoader;
     import ru.azuchan.minimmorts.units.Unit;
+    import ru.azuchan.minimmorts.movement.Point;
 
 	/**
      * Карта игрового мира.
@@ -80,7 +79,7 @@ package {
                             macromap[i][j].bitmapData.copyPixels(
                                 spriteMap[k][l],
                                 new Rectangle(0, 0, Config.CELL_W, Config.CELL_H),
-                                new Point(x, y)
+                                new flash.geom.Point(x, y)
                             );
                             x += Config.CELL_W;
                         }
@@ -124,6 +123,35 @@ package {
          */
         public function isOnMap(j:int, i:int):Boolean {
             return i >= 0 && j >= 0 && i < h && j < w;
+        }
+        
+        public static function getNeighboursCells(cells:Array):Array {
+            var neighbours:Array = [];
+            var checkCell:Function = function (neighbours:Array, _j:int, _i:int):void {
+                if ((neighbours[_i] == undefined || neighbours[_i][_j] == undefined) && Main.map.isOnMap(_j, _i)) {
+                    if (neighbours[_i] == undefined) {
+                        neighbours[_i] = [];
+                    }
+                    neighbours[_i][_j] = new ru.azuchan.minimmorts.movement.Point(_j, _i);
+                }
+            }
+            var i:int, j:String, k:String, result:Array = cells;
+            for (i = 0; i < cells.length; i++) {
+                checkCell(neighbours, cells[i].j - 1, cells[i].i - 1);
+                checkCell(neighbours, cells[i].j    , cells[i].i - 1);
+                checkCell(neighbours, cells[i].j + 1, cells[i].i - 1);
+                checkCell(neighbours, cells[i].j - 1, cells[i].i);
+                checkCell(neighbours, cells[i].j + 1, cells[i].i);
+                checkCell(neighbours, cells[i].j - 1, cells[i].i + 1);
+                checkCell(neighbours, cells[i].j    , cells[i].i + 1);
+                checkCell(neighbours, cells[i].j + 1, cells[i].i + 1);
+            }
+            for (j in neighbours) {
+                for (k in neighbours[j]) {
+                    result.push(neighbours[j][k]);
+                }
+            }
+            return result;
         }
         
         public static function getMacroBlockJOnMap(x:Number):int {

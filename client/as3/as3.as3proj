@@ -46,11 +46,11 @@
   </build>
   <!-- SWC Include Libraries -->
   <includeLibraries>
-    <!-- example: <element path="..." /> -->
+    <element path="as3corelib.swc" />
   </includeLibraries>
   <!-- SWC Libraries -->
   <libraryPaths>
-    <element path="as3corelib.swc" />
+    <!-- example: <element path="..." /> -->
   </libraryPaths>
   <!-- External Libraries -->
   <externalLibraryPaths>

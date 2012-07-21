@@ -21,6 +21,8 @@ package ru.azuchan.minimmorts.sprite {
          */
         private var movement:Movement;
         
+        private var onMovementComplete:Function;
+        
         /**
          * Флаг окончания движения спрайта.
          */
@@ -31,9 +33,10 @@ package ru.azuchan.minimmorts.sprite {
          */
         private var spriteMovementAnimation:SpriteMovementAnimation;
         
-        public function SpriteMovement(unit:Unit, movement:Movement) {
+        public function SpriteMovement(unit:Unit, movement:Movement, onMovementComplete:Function) {
             this.unit = unit;
             this.movement = movement;
+            this.onMovementComplete = onMovementComplete;
             finished = false;
             spriteMovementAnimation = new SpriteMovementAnimation();
         }
@@ -281,7 +284,7 @@ package ru.azuchan.minimmorts.sprite {
             
             if (finished) {
                 curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + spriteMovementAnimation.getStand();
-                Main.movementManager.removeFinishedSpriteMovements();
+                onMovementComplete();
             } else {
                 curPos.spriteName = "peasant_" + curPos.orientation + "_walk_" + spriteMovementAnimation.next();
             }

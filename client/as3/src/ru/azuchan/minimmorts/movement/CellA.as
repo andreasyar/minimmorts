@@ -4,7 +4,7 @@ package ru.azuchan.minimmorts.movement {
      * ...
      * @author sorc
      */
-    public class Cell {
+    public class CellA {
         
         public var i:int;
         
@@ -16,9 +16,9 @@ package ru.azuchan.minimmorts.movement {
         
         public var h:int;
         
-        public var parent:Cell;
+        public var parent:CellA;
         
-        public function Cell(i:int, j:int, g:int, h:int, parent:Cell) {
+        public function CellA(i:int, j:int, g:int, h:int, parent:CellA) {
             this.i = i;
             this.j = j
             this.f = g + h;

@@ -1,6 +1,5 @@
 package ru.azuchan.minimmorts.client {
     import flash.events.TimerEvent;
-    import flash.utils.SetIntervalTimer;
     import flash.utils.Timer;
     import ru.azuchan.minimmorts.actions.ActionManager;
     import ru.azuchan.minimmorts.messages.MessageManager;
@@ -25,6 +24,8 @@ package ru.azuchan.minimmorts.client {
         
         private var serverInteraction:ServerInteraction;
         
+        private var onStepComplete:Function;
+        
         private var firstClientStep:Boolean;
         
         private var idleMode:Boolean;
@@ -39,12 +40,13 @@ package ru.azuchan.minimmorts.client {
         
         private var clientMainLoopTimer:Timer;
         
-        public function ClientMainLoop(messageManager:MessageManager, movementManager:MovementManager, actionManager:ActionManager, unitManager:UnitManager, serverInteraction:ServerInteraction) {
+        public function ClientMainLoop(messageManager:MessageManager, movementManager:MovementManager, actionManager:ActionManager, unitManager:UnitManager, serverInteraction:ServerInteraction, onStepComplete:Function) {
             this.messageManager = messageManager;
             this.movementManager = movementManager;
             this.actionManager = actionManager;
             this.unitManager = unitManager;
             this.serverInteraction = serverInteraction;
+            this.onStepComplete = onStepComplete;
             firstClientStep = true;
             idleMode = false;
             stepBegTime = -1;
@@ -100,7 +102,7 @@ package ru.azuchan.minimmorts.client {
             Main.step++;
             
             movementManager.updatePositions(Main.step);
-            //map.updateMinimap();
+            //Main.map.updateMinimap();
             
             var unitsHash:Object = unitManager.getUnitsHash();
             var unitsCount:int = unitsHash.unitsCount;
@@ -133,6 +135,8 @@ package ru.azuchan.minimmorts.client {
                     }
                 }
             }
+            
+            onStepComplete();
         }
         
         public function start():void {

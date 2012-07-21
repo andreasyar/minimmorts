@@ -1,5 +1,4 @@
 package ru.azuchan.minimmorts.net {
-    //import com.adobe.serialization.json.JSON;
     import com.worlize.websocket.*;
     import ru.azuchan.minimmorts.messages.MessageManager;
 
@@ -22,24 +21,29 @@ package ru.azuchan.minimmorts.net {
         public function connect(url:String):void {
             this.url = url;
             
+            Main.tf.text += ",Create new web socket";
             websocket = new WebSocket(this.url, "*");
             websocket.addEventListener(WebSocketEvent.CLOSED, handleWebSocketClosed);
             websocket.addEventListener(WebSocketEvent.OPEN, handleWebSocketOpen);
             websocket.addEventListener(WebSocketEvent.MESSAGE, handleWebSocketMessage);
             websocket.addEventListener(WebSocketErrorEvent.CONNECTION_FAIL, handleConnectionFail);
             websocket.connect();
+            Main.tf.text += ",Call connect()";
         }
         
         private function handleWebSocketOpen(event:WebSocketEvent):void {
+            Main.tf.text += ",Connected to server: " + url;
             trace("Connected to server: " + url);
             sendMessage("LOGIN,as3,as3"); // TODO: На самом деле пользователь должен вводить логин и пароль.
         }
         
         private function handleWebSocketClosed(event:WebSocketEvent):void {
+            Main.tf.text += ",Disconnected from server";
             trace("Disconnected from server.");
         }
         
         private function handleConnectionFail(event:WebSocketErrorEvent):void {
+            Main.tf.text += ",Connection failure: " + event.text;
             trace("Connection failure: " + event.text);
         }
         

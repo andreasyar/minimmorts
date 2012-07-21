@@ -13,7 +13,10 @@ package ru.azuchan.minimmorts.units {
         
         private var ownerId:int;
         
-        private var id:int;
+        /**
+         * Идентификатор юнита.
+         */
+        private var _id:int;
         
         public var j:int;
         
@@ -29,9 +32,11 @@ package ru.azuchan.minimmorts.units {
         
         private var selectionSprite:Bitmap;
         
+        private var colorMarkSprite:Bitmap;
+        
         public function Unit(ownerId:int, id:int, j:int, i:int, r:int, g:int, b:int) {
             this.ownerId = ownerId;
-            this.id = id;
+            _id = id;
             this.j = j;
             this.i = i;
             
@@ -44,20 +49,29 @@ package ru.azuchan.minimmorts.units {
                 orientation: "S",
                 spriteName: "peasant_S_walk_0"
             }
+            var rgba:Number = 0x00000000;
+            rgba |= (r << 24);
+            rgba |= (g << 16);
+            rgba |= (b << 8);
+            rgba |= 128;
+            colorMarkSprite = new Bitmap(new BitmapData(Config.CELL_W, Config.CELL_H, true, rgba));
+            Main.stage.addChild(colorMarkSprite);
             sprite = new Bitmap();
             sprite.bitmapData = sloader.getSpriteByName(spritePos.spriteName).getBitmapData();
             Main.stage.addChild(sprite);
             selectionSprite = new Bitmap();
             selectionSprite.bitmapData = sloader.getSpriteByName("peasant_selection").getBitmapData();
-            // TODO: Цветной фон под юнитом.
         }
         
         public function getOwnerId():int {
             return ownerId;
         }
         
-        public function getId():int {
-            return id;
+        /**
+         * Идентификатор юнита.
+         */
+        public function get id():int {
+            return _id;
         }
         
         public function update(camera:Camera):void {
@@ -69,6 +83,7 @@ package ru.azuchan.minimmorts.units {
                     trace("Спрайт " + spritePos.spriteName + " не найден.");
                     return;
                 }
+                sprite.bitmapData = s.getBitmapData();
                 drawCoordinates = s.getDrawCoordinatesByXY(spritePos.x, spritePos.y, camera);
             } else {
                 s = sloader.getSpriteByName("peasant_" + spritePos.orientation);
@@ -76,10 +91,13 @@ package ru.azuchan.minimmorts.units {
                     trace("Спрайт " + "peasant_" + spritePos.orientation + " не найден.");
                     return;
                 }
+                sprite.bitmapData = s.getBitmapData();
                 drawCoordinates = s.getDrawCoordinatesByXY(Map.getCellXOnMap(j), Map.getCellYOnMap(i), camera);
             }
             sprite.x = drawCoordinates.x;
             sprite.y = drawCoordinates.y;
+            colorMarkSprite.x = drawCoordinates.x + 21;
+            colorMarkSprite.y = drawCoordinates.y + 17;
             if (selected) {
                 if (!Main.stage.contains(selectionSprite)) {
                     Main.stage.addChild(selectionSprite);
@@ -98,7 +116,7 @@ package ru.azuchan.minimmorts.units {
         }
         
         public function toProtocol1():String {
-            return ownerId + "," + id + "," + j + "," + i;
+            return ownerId + "," + _id + "," + j + "," + i;
         }
     }
 }

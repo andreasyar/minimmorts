@@ -12,20 +12,20 @@ package ru.azuchan.minimmorts.messages {
         private var unitId:int;
         
         /**
-         * j-индекс клетки назначения.
+         * Индекс клетки назначения по ширине.
          */
         private var j:int;
         
         /**
-         * i-индекс клетки назначения.
+         * Индекс клетки назначения по высоте.
          */
         private var i:int;
         
         /**
          * Создаёт требование хода.
-         * @param unitId Идентификатор движущегося юнита.
-         * @param j j-индекс клетки назначения.
-         * @param i i-индекс клетки назначения.
+         * @param unitId идентификатор движущегося юнита
+         * @param j индекс клетки назначения по ширине
+         * @param i индекс клетки назначения по высоте
          */
         public function MoveRequestMessage(unitId:int, j:int, i:int) {
             this.unitId = unitId;
@@ -34,7 +34,8 @@ package ru.azuchan.minimmorts.messages {
         }
         
         /**
-         * Преобразовывает сообщение в формат Protocol-1.
+         * Возвращает сообщение в формате Protocol-1.
+         * @return сообщение в формате Protocol-1
          */
         public function toProtocol1():String {
             return "MOVEREQ," + unitId + "," + j + "," + i;

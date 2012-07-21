@@ -18,9 +18,12 @@ package ru.azuchan.minimmorts.movement {
          */
         private var spriteMovements:Array;
         
+        private var followings:Array;
+        
         public function MovementManager() {
             movements = [];
             spriteMovements = [];
+            followings = [];
         }
         
         /**
@@ -53,7 +56,7 @@ package ru.azuchan.minimmorts.movement {
             var movement:Movement = new Movement(unit, Config.DEFAULT_SPEED, begStep, waypoints, path);
             movements.push(movement);
             
-            spriteMovements.push(new SpriteMovement(unit, movement));
+            spriteMovements.push(new SpriteMovement(unit, movement, removeFinishedSpriteMovements));
         }
         
         /**
@@ -147,7 +150,7 @@ package ru.azuchan.minimmorts.movement {
             var i:int;
             
             for (i = 0; i < movements.length; i++) {
-                if (movements[i].getUnit().getId() == id) {
+                if (movements[i].getUnit().id == id) {
                     movements.splice(i, 1);
                     if (Config.DEBUG_MOVEMENTS) {
                         trace("Удалено движение юнита id=" + id);
@@ -156,7 +159,7 @@ package ru.azuchan.minimmorts.movement {
                 }
             }
             for (i = 0; i < spriteMovements.length; i++) {
-                if (spriteMovements[i].getUnit().getId() == id) {
+                if (spriteMovements[i].getUnit().id == id) {
                     spriteMovements.splice(i, 1);
                     if (Config.DEBUG_MOVEMENTS) {
                         trace("Удалено движение спрайта юнита id=" + id);
@@ -166,7 +169,7 @@ package ru.azuchan.minimmorts.movement {
             }
         }
         
-        private function cost(cur:Cell, i:int, j:int):int {
+        private function cost(cur:CellA, i:int, j:int):int {
             var g:int = cur.g;
             if ( (cur.i - 1 == i && cur.j == j) || (cur.i + 1 == i && cur.j == j) || (cur.i == i && cur.j - 1 == j) || (cur.i == i && cur.j + 1 == j)) {
                 g += 10
@@ -180,7 +183,7 @@ package ru.azuchan.minimmorts.movement {
             return 10 * (Math.abs(j - l) + Math.abs(i - k));
         }
         
-        private function getByIndex(list:Array, i:int, j:int):Cell {
+        private function getByIndex(list:Array, i:int, j:int):CellA {
             for (var n:int = 0; n < list.length; n++) {
                 if (list[n].equal(i, j)) {
                     return list[n];
@@ -199,13 +202,13 @@ package ru.azuchan.minimmorts.movement {
             return false;
         }
         
-        private function getPath(beg:Cell, end:Cell):Cell {
+        private function getPath(beg:CellA, end:CellA):CellA {
             var NOTPASSABLE:int = 0;
             var PASSABLE:int = 1;
             var TRIGGERED:int = 2;
             var open:Array = [];
             var closed:Array = [];
-            var i:int, j:int, g:int, h:int, cur:Cell, nei:Cell, n:int, rows:Array = new Array(3), cols:Array = new Array(3);
+            var i:int, j:int, g:int, h:int, cur:CellA, nei:CellA, n:int, rows:Array = new Array(3), cols:Array = new Array(3);
             var limit:int = 10000
             var stat:Object = {
                 cur: 0,
@@ -302,7 +305,7 @@ package ru.azuchan.minimmorts.movement {
                         if (!isInList(open, i, j)) {
                             g = cost(cur, i, j);
                             h = heuristic(i, j, end.i, end.j);
-                            nei = new Cell(i, j, g, h, cur);
+                            nei = new CellA(i, j, g, h, cur);
 
                             if (nei.equal(end.i, end.j)) {
                                 //console.log(stat)
@@ -336,7 +339,7 @@ package ru.azuchan.minimmorts.movement {
          */
         public function generatePath(map:Map, waypoints:Array, unit:Unit):Array {
             var generatedPath:Array = [];
-            var path:Cell;
+            var path:CellA;
             var pathArray:Array;
             var cachedPathUsed:Boolean = false;
             
@@ -344,8 +347,8 @@ package ru.azuchan.minimmorts.movement {
                 if (Config.usePathCache) {
                     if ( (pathArray = Main.pathCache.getCachedPath(waypoints[i - 1].j, waypoints[i - 1].i, waypoints[i].j, waypoints[i].i, unit)) == null) {
                         path = getPath(
-                            new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
-                            new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+                            new CellA(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                            new CellA(waypoints[i].i, waypoints[i].j, 0, 0, null)
                         );
                         if (path == false) {
                             trace(Main.step + ": Путь через точки "/* + waypointsToString([waypoints[i - 1], waypoints[i]])*/ + " не может быть построен.");
@@ -369,8 +372,8 @@ package ru.azuchan.minimmorts.movement {
                     }
                 } else {
                     path = getPath(
-                        new Cell(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
-                        new Cell(waypoints[i].i, waypoints[i].j, 0, 0, null)
+                        new CellA(waypoints[i - 1].i, waypoints[i - 1].j, 0, 0, null),
+                        new CellA(waypoints[i].i, waypoints[i].j, 0, 0, null)
                     );
                     if (path == false) {
                         trace(Main.step + ": Путь через точки"/* + waypointsToString([waypoints[i - 1], waypoints[i]])*/ + " не может быть построен.");
@@ -401,9 +404,9 @@ package ru.azuchan.minimmorts.movement {
          * Преобразовывает путь-список, возвращаемый функцией getPath(), в путь массив
          * точек. Требует для работы класс Point и Cell.
          */
-        private function convertLinkedPathToArray(path:Cell):Array {
+        private function convertLinkedPathToArray(path:CellA):Array {
             var arrayPath:Array = new Array();
-            var curCell:Cell = path;
+            var curCell:CellA = path;
             
             do {
                 arrayPath.push(new Point(curCell.j, curCell.i));
@@ -436,6 +439,53 @@ package ru.azuchan.minimmorts.movement {
             } else {
                 return null;
             }
+        }
+        
+        public function removeFollowing(object:Unit):void {
+            for (var i:int = 0; i < followings.length; i++) {
+                if (followings[i].getObject() == object) {
+                    followings.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        
+        public function removeFollowingByTarget(target:Unit):void {
+            var found:Boolean = false;
+            do {
+                for (var i:int = 0; i < followings.length; i++) {
+                    if (followings[i].getTarget() == target) {
+                        followings.splice(i, 1);
+                        found = true;
+                        break;
+                    }
+                }
+                found = false;
+            } while (found);
+        }
+        
+        public function addFollowing(object:Unit, target:Unit):Boolean {
+            for (var i:int = 0; i < followings.length; i++) {
+                if (followings[i].getObject() == object) {
+                    if (Config.DEBUG_FOLLOW) {
+                        trace(Main.step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
+                    }
+                    followings[i].setTarget(target);
+                    Main.freeAnimation.push(new FollowBlinkAnimation(target));
+                    return true;
+                }
+            }
+            
+            followings.push(new Follow(object, target));
+            if (Config.DEBUG_FOLLOW) {
+                trace(Main.step + ": Юнит " + object + " начал преследовать цель " + target);
+            }
+            Main.freeAnimation.push(new FollowBlinkAnimation(target));
+            return true;
+        }
+        
+        public function getFollowings():Array {
+            return followings;
         }
     }
 }

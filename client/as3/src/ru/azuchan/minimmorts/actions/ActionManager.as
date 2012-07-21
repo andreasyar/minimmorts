@@ -1,63 +1,78 @@
 package ru.azuchan.minimmorts.actions {
+    import ru.azuchan.minimmorts.map.Cell;
     import ru.azuchan.minimmorts.messages.MoveRequestMessage;
+    import ru.azuchan.minimmorts.movement.MovementManager;
     import ru.azuchan.minimmorts.movement.Point;
     import ru.azuchan.minimmorts.units.Unit;
+    import ru.azuchan.minimmorts.units.UnitManager;
 
 	/**
-     * ...
+     * Управляет и хранит запросы действий пользователя.
      * @author sorc
      */
     public class ActionManager {
         
+        /**
+         * Менеджер движений.
+         */
+        private var movementManager:MovementManager;
+        
+        /**
+         * Менеджер юнитов.
+         */
+        private var unitManager:UnitManager;
+        
+        /**
+         * Запросы движения.
+         */
         private var movementRequests:Array;
         
-        public function ActionManager() {
+        /**
+         * Создаёт менеджер действий.
+         * @param movementManager менеджер движений.
+         * @param unitManager менеджер юнитов.
+         */
+        public function ActionManager(movementManager:MovementManager, unitManager:UnitManager) {
+            this.movementManager = movementManager;
+            this.unitManager = unitManager;
             movementRequests = [];
         }
         
         /**
-         * Добавляет запросы движения выделенных юнитов в заданную клетку.
+         * Добавляет запросы движения выделенных юнитов в заданную клетку карты.
          * При этом все существующие запросы движения удаляются.
          * @param dest клетка назначения
          */
-        public function moveSelectedUnits(dest:Point):void {
+        public function moveSelectedUnits(dest:Cell):void {
             movementRequests = [];
-            var selectedUnits:Array = Main.unitManager.getSelectedUnits();
             
-            for (var i:int = 0; i < selectedUnits.length; i++) {
-                movementRequests.push(new MoveRequestMessage(selectedUnits[i].getId(), dest.j, dest.i));
-            }
+            var selectedUnits:Array = unitManager.getSelectedUnits();            
+            var neighbourCells:Array = [dest];
             
-            /*var neighbourCells = [dest];
-            while (neighbourCells.length < selected_units.length && neighbourCells.length < map.w * map.h) {
-                neighbourCells = getNeighboursCells(neighbourCells);
+            while (neighbourCells.length < selectedUnits.length && neighbourCells.length < Main.map.getWidth() * Main.map.getHeight()) {
+                neighbourCells = Map.getNeighboursCells(neighbourCells);
             }
-            for (var i = 0; i < Math.min(neighbourCells.length, selected_units.length); i++) {
-                if (selected_units[i].getJ() == neighbourCells[i].getJ() && selected_units[i].getI() == neighbourCells[i].getI()) {
+            for (var i:int = 0; i < Math.min(neighbourCells.length, selectedUnits.length); i++) {
+                if (selectedUnits[i].j == neighbourCells[i].j && selectedUnits[i].i == neighbourCells[i].i) {
                     continue;   // В себя не ходим.
                 }
-                this.actions.MOVEMENT.push(
-                    new MoveRequestMessage(
-                        selected_units[i].getId(),
-                        neighbourCells[i].getJ(),
-                        neighbourCells[i].getI()
-                    )
-                );
-                removeFollowing(selected_units[i]);
-            }*/
+                movementRequests.push(new MoveRequestMessage(selectedUnits[i].id, neighbourCells[i].j, neighbourCells[i].i));
+                movementManager.removeFollowing(selectedUnits[i]);
+            }
         }
         
         /**
-         * Добавляет запрос движения юнита в заданную клетку.
+         * Добавляет запрос движения юнита в клетку карты.
          * @param unit юнит
          * @param dest клетка назначения
          */
-        public function moveUnit(unit:Unit, dest:Point):void {
-            movementRequests.push(new MoveRequestMessage(unit.getId(), dest.j, dest.i));
+        public function moveUnit(unit:Unit, dest:Cell):void {
+            movementRequests.push(new MoveRequestMessage(unit.id, dest.j, dest.i));
         }
         
         /**
          * Возвращает запросы движения и очищает массив запросов движения.
+         * @return запросы движения
          */
         public function takeMovementRequests():Array {
             var tmp:Array = movementRequests;

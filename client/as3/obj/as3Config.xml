@@ -16,16 +16,16 @@
     </define>
     <define append="true">
       <name>CONFIG::timeStamp</name>
-      <value>'18.07.2012'</value>
+      <value>'21.07.2012'</value>
     </define>
     <verbose-stacktraces>true</verbose-stacktraces>
     <source-path append="true">
       <path-element>F:\src\minimmorts\client\as3\src</path-element>
       <path-element>C:\Program Files (x86)\FlashDevelop\Library\AS3\classes</path-element>
     </source-path>
-    <library-path append="true">
-      <path-element>F:\src\minimmorts\client\as3\as3corelib.swc</path-element>
-    </library-path>
+    <include-libraries>
+      <library>F:\src\minimmorts\client\as3\as3corelib.swc</library>
+    </include-libraries>
   </compiler>
   <file-specs>
     <path-element>F:\src\minimmorts\client\as3\src\Main.as</path-element>

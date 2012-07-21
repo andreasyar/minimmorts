@@ -1,4 +1,5 @@
 package ru.azuchan.minimmorts.units {
+    import ru.azuchan.minimmorts.movement.MovementManager;
 
 	/**
      * Менеджер юнитов.
@@ -6,13 +7,16 @@ package ru.azuchan.minimmorts.units {
      */
     public class UnitManager {
         
+        private var movementManager:MovementManager;
+        
         private var units:Array;
         
         private var selfUnits:Array;
         
         private var selectedUnits:Array;
         
-        public function UnitManager() {
+        public function UnitManager(movementManager:MovementManager) {
+            this.movementManager = movementManager;
             units = [];
             selfUnits = [];
             selectedUnits = [];
@@ -36,7 +40,7 @@ package ru.azuchan.minimmorts.units {
         
         public function getUnitById(id:int):Unit {
             for (var i:int = 0; i < units.length; i++) {
-                if (units[i].getId() == id) {
+                if (units[i].id == id) {
                     return units[i];
                 }
             }
@@ -46,15 +50,15 @@ package ru.azuchan.minimmorts.units {
         
         public function delUnitById(id:int):Boolean {
             for (var i:int = 0; i < units.length; i++) {
-                if (units[i].getId() == id) {
+                if (units[i].id == id) {
                     units.splice(i, 1);
-                    Main.movementManager.delMovementByUnitId(id);
-                    //removeFollowingByTarget(units[i]);
+                    movementManager.delMovementByUnitId(id);
+                    movementManager.removeFollowingByTarget(units[i]);
                     return true;
                 }
             }
             for (i = 0; i < selfUnits.length; i++) {
-                if (selfUnits[i].getId() == id) {
+                if (selfUnits[i].id == id) {
                     selfUnits.splice(i, 1);
                     return true;
                 }
@@ -89,8 +93,69 @@ package ru.azuchan.minimmorts.units {
             }
         }
         
+        public function selectUnitsRect(dim:Object):int {
+            var n:int = 0;
+            selectedUnits = [];
+            var k:int;
+            
+            for (k = 0; k < selfUnits.length; k++) {
+                selfUnits[k].selected = false;
+            }
+            for (var i:int = dim.begI; i < dim.endI; i++) {
+                for (var j:int = dim.begJ; j < dim.endJ; j++) {
+                    for (k = 0; k < selfUnits.length; k++) {
+                        if (selfUnits[k].j == j && selfUnits[k].i == i) {
+                            selfUnits[k].selected = true;
+                            selectedUnits.push(selfUnits[k]);
+                            n++;
+                        }
+                    }
+                }
+            }
+            
+            return n;
+        }
+        
+        public function selfUnitsToProtocol1():String {
+            var out:String = "";
+            if (selfUnits.length > 0) {
+                out += selfUnits[0].toProtocol1();
+                for (var i:int = 1; i < selfUnits.length; i++) {
+                    out += "," + selfUnits[i].toProtocol1();
+                }
+            }
+            return out;
+        }
+        
+        /**
+         * Возвращает копию массива выделенных юнитов.
+         * @return копия массива выделенных юнитов
+         */
         public function getSelectedUnits():Array {
-            return selectedUnits;
+            return selectedUnits.concat();
+        }
+        
+        public function tryFollowing(x:Number, y:Number):Boolean {
+            for (var i:int = 0; i < units.length; i++) {
+                for (var j:int = 0; j < selectedUnits.length; j++) {
+                    if (units[i] != selectedUnits[j] && units[i].isInSprite(x, y)) {
+                        for (var k:int = 0; k < selectedUnits.length; k++) {
+                            movementManager.addFollowing(selectedUnits[k], units[i]);
+                        }
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        public function getUnits():Array {
+            return units;
+        }
+        
+        public function getSelfUnits():Array {
+            return selfUnits;
         }
     }
 }

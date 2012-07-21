@@ -62,9 +62,11 @@ package {
         
         public static const DEBUG_MODES:Boolean = false;
         
-        public static const DEBUG_PROTOCOL:Boolean = true;
+        public static const DEBUG_PROTOCOL:Boolean = false;
         
         public static const usePathCache:Boolean = true;
+        
+        public static const DEBUG_FOLLOW:Boolean = false;
         
         public function Config() {
             
