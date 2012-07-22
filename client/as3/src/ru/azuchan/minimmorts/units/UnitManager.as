@@ -1,4 +1,7 @@
 package ru.azuchan.minimmorts.units {
+    import flash.display.Bitmap;
+    import flash.display.BitmapData;
+    import ru.azuchan.minimmorts.follow.FollowManager;
     import ru.azuchan.minimmorts.movement.MovementManager;
 
 	/**
@@ -7,21 +10,62 @@ package ru.azuchan.minimmorts.units {
      */
     public class UnitManager {
         
+        /**
+         * Менеджер движений.
+         */
         private var movementManager:MovementManager;
         
+        /**
+         * Менеджер преследований.
+         */
+        private var followManager:FollowManager;
+        
+        /**
+         * Массив юнитов.
+         */
         private var units:Array;
         
+        /**
+         * Массив юнитов, принадлежащих игроку.
+         */
         private var selfUnits:Array;
         
+        /**
+         * Массив выделенных юнитов.
+         */
         private var selectedUnits:Array;
         
-        public function UnitManager(movementManager:MovementManager) {
+        /**
+         * Создаёт новый менеджер юнитов.
+         * @param movementManager менеджер движений
+         * @param followManager менеджер преследований
+         */
+        public function UnitManager(movementManager:MovementManager, followManager:FollowManager) {
             this.movementManager = movementManager;
+            this.followManager = followManager;
             units = [];
             selfUnits = [];
             selectedUnits = [];
         }
         
+        /**
+         * Возвращает копию массива выделенных юнитов.
+         * @return копия массива выделенных юнитов
+         */
+        public function getSelectedUnits():Array {
+            return selectedUnits.concat();
+        }
+        
+        /**
+         * Добавляет юнита.
+         * @param ownerId идентификатор владельца юнита
+         * @param id идентификатор юнита
+         * @param j j-координата клетки карты, где находится юнит
+         * @param i i-координата клетки карты, где находится юнит
+         * @param r красная компонента цвета юнита
+         * @param g зеленая компонента цвета юнита
+         * @param b синяя компонента цвета юнита
+         */
         public function addUnit(ownerId:int, id:int, j:int, i:int, r:int, g:int, b:int):void {
             var unit : Unit = new Unit(ownerId, id, j, i, r, g, b);
             units.push(unit);
@@ -32,12 +76,21 @@ package ru.azuchan.minimmorts.units {
             }
         }
         
+        /**
+         * Обновляет положение всех юнитов.
+         * @param camera камера
+         */
         public function update(camera:Camera):void {
             for (var i:int; i < units.length; i++) {
                 units[i].update(camera);
             }
         }
         
+        /**
+         * Возвращает юнита по идентификатору.
+         * @param id идентификатор юнита
+         * @return юнит или null, если юнит не был найден
+         */
         public function getUnitById(id:int):Unit {
             for (var i:int = 0; i < units.length; i++) {
                 if (units[i].id == id) {
@@ -48,12 +101,19 @@ package ru.azuchan.minimmorts.units {
             return null;
         }
         
+        /**
+         * Удаляет юнита по идентификатору.
+         * @param id идентификатор юнита
+         * @return вовзвращает true, если юнит был успешно удалён и
+         * false, если юнит не был найден
+         */
         public function delUnitById(id:int):Boolean {
             for (var i:int = 0; i < units.length; i++) {
                 if (units[i].id == id) {
+                    units[i].hide();
                     units.splice(i, 1);
                     movementManager.delMovementByUnitId(id);
-                    movementManager.removeFollowingByTarget(units[i]);
+                    followManager.removeFollowingByObject(units[i]);
                     return true;
                 }
             }
@@ -67,6 +127,10 @@ package ru.azuchan.minimmorts.units {
             return false;
         }
         
+        /**
+         * Возвращает хеш юнитов.
+         * @return хеш юнитов
+         */
         public function getUnitsHash():Object {
             var hash:String = "";
             
@@ -81,6 +145,11 @@ package ru.azuchan.minimmorts.units {
             };
         }
         
+        /**
+         * Выделяет юнитов в заданной точке.
+         * @param x x-координата точки на экране
+         * @param y y-координата точки на экране
+         */
         public function selectUnits(x:Number, y:Number):void {
             selectedUnits = [];
             for (var i:int = 0; i < selfUnits.length; i++) {
@@ -93,6 +162,10 @@ package ru.azuchan.minimmorts.units {
             }
         }
         
+        /**
+         * Выделяет юнитов в заданной прямоугольной области.
+         * @param dim прямоугольная область
+         */
         public function selectUnitsRect(dim:Object):int {
             var n:int = 0;
             selectedUnits = [];
@@ -116,31 +189,18 @@ package ru.azuchan.minimmorts.units {
             return n;
         }
         
-        public function selfUnitsToProtocol1():String {
-            var out:String = "";
-            if (selfUnits.length > 0) {
-                out += selfUnits[0].toProtocol1();
-                for (var i:int = 1; i < selfUnits.length; i++) {
-                    out += "," + selfUnits[i].toProtocol1();
-                }
-            }
-            return out;
-        }
-        
         /**
-         * Возвращает копию массива выделенных юнитов.
-         * @return копия массива выделенных юнитов
+         * Пытается запустить преследование. Возвращает true, если преследование
+         * было запущено и flase в противном случае.
+         * @param x x-координата нажатия мыши на экране
+         * @param y y-координата нажатия мыши на экране
          */
-        public function getSelectedUnits():Array {
-            return selectedUnits.concat();
-        }
-        
         public function tryFollowing(x:Number, y:Number):Boolean {
             for (var i:int = 0; i < units.length; i++) {
                 for (var j:int = 0; j < selectedUnits.length; j++) {
                     if (units[i] != selectedUnits[j] && units[i].isInSprite(x, y)) {
                         for (var k:int = 0; k < selectedUnits.length; k++) {
-                            movementManager.addFollowing(selectedUnits[k], units[i]);
+                            followManager.addFollowing(selectedUnits[k], units[i]);
                         }
                         return true;
                     }
@@ -150,12 +210,18 @@ package ru.azuchan.minimmorts.units {
             return false;
         }
         
-        public function getUnits():Array {
-            return units;
-        }
-        
-        public function getSelfUnits():Array {
-            return selfUnits;
+        /**
+         * Отмечает положение юнитов на миникарте.
+         * @param minimap миникарта
+         */
+        public function markUnitsOnMinimap(minimap:Bitmap):void {
+            var i:int;
+            for (i = 0; i < units.length; i++) {
+                minimap.bitmapData.setPixel(units[i].j, units[i].i, 0xFF0000);
+            }
+            for (i = 0; i < selfUnits.length; i++) {
+                minimap.bitmapData.setPixel(units[i].j, units[i].i, 0x0000FF);
+            }
         }
     }
 }

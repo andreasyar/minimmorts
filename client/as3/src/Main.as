@@ -7,23 +7,25 @@ package {
     import flash.events.Event;
     import flash.events.KeyboardEvent;
     import flash.events.MouseEvent;
-    import ru.azuchan.minimmorts.map.Cell;
-    import ru.azuchan.minimmorts.movement.FollowLoop;
-    import ru.azuchan.minimmorts.sprite.SpriteLoader;
+    import flash.events.ThrottleEvent;
+    import flash.events.TimerEvent;
     import flash.text.TextField;
-    import com.adobe.serialization.json.JSON;
-    import ru.azuchan.minimmorts.client.ClientMainLoop;
-    import ru.azuchan.minimmorts.movement.PathCache;
-    import ru.azuchan.minimmorts.movement.Point;
-    import ru.azuchan.minimmorts.units.UnitManager;
-    import ru.azuchan.minimmorts.movement.MovementManager;
-    import ru.azuchan.minimmorts.messages.MessageManager;
-    import ru.azuchan.minimmorts.net.ServerInteraction;
-    import ru.azuchan.minimmorts.actions.ActionManager;
     import flash.system.Security;
     import flash.geom.ColorTransform;
     import flash.utils.Timer;
-    import flash.events.TimerEvent;
+    import com.adobe.serialization.json.JSON;
+    import ru.azuchan.minimmorts.follow.FollowLoop;
+    import ru.azuchan.minimmorts.follow.FollowManager;
+    import ru.azuchan.minimmorts.map.Cell;
+    import ru.azuchan.minimmorts.map.Map;
+    import ru.azuchan.minimmorts.sprite.SpriteLoader;
+    import ru.azuchan.minimmorts.client.ClientMainLoop;
+    import ru.azuchan.minimmorts.movement.PathCache;
+    import ru.azuchan.minimmorts.movement.MovementManager;
+    import ru.azuchan.minimmorts.units.UnitManager;
+    import ru.azuchan.minimmorts.messages.MessageManager;
+    import ru.azuchan.minimmorts.net.ServerInteraction;
+    import ru.azuchan.minimmorts.actions.ActionManager;
 
     /**
      * ...
@@ -34,7 +36,7 @@ package {
         /**
          * Карта.
          */
-        static public var map:Map;
+        private var map:Map;
         
         /**
          * Камера.
@@ -76,6 +78,8 @@ package {
         
         private var unitManager:UnitManager;
         
+        private var followManager:FollowManager;
+        
         private var serverInteraction:ServerInteraction;
         
         static public var tf:TextField;
@@ -96,6 +100,10 @@ package {
         
         private var minimap:Bitmap;
         
+        private var throttle:Boolean;
+        
+        private var clientMainLoop:ClientMainLoop;
+        
         public function Main():void {
             if (stage) {
                 init();
@@ -115,18 +123,23 @@ package {
             Main.pathCache = new PathCache();
             Main.step = -1;
             Main.freeAnimation = [];
+            throttle = false;
         }
         
         private function loadCompleteCallback():void {
-            Main.map = new Map(100, 100);
+            map = new Map(100, 100);
+            map.show(stage);
             
-            movementManager = new MovementManager();
-            unitManager = new UnitManager(movementManager);
-            messageManager = new MessageManager(movementManager, unitManager, welcomeReceivedCallback);
-            actionManager = new ActionManager(movementManager, unitManager);
+            followManager = new FollowManager(Main.freeAnimation, Main.stage);
+            movementManager = new MovementManager(map);
+            unitManager = new UnitManager(movementManager, followManager);
+            messageManager = new MessageManager(movementManager, unitManager);
+            messageManager.addEventListener("WELCOME", welcomeReceivedCallback);
+            messageManager.addEventListener("STEPTIME", stepTimeReceivedCallback);
+            actionManager = new ActionManager(unitManager, followManager, map);
             serverInteraction = new ServerInteraction(messageManager);
             
-            minimap = new Bitmap(new BitmapData(Main.map.getWidth(), Main.map.getHeight()));
+            minimap = new Bitmap(new BitmapData(map.width, map.height));
             minimap.x = 25;
             minimap.y = 25;
             stage.addChild(minimap);
@@ -138,25 +151,27 @@ package {
             }
             
             tf = new TextField();
-            tf.text = "ws://" + Main.serverIp + ":8015/";
-            //stage.addChild(tf);
+            tf.x = 200;
+            tf.y = 200;
+            tf.wordWrap = true;
+            stage.addChild(tf);
             
             serverInteraction.connect("ws://" + Main.serverIp + ":8015/");
-            tf.text += ", connection...";
         }
         
         private function welcomeReceivedCallback():void {
             stage.addEventListener(Event.ENTER_FRAME, onEnterFrame);
             stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
-            //stage.addEventListener(MouseEvent.CLICK, onMouseClick);
             stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
             stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
             stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseMove);
             stage.addEventListener(MouseEvent.RIGHT_CLICK, onMouseRightClick);
+            stage.addEventListener(ThrottleEvent.THROTTLE, onThrottle);
             
-            var client:ClientMainLoop = new ClientMainLoop(messageManager, movementManager, actionManager, unitManager, serverInteraction, onStepComplete);
-            client.start();
-            var follower:FollowLoop = new FollowLoop(movementManager, actionManager);
+            clientMainLoop = new ClientMainLoop(messageManager, movementManager, actionManager, unitManager, serverInteraction, onStepComplete);
+            clientMainLoop.start();
+            
+            var follower:FollowLoop = new FollowLoop(actionManager, followManager);
             follower.start();
             
             selectionRect = new Shape();
@@ -214,9 +229,22 @@ package {
             scrollMapBars[3].name = "downScrollBar";
             stage.addChild(scrollMapBars[3]);
             scrollMapBarTimers[3].addEventListener("timer", scrollDown);
+        }
+        
+        private function stepTimeReceivedCallback():void {
+            clientMainLoop.stop();
+            clientMainLoop.start();
+        }
+        
+        private function onThrottle(event:ThrottleEvent):void {
+            throttle = !throttle;
+            tf.text = tf.text.concat(throttle ? ",off" : ",on");
             
-            var derp:int = new Cell(1, 1).i;
-            trace(derp);
+            if (throttle) {
+                // TODO: Сделать отключение, полную очистку и остановку. Кроме загрузки спрайтов.
+            } else {
+                // TODO: Запустить клиент заново.
+            }
         }
         
         private function onScrollMapBarOver(event:MouseEvent):void {
@@ -279,15 +307,15 @@ package {
         
         private function scrollRight(event:TimerEvent):void {
             Main.camera.x += 1 * Config.CELL_W;
-            if (Main.camera.x > map.getWidth() * Config.CELL_W - Config.SCR_HW) {
-                Main.camera.x = map.getWidth() * Config.CELL_W - Config.SCR_HW;
+            if (Main.camera.x > map.width * Config.CELL_W - Config.SCR_HW) {
+                Main.camera.x = map.width * Config.CELL_W - Config.SCR_HW;
             }
         }
         
         private function scrollDown(event:TimerEvent):void {
             Main.camera.y += 1 * Config.CELL_H;
-            if (Main.camera.y > map.getHeight() * Config.CELL_H - Config.SCR_HH) {
-                Main.camera.y = map.getHeight() * Config.CELL_H - Config.SCR_HH;
+            if (Main.camera.y > map.height * Config.CELL_H - Config.SCR_HH) {
+                Main.camera.y = map.height * Config.CELL_H - Config.SCR_HH;
             }
         }
         
@@ -300,7 +328,6 @@ package {
             }
             if (selectionBeg != null && selectionEnd != null && stage.contains(selectionRect)) {
                 selectionRect.graphics.clear();
-                //selectionRect.graphics.beginFill(0xFFFFFF);
                 selectionRect.graphics.lineStyle(2, 0x000000, 0.75);
                 selectionRect.graphics.moveTo(selectionBeg.x, selectionBeg.y);
                 selectionRect.graphics.lineTo(selectionEnd.x, selectionBeg.y);
@@ -318,8 +345,8 @@ package {
                 }
             } else if (event.keyCode == 39) {   // right arrow
                 Main.camera.x += 1 * Config.CELL_W;
-                if (Main.camera.x > map.getWidth() * Config.CELL_W - Config.SCR_HW) {
-                    Main.camera.x = map.getWidth() * Config.CELL_W - Config.SCR_HW;
+                if (Main.camera.x > map.width * Config.CELL_W - Config.SCR_HW) {
+                    Main.camera.x = map.width * Config.CELL_W - Config.SCR_HW;
                 }
             } else if (event.keyCode == 38) {   // up arrow
                 Main.camera.y -= 1 * Config.CELL_H;
@@ -328,8 +355,8 @@ package {
                 }
             } else if (event.keyCode == 40) {   // down arrow
                 Main.camera.y += 1 * Config.CELL_H;
-                if (Main.camera.y > map.getHeight() * Config.CELL_H - Config.SCR_HH) {
-                    Main.camera.y = map.getHeight() * Config.CELL_H - Config.SCR_HH;
+                if (Main.camera.y > map.height * Config.CELL_H - Config.SCR_HH) {
+                    Main.camera.y = map.height * Config.CELL_H - Config.SCR_HH;
                 }
             }
         }
@@ -353,8 +380,8 @@ package {
                 }
                 unitManager.selectUnitsRect(dim);
             } else {
-                var tAxis:Object = camera.reTranslateAxis(event.stageX, event.stageY);
-                unitManager.selectUnits(tAxis.x, tAxis.y);
+                //var tAxis:Object = camera.reTranslateAxis(event.stageX, event.stageY);
+                unitManager.selectUnits(event.stageX, event.stageY);
             }
             
             selectionBeg = null;
@@ -365,11 +392,6 @@ package {
         }
         
         private function onMouseMove(event:MouseEvent):void {
-            /*if (event.relatedObject == scrollMapBars[0]) {
-                trace("Move!");
-                return;
-            }*/
-            
             if (selectionBeg != null) {
                 selectionEnd = { x: event.stageX, y: event.stageY };
                 
@@ -379,14 +401,9 @@ package {
             }
         }
         
-        /*private function onMouseClick(event:MouseEvent):void {
-            var tAxis:Object = camera.reTranslateAxis(event.stageX, event.stageY);
-            unitManager.selectUnits(tAxis.x, tAxis.y);
-        }*/
-        
         private function onMouseRightClick(event:MouseEvent):void {
             var tAxis:Object = camera.reTranslateAxis(event.stageX, event.stageY);
-            if (!unitManager.tryFollowing(tAxis.x, tAxis.y)) {
+            if (!unitManager.tryFollowing(event.stageX, event.stageY)) {
                 actionManager.moveSelectedUnits(new Cell(Map.getCellJOnMap(tAxis.x), Map.getCellIOnMap(tAxis.y)));
             }
         }
@@ -396,9 +413,9 @@ package {
          */
         private function updateMinimap():void {
             var i:int, j:int, k:int;
-            for (i = 0; i < map.getHeight(); i++) {
-                for (j = 0; j < map.getWidth(); j++) {
-                    if (i == 0 || j == 0 || i == map.getHeight() - 1 || j == map.getWidth() - 1) {
+            for (i = 0; i < map.height; i++) {
+                for (j = 0; j < map.width; j++) {
+                    if (i == 0 || j == 0 || i == map.height - 1 || j == map.width - 1) {
                         // Черная рамка по краям.
                         minimap.bitmapData.setPixel(j, i, 0x000000);
                     } else {
@@ -407,20 +424,13 @@ package {
                     }
                 }
             }
-            var units:Array = unitManager.getUnits();
-            for (k = 0; k < units.length; k++) {
-                minimap.bitmapData.setPixel(units[k].j, units[k].i, 0xFF0000);
-            }
-            var selfUnits:Array = unitManager.getSelfUnits();
-            for (k = 0; k < selfUnits.length; k++) {
-                minimap.bitmapData.setPixel(units[k].j, units[k].i, 0x0000FF);
-            }
+            unitManager.markUnitsOnMinimap(minimap);
             var camJ:int = Math.max(0, Map.getCellJOnMap(Main.camera.x));
             var camI:int = Math.max(0, Map.getCellIOnMap(Main.camera.y));
             var camW:int = Math.ceil(Config.SCR_W / Config.CELL_W);
             var camH:int = Math.ceil(Config.SCR_H / Config.CELL_H);
-            for (i = camI; i < map.getHeight(); i++) {
-                for (j = camJ; j < map.getWidth(); j++) {
+            for (i = camI; i < map.height; i++) {
+                for (j = camJ; j < map.width; j++) {
                     if ( ((i == camI || i == camI + camH - 1) && j <= camJ + camW - 1) || (j == camJ || j == camJ + camW - 1) && i <= camI + camH - 1) {
                         // Серая рамка камеры.
                         minimap.bitmapData.setPixel(j, i, 0x808080);

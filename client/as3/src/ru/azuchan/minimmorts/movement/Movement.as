@@ -2,119 +2,153 @@ package ru.azuchan.minimmorts.movement {
     import ru.azuchan.minimmorts.units.Unit;
 
 	/**
-     * ...
+     * Движение.
      * @author sorc
      */
     public class Movement {
-
+        
         /**
          * Юнит.
          */
-        private var unit:Unit;
-
+        private var _unit:Unit;
+        
         /**
          * Скорость движения в клетках в шаг.
          */
-        private var speed:Number;
-
+        private var _speed:Number;
+        
         /**
          * Номер хода, когда движение началось.
          */
-        private var begStep:int;
-
+        private var _begStep:int;
+        
         /**
          * Точки, по которым строится путь движения.
          */
-        private var waypoints:Array;
-
+        private var _waypoints:Array;
+        
         /**
          * Путь движения.
          */
-        private var path:Array;
-
+        private var _path:Array;
+        
         /**
          * Флаг окончания движения.
          */
-        private var finished:Boolean;
+        private var _finished:Boolean;
         
+        /**
+         * Создаёт новое движение.
+         * @param unit юнит
+         * @param speed скорость движения в клетках в шаг
+         * @param begStep номер хода, когда движение началось
+         * @param waypoints точки, по которым строится путь движения
+         * @param path путь движения
+         */
         public function Movement(unit:Unit, speed:Number, begStep:int, waypoints:Array, path:Array) {
-            this.unit = unit;
-            this.speed = speed;
-            this.path = path;
-            this.begStep = begStep;
-            this.waypoints = waypoints;
-            finished = false;
+            _unit = unit;
+            _speed = speed;
+            _begStep = begStep;
+            _waypoints = waypoints;
+            _path = path;
+            _finished = false;
         }
         
-        public function getPath():Array {
-            return path;
+        /**
+         * Юнит.
+         */
+        public function get unit():Unit {
+            return _unit;
         }
         
-        internal function setPath(path:Array):void {
-            this.path = path;
+        /**
+         * Скорость движения в клетках в шаг.
+         */
+        public function get speed():Number {
+            return _speed;
         }
         
-        internal function setWaypoints(waypoints:Array):void {
-            this.waypoints = waypoints;
+        /**
+         * Номер хода, когда движение началось.
+         */
+        public function get begStep():int {
+            return _begStep;
         }
         
-        internal function getWaypoints():Array {
-            return waypoints;
+        public function set begStep(begStep:int):void {
+            _begStep = begStep;
         }
         
+        /**
+         * Точки, по которым строится путь движения.
+         */
+        public function get waypoints():Array {
+            return _waypoints;
+        }
+        
+        public function set waypoints(waypoints:Array):void {
+            _waypoints = waypoints;
+        }
+        
+        /**
+         * Путь движения.
+         */
+        public function get path():Array {
+            return _path;
+        }
+        
+        public function set path(path:Array):void {
+            _path = path;
+        }
+        
+        /**
+         * Флаг окончания движения.
+         */
+        public function get finished():Boolean {
+            return _finished;
+        }
+        
+        /**
+         * Обвновляет положение юнита.
+         * @param step текущий шаг
+         */
         internal function updatePosition(step:int):void {
-            var n:int = Math.floor((step - begStep) * speed);
-            if (path == null) {
-                trace("Положение юнита " + unit + " не может быть обновлено. Путь null");
+            var n:int = Math.floor((step - _begStep) * _speed);
+            if (_path == null) {
+                trace("Положение юнита " + _unit + " не может быть обновлено. Путь null");
                 return;
             }
-            if (path.length <= 0) {
-                trace("Положение юнита " + unit + " не может быть обновлено. Путь пуст");
+            if (_path.length <= 0) {
+                trace("Положение юнита " + _unit + " не может быть обновлено. Путь пуст");
                 return;
             }
-            if (n >= path.length - 1) {
+            if (n >= _path.length - 1) {
                 if (Config.DEBUG_MOVEMENTS) {
-                    trace(Main.step + ": Юнит " + unit + " сходил [" + unit.j + "," + unit.i + "]->[" + path[path.length - 1].j + "," + path[path.length - 1].i + "] и движение звершилось.");
+                    trace(Main.step + ": Юнит " + _unit + " сходил [" + _unit.j + "," + _unit.i + "]->[" + _path[_path.length - 1].j + "," + _path[_path.length - 1].i + "] и движение звершилось.");
                 }
-                unit.j = path[path.length - 1].j;
-                unit.i = path[path.length - 1].i;
-                finished = true;
+                _unit.j = _path[_path.length - 1].j;
+                _unit.i = _path[_path.length - 1].i;
+                _finished = true;
             } else {
                 if (Config.DEBUG_MOVEMENTS) {
-                    trace(Main.step + ": Юнит " + unit + " сходил [" + unit.j + "," + unit.i + "]->[" + path[n].j + "," + path[n].i + "]");
+                    trace(Main.step + ": Юнит " + _unit + " сходил [" + _unit.j + "," + _unit.i + "]->[" + _path[n].j + "," + _path[n].i + "]");
                 }
-                unit.j = path[n].j;
-                unit.i = path[n].i;
+                _unit.j = _path[n].j;
+                _unit.i = _path[n].i;
             }
         }
         
-        internal function getUnit():Unit {
-            return unit;
-        }
-        
-        public function getSpeed():Number {
-            return speed;
-        }
-        
-        public function getBegStep():int {
-            return begStep;
-        }
-        
-        internal function setBegStep(begStep:int):void {
-            this.begStep = begStep;
-        }
-        
-        internal function isFinished():Boolean {
-            return finished;
-        }
-        
+        /**
+         * Возвращает строковое представляение движения.
+         * @return строковое представляение движения
+         */
         public function toString():String {
-            return "begJ=" + waypoints[0].j +
-                   ",begI=" + waypoints[0].i +
-                   ",endJ=" + waypoints[waypoints.length - 1].j +
-                   ",endI=" + waypoints[waypoints.length - 1].i +
-                   ",finished=" + finished +
-                   ",beg_step=" + begStep;
+            return "begJ=" + _waypoints[0].j +
+                   ",begI=" + _waypoints[0].i +
+                   ",endJ=" + _waypoints[_waypoints.length - 1].j +
+                   ",endI=" + _waypoints[_waypoints.length - 1].i +
+                   ",finished=" + _finished +
+                   ",beg_step=" + _begStep;
         }
     }
 }

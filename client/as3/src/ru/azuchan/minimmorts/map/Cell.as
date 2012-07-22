@@ -1,5 +1,4 @@
 package ru.azuchan.minimmorts.map {
-    import ru.azuchan.minimmorts.movement.Point;
     
 	/**
      * Клетка карты.
@@ -49,8 +48,6 @@ package ru.azuchan.minimmorts.map {
         public function equals(obj:Object):Boolean {
             if (obj is Cell) {
                 return obj.j == _j && obj.i == _i;
-            } else if (obj is Point) {
-                return obj.j == _j && obj.i == _i;
             }
             
             return false;
@@ -72,6 +69,14 @@ package ru.azuchan.minimmorts.map {
          */
         public function toString():String {
             return "[" + _j + "," + _i + "]";
+        }
+        
+        /**
+         * Возвращает клетку карты в формате Protocol-1.
+         * @return клетка карты в формате Protocol-1
+         */
+        public function toProtocol1():String {
+            return _j + "," + _i;
         }
     }
 }

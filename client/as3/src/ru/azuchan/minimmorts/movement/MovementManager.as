@@ -1,6 +1,8 @@
 package ru.azuchan.minimmorts.movement {
+    import ru.azuchan.minimmorts.map.Cell;
     import ru.azuchan.minimmorts.units.Unit;
     import ru.azuchan.minimmorts.sprite.SpriteMovement;
+    import ru.azuchan.minimmorts.map.Map;
 
 	/**
      * Менеджер движений. Хранит и управляет движением.
@@ -18,16 +20,25 @@ package ru.azuchan.minimmorts.movement {
          */
         private var spriteMovements:Array;
         
-        private var followings:Array;
+        /**
+         * Карта игрового мира.
+         */
+        private var map:Map;
         
-        public function MovementManager() {
+        /**
+         * Создаёт новый менеджер движения.
+         * @param map карта игрового мира
+         */
+        public function MovementManager(map:Map) {
+            this.map = map;
             movements = [];
             spriteMovements = [];
-            followings = [];
         }
         
         /**
          * Проверяет, движется ли юнит.
+         * @param unit юнит
+         * @return движется ли юнит
          */
         private function isUnitMove(unit:Unit):Boolean {
             for (var i:int = 0; i < movements.length; i++) {
@@ -41,13 +52,16 @@ package ru.azuchan.minimmorts.movement {
         
         /**
          * Создаёт новое движение.
+         * @param begStep шаг начала движения
+         * @param unit движущийся юнит
+         * @param waypoints токи пути движения
          */
         public function startNewMovement(begStep:int, unit:Unit, waypoints:Array):void {
             if (Config.DEBUG_MOVEMENTS) {
                 trace(Main.step + ": Создаётся новое движение юнита " + unit + " по точкам "/* + waypointsToString(waypoints)*/);
             }
             
-            var path:Array = generatePath(Main.map, waypoints, unit);
+            var path:Array = generatePath(waypoints, unit);
             if (path == null) {
                 trace(Main.step + ": Путь движения юнита " + unit + " по точкам "/* + waypointsToString(waypoints)*/ + " не найден.");
                 return;
@@ -61,11 +75,14 @@ package ru.azuchan.minimmorts.movement {
         
         /**
          * Обновляет существующее движение.
+         * @param begStep шаг начала движения
+         * @param unit движущийся юнит
+         * @param waypoints токи пути движения
          */
         public function updateMovement(begStep:int, unit:Unit, waypoints:Array):void {
             var existedMovement:Movement = null;
             for (var i:int = 0; i < movements.length; i++) {
-                if (movements[i].getUnit() == unit) {
+                if (movements[i].unit == unit) {
                     existedMovement = movements[i];
                     break;
                 }
@@ -77,20 +94,21 @@ package ru.azuchan.minimmorts.movement {
             if (Config.DEBUG_MOVEMENTS) {
                 trace(Main.step + ": Обновляется движение юнита " + unit + " по точкам "/* + waypointsToString(waypoints)*/);
             }
-            existedMovement.setBegStep(begStep);
+            existedMovement.begStep = begStep;
             
-            var path:Array = generatePath(Main.map, waypoints, existedMovement.getUnit());
+            var path:Array = generatePath(waypoints, existedMovement.unit);
             if (path == null) {
                 trace(Main.step + ": Путь движения юнита " + unit + " по точкам "/* + waypointsToString(waypoints)*/ + " не найден.");
                 return;
             }
             
-            existedMovement.setWaypoints(waypoints);
-            existedMovement.setPath(path);
+            existedMovement.waypoints = waypoints;
+            existedMovement.path = path;
         }
         
         /**
          * Обновляет позиции юнитов.
+         * @param step текущий шаг
          */
         public function updatePositions(step:int):void {
             removeFinishedMovements();  // TODO В том чтобы удалять движения именно тут есть глубинный смысл, надо от него избавится.
@@ -123,7 +141,7 @@ package ru.azuchan.minimmorts.movement {
                 if (!(movements[i] is Movement)) {
                     throw new Error("Движение не является объектом типа Movement.");
                 }
-                if (!movements[i].isFinished()) {
+                if (!movements[i].finished) {
                     movementsInProgress.push(movements[i]);
                 }
             }
@@ -146,11 +164,15 @@ package ru.azuchan.minimmorts.movement {
             spriteMovements = spriteMovementsInProgress;
         }
         
+        /**
+         * Удаляет движение по идентификатору юнита.
+         * @param id идентификатор юнита
+         */
         public function delMovementByUnitId(id:int):void {
             var i:int;
             
             for (i = 0; i < movements.length; i++) {
-                if (movements[i].getUnit().id == id) {
+                if (movements[i].unit.id == id) {
                     movements.splice(i, 1);
                     if (Config.DEBUG_MOVEMENTS) {
                         trace("Удалено движение юнита id=" + id);
@@ -224,7 +246,7 @@ package ru.azuchan.minimmorts.movement {
                 return null;
             }
             
-            if (!Main.map.isOnMap(end.j, end.i) || /*accessMap[end.i][end.j] == NOTPASSABLE*/ false) {
+            if (!map.isOnMap(end.j, end.i) || /*accessMap[end.i][end.j] == NOTPASSABLE*/ false) {
                 return null;
             }
             
@@ -278,7 +300,7 @@ package ru.azuchan.minimmorts.movement {
                         }
 
                         // Клетку вне карты не рассматриваем.
-                        if (!Main.map.isOnMap(j, i)) {
+                        if (!map.isOnMap(j, i)) {
                             stat.onmap++;
                             continue;
                         }
@@ -335,9 +357,10 @@ package ru.azuchan.minimmorts.movement {
         }
         
         /**
-         * Создаёт путь на карте по вейпоинтам.
+         * Создаёт путь на карте по точкам пути.
+         * @param waypoints точки пути
          */
-        public function generatePath(map:Map, waypoints:Array, unit:Unit):Array {
+        public function generatePath(waypoints:Array, unit:Unit):Array {
             var generatedPath:Array = [];
             var path:CellA;
             var pathArray:Array;
@@ -402,20 +425,28 @@ package ru.azuchan.minimmorts.movement {
         
         /**
          * Преобразовывает путь-список, возвращаемый функцией getPath(), в путь массив
-         * точек. Требует для работы класс Point и Cell.
+         * клеток.
          */
         private function convertLinkedPathToArray(path:CellA):Array {
             var arrayPath:Array = new Array();
             var curCell:CellA = path;
             
             do {
-                arrayPath.push(new Point(curCell.j, curCell.i));
+                arrayPath.push(new Cell(curCell.j, curCell.i));
                 curCell = curCell.parent;
             } while (curCell != null);
             
             return arrayPath.reverse();
         }
         
+        /**
+         * Возвращает ориентацию движения между соседними клетками.
+         * @param begJ j-индекс на карте клетки отправления
+         * @param begI i-индекс на карте клетки отправления
+         * @param endJ j-индекс на карте клетки назначения
+         * @param endI i-индекс на карте клетки назначения
+         * @return ориентация движения или null, если ориентация не определена.
+         */
         public static function getMovementOrientation(begJ:int, begI:int, endJ:int, endI:int):String {
             var jDiff:int = endJ - begJ;
             var iDiff:int = endI - begI;
@@ -439,53 +470,6 @@ package ru.azuchan.minimmorts.movement {
             } else {
                 return null;
             }
-        }
-        
-        public function removeFollowing(object:Unit):void {
-            for (var i:int = 0; i < followings.length; i++) {
-                if (followings[i].getObject() == object) {
-                    followings.splice(i, 1);
-                    break;
-                }
-            }
-        }
-        
-        public function removeFollowingByTarget(target:Unit):void {
-            var found:Boolean = false;
-            do {
-                for (var i:int = 0; i < followings.length; i++) {
-                    if (followings[i].getTarget() == target) {
-                        followings.splice(i, 1);
-                        found = true;
-                        break;
-                    }
-                }
-                found = false;
-            } while (found);
-        }
-        
-        public function addFollowing(object:Unit, target:Unit):Boolean {
-            for (var i:int = 0; i < followings.length; i++) {
-                if (followings[i].getObject() == object) {
-                    if (Config.DEBUG_FOLLOW) {
-                        trace(Main.step + ": Юнит " + object + " изменил цель преследования c " + followings[i].getTarget() + " на " + target);
-                    }
-                    followings[i].setTarget(target);
-                    Main.freeAnimation.push(new FollowBlinkAnimation(target));
-                    return true;
-                }
-            }
-            
-            followings.push(new Follow(object, target));
-            if (Config.DEBUG_FOLLOW) {
-                trace(Main.step + ": Юнит " + object + " начал преследовать цель " + target);
-            }
-            Main.freeAnimation.push(new FollowBlinkAnimation(target));
-            return true;
-        }
-        
-        public function getFollowings():Array {
-            return followings;
         }
     }
 }

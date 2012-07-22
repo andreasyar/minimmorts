@@ -1,10 +1,11 @@
 package ru.azuchan.minimmorts.actions {
+    import ru.azuchan.minimmorts.follow.FollowManager;
     import ru.azuchan.minimmorts.map.Cell;
     import ru.azuchan.minimmorts.messages.MoveRequestMessage;
     import ru.azuchan.minimmorts.movement.MovementManager;
-    import ru.azuchan.minimmorts.movement.Point;
     import ru.azuchan.minimmorts.units.Unit;
     import ru.azuchan.minimmorts.units.UnitManager;
+    import ru.azuchan.minimmorts.map.Map;
 
 	/**
      * Управляет и хранит запросы действий пользователя.
@@ -13,14 +14,19 @@ package ru.azuchan.minimmorts.actions {
     public class ActionManager {
         
         /**
-         * Менеджер движений.
-         */
-        private var movementManager:MovementManager;
-        
-        /**
          * Менеджер юнитов.
          */
         private var unitManager:UnitManager;
+        
+        /**
+         * Менеджер преследований.
+         */
+        private var followManager:FollowManager;
+        
+        /**
+         * Карта игрового мира.
+         */
+        private var map:Map;
         
         /**
          * Запросы движения.
@@ -32,9 +38,10 @@ package ru.azuchan.minimmorts.actions {
          * @param movementManager менеджер движений.
          * @param unitManager менеджер юнитов.
          */
-        public function ActionManager(movementManager:MovementManager, unitManager:UnitManager) {
-            this.movementManager = movementManager;
+        public function ActionManager(unitManager:UnitManager, followManager:FollowManager, map:Map) {
             this.unitManager = unitManager;
+            this.followManager = followManager;
+            this.map = map;
             movementRequests = [];
         }
         
@@ -49,15 +56,15 @@ package ru.azuchan.minimmorts.actions {
             var selectedUnits:Array = unitManager.getSelectedUnits();            
             var neighbourCells:Array = [dest];
             
-            while (neighbourCells.length < selectedUnits.length && neighbourCells.length < Main.map.getWidth() * Main.map.getHeight()) {
-                neighbourCells = Map.getNeighboursCells(neighbourCells);
+            while (neighbourCells.length < selectedUnits.length && neighbourCells.length < map.width * map.height) {
+                neighbourCells = map.getNeighboursCells(neighbourCells);
             }
             for (var i:int = 0; i < Math.min(neighbourCells.length, selectedUnits.length); i++) {
-                if (selectedUnits[i].j == neighbourCells[i].j && selectedUnits[i].i == neighbourCells[i].i) {
+                if (neighbourCells[i].equals2(selectedUnits[i].j, selectedUnits[i].i)) {
                     continue;   // В себя не ходим.
                 }
-                movementRequests.push(new MoveRequestMessage(selectedUnits[i].id, neighbourCells[i].j, neighbourCells[i].i));
-                movementManager.removeFollowing(selectedUnits[i]);
+                movementRequests.push(new MoveRequestMessage(selectedUnits[i].id, neighbourCells[i]));
+                followManager.removeFollowing(selectedUnits[i]);
             }
         }
         
@@ -67,7 +74,7 @@ package ru.azuchan.minimmorts.actions {
          * @param dest клетка назначения
          */
         public function moveUnit(unit:Unit, dest:Cell):void {
-            movementRequests.push(new MoveRequestMessage(unit.id, dest.j, dest.i));
+            movementRequests.push(new MoveRequestMessage(unit.id, dest));
         }
         
         /**

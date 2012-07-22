@@ -60,7 +60,7 @@ package {
         
         public static const DEBUG_UNITS:Boolean = false;
         
-        public static const DEBUG_MODES:Boolean = false;
+        public static const DEBUG_MODES:Boolean = true;
         
         public static const DEBUG_PROTOCOL:Boolean = false;
         

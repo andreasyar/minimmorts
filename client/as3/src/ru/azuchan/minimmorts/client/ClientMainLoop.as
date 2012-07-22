@@ -9,21 +9,39 @@ package ru.azuchan.minimmorts.client {
     import ru.azuchan.minimmorts.units.UnitManager;
 
 	/**
-     * ...
+     * Главный цикл клиента.
      * @author sorc
      */
     public class ClientMainLoop {
         
+        /**
+         * Менеджер сообщений.
+         */
         private var messageManager:MessageManager;
         
+        /**
+         * Менеджер движений.
+         */
         private var movementManager:MovementManager;
         
+        /**
+         * Менеджер действий пользователя.
+         */
         private var actionManager:ActionManager;
         
+        /**
+         * Менеджер юнитов.
+         */
         private var unitManager:UnitManager;
         
+        /**
+         * Взаимодействие с сервером.
+         */
         private var serverInteraction:ServerInteraction;
         
+        /**
+         * Обработчик, который вызывается при завершении шага.
+         */
         private var onStepComplete:Function;
         
         private var firstClientStep:Boolean;
@@ -40,6 +58,14 @@ package ru.azuchan.minimmorts.client {
         
         private var clientMainLoopTimer:Timer;
         
+        private var decraseCounter:int;
+        
+        private var decraseValue:int;
+        
+        private var incraseCounter:int;
+        
+        private var incraseValue:int;
+        
         public function ClientMainLoop(messageManager:MessageManager, movementManager:MovementManager, actionManager:ActionManager, unitManager:UnitManager, serverInteraction:ServerInteraction, onStepComplete:Function) {
             this.messageManager = messageManager;
             this.movementManager = movementManager;
@@ -53,9 +79,15 @@ package ru.azuchan.minimmorts.client {
             prevStepTime = -1;
             speedUp = false;
             slowDown = false;
+            decraseCounter = 0;
+            decraseValue = 0;
+            incraseCounter = 0;
+            incraseValue = 0;
         }
         
         public function run(event:TimerEvent):void {
+            var derpy:Number = new Date().getTime();
+            
             if (!firstClientStep) {
                 var confirm:Array = messageManager.takeNotification(Main.step);
                 if (confirm != null) {
@@ -77,11 +109,11 @@ package ru.azuchan.minimmorts.client {
                         }
                     }
                     if (Config.DEBUG_MODES) {
-                        trace(Main.step + ": Действия за текущий ход найдены. Кеш действий: "/* + confirmsCacheToString()*/);
+                        trace(Main.step + ": Действия за текущий ход найдены. Кеш действий: " + messageManager.notificationsCacheToString());
                     }
                 } else {
                     if (Config.DEBUG_MODES) {
-                        trace(Main.step + ": Действия за текущий ход не найдены. Кеш действий: "/* + confirmsCacheToString()*/);
+                        trace(Main.step + ": Действия за текущий ход не найдены. Кеш действий: " + messageManager.notificationsCacheToString());
                     }
                     if (!idleMode) {
                         return;
@@ -102,7 +134,6 @@ package ru.azuchan.minimmorts.client {
             Main.step++;
             
             movementManager.updatePositions(Main.step);
-            //Main.map.updateMinimap();
             
             var unitsHash:Object = unitManager.getUnitsHash();
             var unitsCount:int = unitsHash.unitsCount;
@@ -118,36 +149,80 @@ package ru.azuchan.minimmorts.client {
             }
             serverInteraction.sendMessage(new StateReportMessage(Main.step, unitsCount, unitsString, actionsCount, actionsString).toProtocol1());
             
-            if (!idleMode) {
+            /*if (!idleMode) {
                 if (!firstClientStep) {
                     if (messageManager.getNotificationsLength() > 3 && (speedUp || (!slowDown && !speedUp))) {
                         // Overflow.
-                        restart(Main.stepTime - 3);
+                        restart(clientMainLoopTimer.delay - 3);
                         slowDown = true;
                         speedUp = false;
-                        trace(Main.step + ": Slow down client loop.");
+                        trace(Main.step + ": Частота главного цикла клиента увеличена.");
                     } else if (messageManager.getNotificationsLength() < 2 && (slowDown || (!slowDown && !speedUp))) {
                         // Underflow.
-                        restart(Main.stepTime + 3);
+                        restart(clientMainLoopTimer.delay + 3);
                         slowDown = false;
                         speedUp = true;
-                        trace(Main.step + ": Speed up client loop.");
+                        trace(Main.step + ": Частота главного цикла клиента уменьшена.");
                     }
                 }
-            }
+            }*/
             
             onStepComplete();
+            
+            if (messageManager.getNotificationsLength() > 3) {
+                if (incraseCounter == 0) {
+                    incraseValue = clientMainLoopTimer.delay - 3;
+                    decraseCounter = 0;
+                    decraseValue = 0;
+                }
+                incraseCounter++;
+            } else if (messageManager.getNotificationsLength() < 2) {
+                if (decraseCounter == 0) {
+                    decraseValue = clientMainLoopTimer.delay + 3;
+                    incraseCounter = 0;
+                    incraseValue = 0;
+                }
+                decraseCounter++;
+            }
+            
+            //trace(clientMainLoopTimer.delay, new Date().getTime() - derpy);
+            
+            if (incraseCounter > 10) {
+                incraseCounter = 0;
+                decraseCounter = 0;
+                decraseValue = 0;
+                restart(incraseValue);
+                return;
+            }
+            
+            if (decraseCounter > 10) {
+                decraseCounter = 0;
+                incraseCounter = 0;
+                incraseValue = 0;
+                restart(decraseValue);
+                return;
+            }
         }
         
         public function start():void {
             clientMainLoopTimer = new Timer(Main.stepTime);
+            trace(Main.step + ": Главный цикл клиента запущен с частотой " + Main.stepTime);
             clientMainLoopTimer.addEventListener("timer", run);
             clientMainLoopTimer.start();
+            decraseCounter = 0;
+            decraseValue = 0;
+            incraseCounter = 0;
+            incraseValue = 0;
+        }
+        
+        public function stop():void {
+            clientMainLoopTimer.stop();
         }
         
         public function restart(stepTime:int):void {
             clientMainLoopTimer.stop();
             clientMainLoopTimer = new Timer(stepTime);
+            trace(Main.step + ": Главный цикл клиента перезапущен с частотой " + stepTime);
             clientMainLoopTimer.addEventListener("timer", run);
             clientMainLoopTimer.start();
         }

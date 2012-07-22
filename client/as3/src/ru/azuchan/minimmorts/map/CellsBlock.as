@@ -1,4 +1,5 @@
 package ru.azuchan.minimmorts.map {
+    import flash.display.Stage;
     import flash.display.Bitmap;
     import flash.display.BitmapData;
     import flash.geom.Rectangle;
@@ -25,9 +26,14 @@ package ru.azuchan.minimmorts.map {
          */
         private var sprite:Bitmap;
         
+        /**
+         * Создаёт новый блок клеток.
+         * @param width ширина блока клеток в клетках
+         * @param height высота блока клеток в клетках
+         */
         public function CellsBlock(width:int, height:int) {
-            _width = w;
-            _height = h;
+            _width = width;
+            _height = height;
             sprite = new Bitmap();
             sprite.bitmapData = new BitmapData(_width * Config.CELL_W, _height * Config.CELL_H);
         }
@@ -50,7 +56,7 @@ package ru.azuchan.minimmorts.map {
          * Записывает изображение в блок клеток.
          * @param stage главный холст
          */
-        public function writeBitmapData(src:BitmapData, x:Number, y:Number/*, width:Number = Config.CELL_W, height:Number = Config.CELL_H*/):void {
+        public function writeBitmapData(src:BitmapData, x:Number, y:Number):void {
             sprite.bitmapData.copyPixels(src, new Rectangle(0, 0, src.width, src.height), new Point(x, y));
         }
         

@@ -1,32 +1,47 @@
 package ru.azuchan.minimmorts.movement {
 
 	/**
-     * ...
+     * Пара ключ-значение.
      * @author sorc
      */
     public class Pair {
         
-        private var key:Array;
+        /**
+         * Ключ.
+         */
+        private var _key:Array;
         
-        private var value:int;
+        /**
+         * Значение.
+         */
+        private var _value:int;
         
+        /**
+         * Создаёт новую пару ключ-значение.
+         * @param key ключ
+         * @param value значение
+         */
         public function Pair(key:Array, value:int) {
-            this.key = key;
-            this.value = value;
+            _key = key;
+            _value = value;
         }
         
-        public function getKey():Array {
-            return key;
+        /**
+         * Ключ.
+         */
+        public function get key():Array {
+            return _key;
         }
         
-        public function getValue():int {
-            return value;
+        /**
+         * Значение.
+         */
+        public function get value():int {
+            return _value;
         }
         
-        public function setValue(value:int):int {
-            var oldValue:int = this.value;
-            this.value = value;
-            return oldValue;
+        public function set value(value:int):void {
+            _value = value;
         }
     }
 }

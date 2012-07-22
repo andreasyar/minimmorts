@@ -2,7 +2,6 @@ package ru.azuchan.minimmorts.map {
     import flash.display.Stage;
     import ru.azuchan.minimmorts.sprite.SpriteLoader;
     import ru.azuchan.minimmorts.units.Unit;
-    import ru.azuchan.minimmorts.movement.Point;
 
 	/**
      * Карта игрового мира.
@@ -38,12 +37,12 @@ package ru.azuchan.minimmorts.map {
         /**
          * Ширина блока клеток в клетках.
          */
-        private const CELLBLOCK_W:int = 20;
+        public static const CELLBLOCK_W:int = 20;
         
         /**
          * Высота блока клеток в клетках.
          */
-        private const CELLBLOCK_H:int = 20;
+        public static const CELLBLOCK_H:int = 20;
         
         /**
          * Создаёт новую карту.
@@ -62,22 +61,22 @@ package ru.azuchan.minimmorts.map {
             for (i = 0; i < _height; i++) {
                 spriteMap[i] = [];
                 for (j = 0; j < _width; j++) {
-                    spriteMap[i][j] = sloader.getSpriteByName("grass").getBitmapData();
+                    spriteMap[i][j] = sloader.getSpriteByName("grass").bitmapData;
                 }
             }
             
-            var cellBlocksW:int = Math.ceil(_width / CELLBLOCK_W);
-            var cellBlocksH:int = Math.ceil(_height / CELLBLOCK_H);
+            var cellBlocksW:int = Math.ceil(_width / Map.CELLBLOCK_W);
+            var cellBlocksH:int = Math.ceil(_height / Map.CELLBLOCK_H);
             var dim:Object = { jFrom : 0, jTo : 0, iFrom : 0, iTo : 0 };
             for (i = 0; i < cellBlocksH; i++) {
                 cellBlocks[i] = [];
                 for (j = 0; j < cellBlocksW; j++) {
-                    cellBlocks[i][j] = new CellsBlock(CELLBLOCK_W, CELLBLOCK_H);
+                    cellBlocks[i][j] = new CellsBlock(Map.CELLBLOCK_W, Map.CELLBLOCK_H);
                     
-                    dim.jFrom = j * CELLBLOCK_W;
-                    dim.jTo = dim.jFrom + CELLBLOCK_W;
-                    dim.iFrom = i * CELLBLOCK_H;
-                    dim.iTo = dim.iFrom + CELLBLOCK_H;
+                    dim.jFrom = j * Map.CELLBLOCK_W;
+                    dim.jTo = dim.jFrom + Map.CELLBLOCK_W;
+                    dim.iFrom = i * Map.CELLBLOCK_H;
+                    dim.iTo = dim.iFrom + Map.CELLBLOCK_H;
                     
                     x = 0;
                     y = 0;
@@ -112,8 +111,8 @@ package ru.azuchan.minimmorts.map {
          * @param stage главный холст
          */
         public function show(stage:Stage):void {
-            for (i = 0; i < cellBlocks.length; i++) {
-                for (j = 0; j < cellBlocks[i].length; j++) {
+            for (var i:int = 0; i < cellBlocks.length; i++) {
+                for (var j:int = 0; j < cellBlocks[i].length; j++) {
                     cellBlocks[i][j].show(stage);
                 }
             }
@@ -159,7 +158,7 @@ package ru.azuchan.minimmorts.map {
                     if (neighbours[_i] == undefined) {
                         neighbours[_i] = [];
                     }
-                    neighbours[_i][_j] = new Point(_j, _i);
+                    neighbours[_i][_j] = new Cell(_j, _i);
                 }
             }
             var i:int, j:String, k:String, result:Array = cells;
@@ -187,7 +186,7 @@ package ru.azuchan.minimmorts.map {
          * @return j-индекс верхней левой клетки блока клеток на карте
          */
         public static function getCellBlockJOnMap(x:Number):int {
-            return Math.floor(x / (CELLBLOCK_W * Config.CELL_W));
+            return Math.floor(x / (Map.CELLBLOCK_W * Config.CELL_W));
         }
         
         /**
@@ -196,7 +195,7 @@ package ru.azuchan.minimmorts.map {
          * @return i-индекс верхней левой клетки блока клеток на карте
          */
         public static function getCellBlockIOnMap(y:Number):int {
-            return Math.floor(y / (CELLBLOCK_H * Config.CELL_H));
+            return Math.floor(y / (Map.CELLBLOCK_H * Config.CELL_H));
         }
         
         /**
@@ -205,7 +204,7 @@ package ru.azuchan.minimmorts.map {
          * @return x-координата верхней левой клетки блока клеток на экране
          */
         public static function getCellBlockXOnMap(j:int):Number {
-            return j * (CELLBLOCK_W * Config.CELL_W);
+            return j * (Map.CELLBLOCK_W * Config.CELL_W);
         }
         
         /**
@@ -214,7 +213,7 @@ package ru.azuchan.minimmorts.map {
          * @return y-координата верхней левой клетки блока клеток на экране
          */
         public static function getCellBlockYOnMap(i:int):Number {
-            return i * (CELLBLOCK_H * Config.CELL_H);
+            return i * (Map.CELLBLOCK_H * Config.CELL_H);
         }
         
         /**

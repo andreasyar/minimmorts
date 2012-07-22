@@ -1,4 +1,5 @@
 package ru.azuchan.minimmorts.messages {
+    import ru.azuchan.minimmorts.map.Cell;
     
 	/**
      * Требование хода.
@@ -12,14 +13,9 @@ package ru.azuchan.minimmorts.messages {
         private var unitId:int;
         
         /**
-         * Индекс клетки назначения по ширине.
+         * Клетка назначения.
          */
-        private var j:int;
-        
-        /**
-         * Индекс клетки назначения по высоте.
-         */
-        private var i:int;
+        private var dest:Cell;
         
         /**
          * Создаёт требование хода.
@@ -27,10 +23,9 @@ package ru.azuchan.minimmorts.messages {
          * @param j индекс клетки назначения по ширине
          * @param i индекс клетки назначения по высоте
          */
-        public function MoveRequestMessage(unitId:int, j:int, i:int) {
+        public function MoveRequestMessage(unitId:int, dest:Cell) {
             this.unitId = unitId;
-            this.j = j;
-            this.i = i;
+            this.dest = dest;
         }
         
         /**
@@ -38,7 +33,7 @@ package ru.azuchan.minimmorts.messages {
          * @return сообщение в формате Protocol-1
          */
         public function toProtocol1():String {
-            return "MOVEREQ," + unitId + "," + j + "," + i;
+            return "MOVEREQ," + unitId + "," + dest.toProtocol1();
         }
     }
 }

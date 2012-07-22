@@ -1,9 +1,10 @@
 package ru.azuchan.minimmorts.sprite {
+    import ru.azuchan.minimmorts.map.Cell;
     import ru.azuchan.minimmorts.movement.Movement;
     import ru.azuchan.minimmorts.movement.MovementManager;
-    import ru.azuchan.minimmorts.movement.Point;
     import ru.azuchan.minimmorts.units.Unit;
     import ru.azuchan.minimmorts.client.ClientMainLoop;
+    import ru.azuchan.minimmorts.map.Map;
 
 	/**
      * Плавное движение спрайта юнита по клеткам карты.
@@ -21,6 +22,9 @@ package ru.azuchan.minimmorts.sprite {
          */
         private var movement:Movement;
         
+        /**
+         * Обработчик события завершения движения.
+         */
         private var onMovementComplete:Function;
         
         /**
@@ -33,6 +37,12 @@ package ru.azuchan.minimmorts.sprite {
          */
         private var spriteMovementAnimation:SpriteMovementAnimation;
         
+        /**
+         * Создаёт новое движение спрайта.
+         * @param unit юнит
+         * @param movement движение юнита
+         * @param onMovementComplete обработчик события завершения движения
+         */
         public function SpriteMovement(unit:Unit, movement:Movement, onMovementComplete:Function) {
             this.unit = unit;
             this.movement = movement;
@@ -57,6 +67,7 @@ package ru.azuchan.minimmorts.sprite {
         
         /**
          * Обновляет положение спрайта юнита.
+         * @return обновилось положение спрайта или нет
          */
         public function updatePosition():Boolean {
             if (ClientMainLoop.stepBegTime == -1 || ClientMainLoop.prevStepTime == -1) {
@@ -75,7 +86,7 @@ package ru.azuchan.minimmorts.sprite {
             }
             
             // Стоим на месте.
-            if (Main.step == movement.getBegStep()) {
+            if (Main.step == movement.begStep) {
                 return true;
             }
             
@@ -89,28 +100,28 @@ package ru.azuchan.minimmorts.sprite {
             var curTime:int = (new Date()).getTime() - ClientMainLoop.prevStepTime;
             var diffTime:int = curTime - prevStepBegTime;
             
-            var m:int = ((Main.step - 1) - movement.getBegStep()) * movement.getSpeed();
-            var prevPos:Point = null;
+            var m:Number = ((Main.step - 1) - movement.begStep) * movement.speed;
+            var prevPos:Cell = null;
             var n:int = Math.floor(m);
-            if (n > movement.getPath().length - 1) {
-                n = movement.getPath().length - 1;
+            if (n > movement.path.length - 1) {
+                n = movement.path.length - 1;
             }
-            prevPos = movement.getPath()[n];
+            prevPos = movement.path[n];
             
             var movementOrientation:String;
-            if (n == movement.getPath().length - 1) {
+            if (n == movement.path.length - 1) {
                 movementOrientation = MovementManager.getMovementOrientation(
-                    movement.getPath()[n - 1].j,
-                    movement.getPath()[n - 1].i,
-                    movement.getPath()[n].j,
-                    movement.getPath()[n].i
+                    movement.path[n - 1].j,
+                    movement.path[n - 1].i,
+                    movement.path[n].j,
+                    movement.path[n].i
                 );
             } else {    // n < this.movement.path.length - 1
                 movementOrientation = MovementManager.getMovementOrientation(
-                    movement.getPath()[n].j,
-                    movement.getPath()[n].i,
-                    movement.getPath()[n + 1].j,
-                    movement.getPath()[n + 1].i
+                    movement.path[n].j,
+                    movement.path[n].i,
+                    movement.path[n + 1].j,
+                    movement.path[n + 1].i
                 );
             }
             
@@ -122,18 +133,18 @@ package ru.azuchan.minimmorts.sprite {
             var prevPosX:Number = Map.getCellXOnMap(prevPos.j);
             var prevPosY:Number = Map.getCellYOnMap(prevPos.i);
             
-            var v:Number = (movement.getSpeed() * Config.CELL_W) / ClientMainLoop.prevStepTime;
+            var v:Number = (movement.speed * Config.CELL_W) / ClientMainLoop.prevStepTime;
             
             var curPos:Object = null;
-            var endX:Number = Map.getCellXOnMap(movement.getPath()[movement.getPath().length - 1].j);
-            var endY:Number = Map.getCellYOnMap(movement.getPath()[movement.getPath().length - 1].i);
+            var endX:Number = Map.getCellXOnMap(movement.path[movement.path.length - 1].j);
+            var endY:Number = Map.getCellYOnMap(movement.path[movement.path.length - 1].i);
             switch (movementOrientation) {
                 case "N":
                     prevPosY -= (m - n) * Config.CELL_H;
                     prevPosY -= v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosY <= endY && n == movement.getPath().length - 1) {
+                    if (prevPosY <= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosY = endY;
                     }
@@ -153,7 +164,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosY -= v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosX >= endX && prevPosY <= endY && n == movement.getPath().length - 1) {
+                    if (prevPosX >= endX && prevPosY <= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                         prevPosY = endY;
@@ -171,7 +182,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosX += v * diffTime;
                     prevPosX = Math.floor(prevPosX);
                     
-                    if (prevPosX >= endX && n == movement.getPath().length - 1) {
+                    if (prevPosX >= endX && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                     }
@@ -191,7 +202,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosY += v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosX >= endX && prevPosY >= endY && n == movement.getPath().length - 1) {
+                    if (prevPosX >= endX && prevPosY >= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                         prevPosY = endY;
@@ -209,7 +220,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosY += v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosY >= endY && n == movement.getPath().length - 1) {
+                    if (prevPosY >= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosY = endY;
                     }
@@ -229,7 +240,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosY += v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosX <= endX && prevPosY >= endY && n == movement.getPath().length - 1) {
+                    if (prevPosX <= endX && prevPosY >= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                         prevPosY = endY;
@@ -247,7 +258,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosX -= v * diffTime;
                     prevPosX = Math.floor(prevPosX);
                     
-                    if (prevPosX <= endX && n == movement.getPath().length - 1) {
+                    if (prevPosX <= endX && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                     }
@@ -267,7 +278,7 @@ package ru.azuchan.minimmorts.sprite {
                     prevPosY -= v * diffTime;
                     prevPosY = Math.floor(prevPosY);
                     
-                    if (prevPosX <= endX && prevPosY <= endY && n == movement.getPath().length - 1) {
+                    if (prevPosX <= endX && prevPosY <= endY && n == movement.path.length - 1) {
                         finished = true;
                         prevPosX = endX;
                         prevPosY = endY;

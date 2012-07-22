@@ -6,6 +6,9 @@ package ru.azuchan.minimmorts.sprite {
      */
     public class SpriteMovementAnimation {
         
+        /**
+         * Количество спрайтов в анимации.
+         */
         private var spritesCount:int;
         
         /**
@@ -13,8 +16,14 @@ package ru.azuchan.minimmorts.sprite {
          */
         private var spriteInterval:int;
         
+        /**
+         * Время начала анимации движения.
+         */
         private var creationTime:int;
         
+        /**
+         * Создаёт анимацию движения.
+         */
         public function SpriteMovementAnimation() {
             spritesCount = 5;
             spriteInterval = 150;
@@ -31,7 +40,7 @@ package ru.azuchan.minimmorts.sprite {
         }
         
         /**
-         * Возвращает спрайт юнита, стоящего неподвижно.
+         * Возвращает индекс спрайта неподвижно стоящего юнита.
          */
         public function getStand():int {
             return 0;
