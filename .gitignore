@@ -3,4 +3,6 @@
 /client/node_modules/
 /client/dist/
 /server/target/
+/release/dist/
+/release/sprites/
 __pycache__/

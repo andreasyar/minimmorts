@@ -438,7 +438,7 @@ function camMove() {
 <div id="login_form">
 Login: <input type="text" id="login" value="test"><br>
 Password: <input type="password" id="password" value="test"><br>
-Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
+Server: <input type="text" id="host" value=""><br>
 <input type="button" id="connect_button" value="Connect" onclick="connect(); return false;">
 </div>
 
@@ -462,6 +462,8 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 </div>
 
 <script type="text/javascript">
+document.getElementById('host').value =
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/';
 document.body.onload = function(e) {
     if (/chrome/.test(navigator.userAgent.toLowerCase())) {
         showLoginForm();

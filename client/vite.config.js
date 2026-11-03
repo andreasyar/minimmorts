@@ -3,7 +3,12 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   root: 'src',
   cacheDir: '../node_modules/.vite',
-  server: { host: '0.0.0.0', port: 5173, strictPort: true },
+  server: {
+    host: '0.0.0.0', port: 5173, strictPort: true,
+    proxy: {
+      '/ws/': { target: 'ws://server:8015', ws: true, rewrite: () => '/' },
+    },
+  },
   build: { outDir: '../dist' },
   plugins: [{
     name: 'legacy-client-reload',

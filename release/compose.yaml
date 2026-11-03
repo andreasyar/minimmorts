@@ -1,0 +1,30 @@
+name: minimmorts-release
+x-project-version: 2.1.0
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web.Dockerfile
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80'
+    volumes:
+      - ./sprites:/usr/share/nginx/html/sprites:ro,z
+    depends_on:
+      - server
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1/healthz']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  server:
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    init: true
+    volumes:
+      - ./config/server.xml:/app/config.xml:ro,z
+      - server_logs:/run/minimmorts
+    restart: unless-stopped
+volumes:
+  server_logs:
