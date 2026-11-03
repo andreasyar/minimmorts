@@ -1,0 +1,14 @@
+{
+  "name": "minimmorts-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "vite",
+    "build": "node tools/build.mjs",
+    "lock": "node tools/lock.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 4173 --strictPort"
+  },
+  "devDependencies": { "vite": "8.3.5" }
+}

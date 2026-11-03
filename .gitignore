@@ -1,2 +1,6 @@
 # Legacy sprites are kept locally; the project does not own their copyright.
 /client/src/sprites/
+/client/node_modules/
+/client/dist/
+/server/target/
+__pycache__/

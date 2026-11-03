@@ -1,7 +1,7 @@
 package minimmorts.db;
 
-import com.mysql.jdbc.Connection;
-import com.mysql.jdbc.Statement;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -56,7 +56,7 @@ public class DBWorker {
         String s = "jdbc:mysql://" + host + ":" + port + "/" + database + "?user=" + user + "&password=" + password;
         p.setProperty("autoReconnect", "true");
         p.setProperty("validationQuery", "Select 1");
-        connection = (Connection) DriverManager.getConnection(s, p);
+        connection = DriverManager.getConnection(s, p);
     }
 
     public void disconnect() throws SQLException {
@@ -64,6 +64,6 @@ public class DBWorker {
     }
 
     public Statement newStatement() throws SQLException {
-        return (Statement) connection.createStatement();
+        return connection.createStatement();
     }
 }

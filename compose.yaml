@@ -1,0 +1,39 @@
+name: minimmorts
+services:
+  client:
+    build:
+      context: .
+      dockerfile: dev/client/Dockerfile
+    init: true
+    working_dir: /workspace/client
+    command: sh -c 'npm ci --no-audit --no-fund && exec npm run dev'
+    ports:
+      - '127.0.0.1:5173:5173'
+    volumes:
+      - .:/workspace:rw,z
+      - client_modules:/workspace/client/node_modules
+      - client_dist:/workspace/client/dist
+      - npm_cache:/root/.npm
+  server:
+    build:
+      context: .
+      dockerfile: dev/server/Dockerfile
+    init: true
+    working_dir: /workspace/server
+    command: python3 /workspace/dev/server/watch.py
+    environment:
+      MAVEN_ARGS: -Dminimmorts.buildDirectory=/build/server/target
+    ports:
+      - '127.0.0.1:8015:8015'
+    volumes:
+      - .:/workspace:rw,z
+      - server_target:/build/server
+      - maven_cache:/root/.m2
+      - server_run:/run/minimmorts
+volumes:
+  client_modules:
+  client_dist:
+  npm_cache:
+  server_target:
+  maven_cache:
+  server_run:
