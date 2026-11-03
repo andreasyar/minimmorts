@@ -111,14 +111,14 @@ function SpriteMovement(unit, movement) {
             return false;
         }
 
-        var prevPosX = Map.getCellXOnMap(prevPos.j);
-        var prevPosY = Map.getCellYOnMap(prevPos.i);
+        var prevPosX = GameMap.getCellXOnMap(prevPos.j);
+        var prevPosY = GameMap.getCellYOnMap(prevPos.i);
 
         var v = (this.movement.speed * CELL_W) / prevStepTime;
 
         var curPos = null;
-        var endX = Map.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
-        var endY = Map.getCellYOnMap(this.movement.path[this.movement.path.length - 1].i);
+        var endX = GameMap.getCellXOnMap(this.movement.path[this.movement.path.length - 1].j);
+        var endY = GameMap.getCellYOnMap(this.movement.path[this.movement.path.length - 1].i);
         switch (movementOrientation) {
             case "N":
                 prevPosY -= (m - n) * CELL_H;

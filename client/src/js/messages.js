@@ -189,7 +189,7 @@ var MESSAGE_HANDLERS = {
         clientId = msg[1];
         step = msg[2];
         camera = new Camera(null);
-        map = new Map(100, 100);
+        map = new GameMap(100, 100);
         
         self_units_list = new Array();
         if (DEBUG_UNITS) {
@@ -260,8 +260,8 @@ var MESSAGE_HANDLERS = {
             /*
              * Камера будет смотреть на последнего добавленного юнита игрока.
              */
-            camera.x = Map.getCellXOnMap(unit.j - (SCR_W / CELL_W) / 2);
-            camera.y = Map.getCellYOnMap(unit.i - (SCR_H / CELL_H) / 2);
+            camera.x = GameMap.getCellXOnMap(unit.j - (SCR_W / CELL_W) / 2);
+            camera.y = GameMap.getCellYOnMap(unit.i - (SCR_H / CELL_H) / 2);
         } else {
             cur_units_list = units_list;
         }

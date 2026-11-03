@@ -468,7 +468,7 @@ function onLoadMap(mapId) {
         }
     }
 
-    maps[mapId] = new Map(mapId, mapW, mapH, sloader, spriteMap, accessMap,
+    maps[mapId] = new GameMap(mapId, mapW, mapH, sloader, spriteMap, accessMap,
                           eventMap)
     console.log("Загрузка карты %s (%sx%s) завершена.", mapId, mapW, mapH)
 }
@@ -502,10 +502,10 @@ function createSelectionRect(x1, y1, x2, y2) {
     };
     var tAxis1 = camera.reTranslateAxis(rect.beg.x, rect.beg.y);
     var tAxis2 = camera.reTranslateAxis(rect.end.x, rect.end.y);
-    rect.beg.j = Map.getCellJOnMap(tAxis1.x);
-    rect.beg.i = Map.getCellJOnMap(tAxis1.y);
-    rect.end.j = Map.getCellJOnMap(tAxis2.x);
-    rect.end.i = Map.getCellJOnMap(tAxis2.y);
+    rect.beg.j = GameMap.getCellJOnMap(tAxis1.x);
+    rect.beg.i = GameMap.getCellJOnMap(tAxis1.y);
+    rect.end.j = GameMap.getCellJOnMap(tAxis2.x);
+    rect.end.i = GameMap.getCellJOnMap(tAxis2.y);
 
     return rect;
 }
@@ -664,8 +664,8 @@ function pathToString(path) {
  * Создаёт путь на карте по вейпоинтам.
  */
 function generatePath(map, waypoints, unit) {
-    if (!(map instanceof Map)) {
-        throw new Error("Карта не является объектом типа Map.");
+    if (!(map instanceof GameMap)) {
+        throw new Error("Карта не является объектом типа GameMap.");
     }
     if (!(waypoints instanceof Array)) {
         throw new Error("Вейпоинты не является массивом.");

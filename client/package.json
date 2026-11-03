@@ -5,6 +5,7 @@
   "type": "module",
   "engines": { "node": ">=24" },
   "scripts": {
+    "test": "node --test tools/*.test.mjs",
     "dev": "vite",
     "build": "node tools/build.mjs",
     "lock": "node tools/lock.mjs",

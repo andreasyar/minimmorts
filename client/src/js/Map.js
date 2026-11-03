@@ -3,14 +3,15 @@
 // Require: resources.js, SpriteLoader.js, constants.js
 
 // Карта игрового мира.
-function Map(width, height) {
+// Не перекрываем встроенный Map: его использует в том числе клиент Vite.
+function GameMap(width, height) {
 
     // Эту функцию можно вызвать только как конструктор (с new).
     if (this.constructor !== arguments.callee) {
         throw new Error("Constructor called like a simple function!");
     }
     
-    Map.DEBUG_DRAW = false;
+    GameMap.DEBUG_DRAW = false;
 
     /**
      * Ширина карты в клетках.
@@ -70,7 +71,7 @@ function Map(width, height) {
                 for (var l = dim.j_from; l < dim.j_to; l++) {
                     if (this.spriteMap[k][l] != undefined) {
                         macroblock_context.drawImage(this.spriteMap[k][l].ground, x, y);
-                        if (Map.DEBUG_DRAW) {
+                        if (GameMap.DEBUG_DRAW) {
                             macroblock_context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), x, y);
                             macroblock_context.fillText(k + "," + l, x + 3, y + 15);
                         }
@@ -81,7 +82,7 @@ function Map(width, height) {
                 y += this.sloader.getSpriteByName("grass").h;
             }
             
-            if (Map.DEBUG_DRAW) {
+            if (GameMap.DEBUG_DRAW) {
                 macroblock_context.beginPath();
                 macroblock_context.moveTo(0, 0);
                 macroblock_context.lineTo(MACROBLOCK_W * CELL_W - 1, 0);
@@ -119,47 +120,47 @@ function Map(width, height) {
         if (camera.x < 0) {
             j_from = 0;
         } else {
-            j_from = Map.getMacroBlockJOnMap(camera.x);
+            j_from = GameMap.getMacroBlockJOnMap(camera.x);
         }
 
         var j_to
         if (camera.x + SCR_W >= this.w * CELL_W) {
             j_to = macromap_w - 1;
         } else {
-            j_to = Map.getMacroBlockJOnMap(camera.x + SCR_W);
+            j_to = GameMap.getMacroBlockJOnMap(camera.x + SCR_W);
         }
         // Разрешение экрана может быть разное, поэтому при подсчете
-        // Map.getCellJOnMap можем случайно вылететь за края карты.
+        // GameMap.getCellJOnMap можем случайно вылететь за края карты.
         if (j_to >= macromap_w) {
             j_to = macromap_w - 1;
         }
 
-        var i_from = Map.getMacroBlockIOnMap(camera.y)
+        var i_from = GameMap.getMacroBlockIOnMap(camera.y)
         if (camera.y < 0) {
             i_from = 0
         } else {
-            i_from = Map.getMacroBlockIOnMap(camera.y)
+            i_from = GameMap.getMacroBlockIOnMap(camera.y)
         }
 
-        var i_to = Map.getMacroBlockIOnMap(camera.y + SCR_H)
+        var i_to = GameMap.getMacroBlockIOnMap(camera.y + SCR_H)
         if (camera.y + SCR_H >= this.h * CELL_H) {
             i_to = macromap_h - 1
         } else {
-            i_to = Map.getMacroBlockIOnMap(camera.y + SCR_H)
+            i_to = GameMap.getMacroBlockIOnMap(camera.y + SCR_H)
         }
         // Разрешение экрана может быть разное, поэтому при подсчете
-        // Map.getCellIOnMap можем случайно вылететь за края карты.
+        // GameMap.getCellIOnMap можем случайно вылететь за края карты.
         if (i_to >= macromap_h) {
             i_to = macromap_h - 1;
         }
 
         var i, j,
-            tAxis   // Translated axis. Map -> Camera.
+            tAxis   // Translated axis. GameMap -> Camera.
 
         // Нарисуем клетки вычисленного региона карты.
         for (i = i_from; i <= i_to; i++) {
             for (j = j_from; j <= j_to; j++) {
-                tAxis = camera.translateAxis(Map.getMacroBlockXOnMap(j), Map.getMacroBlockYOnMap(i));
+                tAxis = camera.translateAxis(GameMap.getMacroBlockXOnMap(j), GameMap.getMacroBlockYOnMap(i));
                 context.drawImage(this.macromap[i][j], tAxis.x, tAxis.y);
             }
         }
@@ -196,8 +197,8 @@ function Map(width, height) {
         for (k = 0; k < units_list.length; k++) {
             setPixel(this.miniMap, units_list[k].j, units_list[k].i, 255, 0, 0, 255);
         }
-        var camJ = Math.max(0, Map.getCellJOnMap(camera.x));
-        var camI = Math.max(0, Map.getCellIOnMap(camera.y));
+        var camJ = Math.max(0, GameMap.getCellJOnMap(camera.x));
+        var camI = Math.max(0, GameMap.getCellIOnMap(camera.y));
         //var camW = Math.min(map.w, Math.ceil(SCR_W / CELL_W));
         //var camH = Math.min(map.h, Math.ceil(SCR_H / CELL_H));
         var camW = Math.ceil(SCR_W / CELL_W);
@@ -218,21 +219,21 @@ function Map(width, height) {
 /**
  * Возвращает координату x карты, которую имеет клетка с индексом j.
  */
-Map.getCellXOnMap = function(j) {
+GameMap.getCellXOnMap = function(j) {
     return j * CELL_W
 };
 
 /**
  * Возвращает координату y карты, которую имеет клетка с индексом i.
  */
-Map.getCellYOnMap = function(i) {
+GameMap.getCellYOnMap = function(i) {
     return i * CELL_H
 };
 
 /**
  * Возвращает координату x карты, которую имеет макроблок с индексом j.
  */
-Map.getMacroBlockXOnMap = function(j) {
+GameMap.getMacroBlockXOnMap = function(j) {
     var MACROBLOCK_W = 20;
     return j * (MACROBLOCK_W * CELL_W);
 };
@@ -240,7 +241,7 @@ Map.getMacroBlockXOnMap = function(j) {
 /**
  * Возвращает координату y карты, которую имеет макроблок с индексом i.
  */
-Map.getMacroBlockYOnMap = function(i) {
+GameMap.getMacroBlockYOnMap = function(i) {
     var MACROBLOCK_H = 20;
     return i * (MACROBLOCK_H * CELL_H);
 };
@@ -248,21 +249,21 @@ Map.getMacroBlockYOnMap = function(i) {
 /**
  * Возвращает j индекс клетки по x координате карты.
  */
-Map.getCellJOnMap = function(x) {
+GameMap.getCellJOnMap = function(x) {
     return Math.floor(x / CELL_W)
 };
 
 /**
  * Возвращает i индекс клетки по y координате карты.
  */
-Map.getCellIOnMap = function(y) {
+GameMap.getCellIOnMap = function(y) {
     return Math.floor(y / CELL_H)
 };
 
 /**
  * Возвращает j индекс макроблока по x координате карты.
  */
-Map.getMacroBlockJOnMap = function(x) {
+GameMap.getMacroBlockJOnMap = function(x) {
     var MACROBLOCK_W = 20;
     return Math.floor(x / (MACROBLOCK_W * CELL_W));
 };
@@ -270,7 +271,7 @@ Map.getMacroBlockJOnMap = function(x) {
 /**
  * Возвращает i индекс макроблока по y координате карты.
  */
-Map.getMacroBlockIOnMap = function(y) {
+GameMap.getMacroBlockIOnMap = function(y) {
     var MACROBLOCK_H = 20;
     return Math.floor(y / (MACROBLOCK_H * CELL_H));
 };
@@ -284,7 +285,7 @@ Map.getMacroBlockIOnMap = function(y) {
  * @return Возвращает true, если клетки лежат на диагонали и false в
  * противном случае.
  */
-Map.isDiagonalCells = function(i1, j1, i2, j2) {
+GameMap.isDiagonalCells = function(i1, j1, i2, j2) {
     if (Math.abs(i1 - i2) == Math.abs(j1 - j2)) {
         return true
     }

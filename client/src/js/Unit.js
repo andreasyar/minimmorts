@@ -12,8 +12,8 @@ function Unit(ownerId, id, j, i, color) {
     this.sloader = new SpriteLoader(SPRITES);
     this.selected = false;
     this.spritePos = {
-        x: Map.getCellXOnMap(this.j),
-        y: Map.getCellYOnMap(this.i),
+        x: GameMap.getCellXOnMap(this.j),
+        y: GameMap.getCellYOnMap(this.i),
         arrived: true,
         orientation: "S",
         spriteName: "peasant_S_walk_0"
@@ -55,7 +55,7 @@ function Unit(ownerId, id, j, i, color) {
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
-            drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
+            drawCoordinates = sprite.getDrawCoordinatesByXY(GameMap.getCellXOnMap(this.j), GameMap.getCellYOnMap(this.i), camera);
         }
         context.drawImage(sprite.getImage(), drawCoordinates.x, drawCoordinates.y);
         if (DEBUG_UNITS) {
@@ -78,7 +78,7 @@ function Unit(ownerId, id, j, i, color) {
             drawCoordinates = sprite.getDrawCoordinatesByXY(this.spritePos.x, this.spritePos.y, camera);
         } else {
             sprite = this.sloader.getSpriteByName("peasant_" + this.spritePos.orientation);
-            drawCoordinates = sprite.getDrawCoordinatesByXY(Map.getCellXOnMap(this.j), Map.getCellYOnMap(this.i), camera);
+            drawCoordinates = sprite.getDrawCoordinatesByXY(GameMap.getCellXOnMap(this.j), GameMap.getCellYOnMap(this.i), camera);
         }
         context.putImageData(this.unitMarkBackground, drawCoordinates.x + 21, drawCoordinates.y + 17);
         return;

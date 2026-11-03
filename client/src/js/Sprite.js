@@ -35,7 +35,7 @@ function Sprite(image, w, h, baseX, baseY) {
         }
 
         // Координаты на карте ячейки, где находится игрок.
-        var unitMXY = camera.translateAxis(Map.getCellXOnMap(unitJ), Map.getCellYOnMap(unitI));
+        var unitMXY = camera.translateAxis(GameMap.getCellXOnMap(unitJ), GameMap.getCellYOnMap(unitI));
 
         return {
             x: unitMXY.x - (this.baseX - CELL_HW),
