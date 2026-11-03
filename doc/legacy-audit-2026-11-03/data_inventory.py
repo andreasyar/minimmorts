@@ -86,7 +86,7 @@ for category, records in sorted(categories.items()):
                              unique_contents=len(unique), unique_bytes=sum(unique.values()))
 sprites = ROOT / 'archive-findings-2026-10-25/sprites-v3'
 sprite_records = [dict(name=p.name, bytes=p.stat().st_size, sha256=sha(p.read_bytes())) for p in sorted(sprites.glob('*.png'))]
-resource_js = Path('client/HTML5/src/js/resources.js').read_text()
+resource_js = Path('client/src/js/resources.js').read_text()
 import re
 requested = sorted(set(re.findall(r'src:\s*"sprites/([^"]+)"', resource_js)))
 present = {p.name for p in sprites.glob('*.png')}
