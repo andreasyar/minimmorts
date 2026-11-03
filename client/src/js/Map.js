@@ -44,58 +44,77 @@ function GameMap(width, height) {
     tmpCanvas.height = height;
     this.miniMap = (tmpCanvas.getContext("2d")).createImageData(tmpCanvas.width, tmpCanvas.height);
     
-    var MACROBLOCK_W = 20;
-    var MACROBLOCK_H = 20;
-    var macromap_h = Math.ceil(this.h / MACROBLOCK_H);
-    var macromap_w = Math.ceil(this.w / MACROBLOCK_W);
-    this.macromap = [];
-    var macromap = this.macromap;
-    var macroblock_context;
-    var dim = {j_from: null, j_to: null, i_from: null, i_to: null};
-    for (i = 0; i < macromap_h; i++) {
-        macromap[i] = [];
-        for (j = 0; j < macromap_w; j++) {
-            macromap[i][j] = document.createElement('canvas');
-            macromap[i][j].width = MACROBLOCK_W * CELL_W;
-            macromap[i][j].height = MACROBLOCK_H * CELL_H;
-            macroblock_context = macromap[i][j].getContext("2d");
-            
-            dim.j_from = j * MACROBLOCK_W;
-            dim.j_to = dim.j_from + MACROBLOCK_W;
-            dim.i_from = i * MACROBLOCK_H;
-            dim.i_to = dim.i_from + MACROBLOCK_H;
-            
-            var x = 0;
-            var y = 0;
-            for (var k = dim.i_from; k < dim.i_to; k++) {
-                for (var l = dim.j_from; l < dim.j_to; l++) {
-                    if (this.spriteMap[k][l] != undefined) {
-                        macroblock_context.drawImage(this.spriteMap[k][l].ground, x, y);
-                        if (GameMap.DEBUG_DRAW) {
-                            macroblock_context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), x, y);
-                            macroblock_context.fillText(k + "," + l, x + 3, y + 15);
-                        }
-                        x += this.sloader.getSpriteByName("grass").w;
-                    }
-                }
-                x = 0;
-                y += this.sloader.getSpriteByName("grass").h;
-            }
-            
-            if (GameMap.DEBUG_DRAW) {
-                macroblock_context.beginPath();
-                macroblock_context.moveTo(0, 0);
-                macroblock_context.lineTo(MACROBLOCK_W * CELL_W - 1, 0);
-                macroblock_context.lineTo(MACROBLOCK_W * CELL_W - 1, MACROBLOCK_H * CELL_H - 1);
-                macroblock_context.lineTo(0, MACROBLOCK_H * CELL_H - 1);
-                macroblock_context.lineTo(0, 0);
-                macroblock_context.closePath();
-                macroblock_context.lineWidth = 1;
-                macroblock_context.strokeStyle = "blue";
-                macroblock_context.stroke();
+    // Кеш строится только после загрузки текстур. Иначе drawImage оставляет
+    // пустые блоки, которые не обновляются после появления изображения.
+    this.macromap = null;
+    this.buildMacroMap = function() {
+        var grass = this.sloader.getSpriteByName("grass").getImage();
+        if (!grass.complete || grass.naturalWidth === 0) {
+            return false;
+        }
+        if (GameMap.DEBUG_DRAW) {
+            var border = this.sloader.getSpriteByName("grass_border").getImage();
+            if (!border.complete || border.naturalWidth === 0) {
+                return false;
             }
         }
-    }
+
+        var i, j;
+        var MACROBLOCK_W = 20;
+        var MACROBLOCK_H = 20;
+        var macromap_h = Math.ceil(this.h / MACROBLOCK_H);
+        var macromap_w = Math.ceil(this.w / MACROBLOCK_W);
+        this.macromap = [];
+        var macromap = this.macromap;
+        var macroblock_context;
+        var dim = {j_from: null, j_to: null, i_from: null, i_to: null};
+        for (i = 0; i < macromap_h; i++) {
+            macromap[i] = [];
+            for (j = 0; j < macromap_w; j++) {
+                macromap[i][j] = document.createElement('canvas');
+                macromap[i][j].width = MACROBLOCK_W * CELL_W;
+                macromap[i][j].height = MACROBLOCK_H * CELL_H;
+                macroblock_context = macromap[i][j].getContext("2d");
+
+                dim.j_from = j * MACROBLOCK_W;
+                dim.j_to = Math.min(dim.j_from + MACROBLOCK_W, this.w);
+                dim.i_from = i * MACROBLOCK_H;
+                dim.i_to = Math.min(dim.i_from + MACROBLOCK_H, this.h);
+
+                var x = 0;
+                var y = 0;
+                for (var k = dim.i_from; k < dim.i_to; k++) {
+                    for (var l = dim.j_from; l < dim.j_to; l++) {
+                        if (this.spriteMap[k][l] != undefined) {
+                            macroblock_context.drawImage(this.spriteMap[k][l].ground, x, y);
+                            if (GameMap.DEBUG_DRAW) {
+                                macroblock_context.drawImage(this.sloader.getSpriteByName("grass_border").getImage(), x, y);
+                                macroblock_context.fillText(k + "," + l, x + 3, y + 15);
+                            }
+                            x += this.sloader.getSpriteByName("grass").w;
+                        }
+                    }
+                    x = 0;
+                    y += this.sloader.getSpriteByName("grass").h;
+                }
+
+                if (GameMap.DEBUG_DRAW) {
+                    macroblock_context.beginPath();
+                    macroblock_context.moveTo(0, 0);
+                    macroblock_context.lineTo(MACROBLOCK_W * CELL_W - 1, 0);
+                    macroblock_context.lineTo(MACROBLOCK_W * CELL_W - 1, MACROBLOCK_H * CELL_H - 1);
+                    macroblock_context.lineTo(0, MACROBLOCK_H * CELL_H - 1);
+                    macroblock_context.lineTo(0, 0);
+                    macroblock_context.closePath();
+                    macroblock_context.lineWidth = 1;
+                    macroblock_context.strokeStyle = "blue";
+                    macroblock_context.stroke();
+                }
+            }
+        }
+
+        return true;
+    };
 
     /**
      * Метод рисования карты.
@@ -104,6 +123,10 @@ function GameMap(width, height) {
         if (camera == undefined || camera == null) {
             console.error("У карты не установлена камера! Карта не может быть отображена.")
             return
+        }
+
+        if (this.macromap === null && !this.buildMacroMap()) {
+            return;
         }
 
         // Вычислим, какие клетки карты помещаются на экран при текущем

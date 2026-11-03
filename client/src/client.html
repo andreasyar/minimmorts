@@ -450,6 +450,17 @@ Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
 <input type="checkbox" id="toggleCamFollow" onclick="toggleCamFollow();">
 <b>Слежение за юнитами</b> (камера движется вслед за выделенными юнитами)<br>
 
+<div id="controls_help">
+    <p><b>Управление</b></p>
+    <ul>
+        <li><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> — перемещение камеры, когда она не следует за юнитом.</li>
+        <li><kbd>F5</kbd> — обновление страницы с выходом из игры; затем нужно подключиться заново.</li>
+        <li>Левая кнопка мыши — выделение своих юнитов кликом или рамкой.</li>
+        <li>Правая кнопка мыши — отправить выделенных юнитов в указанную точку; при клике по другому юниту — следовать за ним.</li>
+        <li>Курсор у края игрового поля — прокрутка карты при выключенном слежении.</li>
+    </ul>
+</div>
+
 <script type="text/javascript">
 document.body.onload = function(e) {
     if (/chrome/.test(navigator.userAgent.toLowerCase())) {
