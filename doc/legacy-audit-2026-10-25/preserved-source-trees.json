@@ -1,0 +1,72 @@
+[
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/no-lag-compenstation",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/no-lag-compenstation",
+    "project": "minimmorts",
+    "files": 3187,
+    "bytes": 51783544
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/minimmorts-lag-compenstation",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/minimmorts-lag-compenstation",
+    "project": "minimmorts",
+    "files": 3070,
+    "bytes": 49136218
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-no-lag-compenstation",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-no-lag-compenstation",
+    "project": "minimmorts",
+    "files": 3185,
+    "bytes": 51793778
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-lag-compenstation",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-lag-compenstation",
+    "project": "minimmorts",
+    "files": 3068,
+    "bytes": 49146452
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-html5-client",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-html5-client",
+    "project": "minimmorts",
+    "files": 68,
+    "bytes": 249171
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts",
+    "project": "minimmorts",
+    "files": 3263,
+    "bytes": 54025280
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-trunk",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-trunk",
+    "project": "minimmorts",
+    "files": 162,
+    "bytes": 831998
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/legacy-snapshots/GAMES-AND-KOTOBA/minimmorts",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/legacy-snapshots/GAMES-AND-KOTOBA/minimmorts",
+    "project": "minimmorts",
+    "files": 3065,
+    "bytes": 48812149
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/minimmorts",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/minimmorts",
+    "project": "minimmorts",
+    "files": 6330,
+    "bytes": 102822075
+  },
+  {
+    "source": "/run/media/andrey/b0c92dd1-5027-433e-b91b-c5790e29349d/andrey/Backup/Backup/src/minimmorts-trunk",
+    "destination": "/home/andrey/src/minimmorts-legacy/archive-findings-2026-10-25/snapshots/src/minimmorts-trunk",
+    "project": "minimmorts",
+    "files": 164,
+    "bytes": 820740
+  }
+]

@@ -1,0 +1,11 @@
+--- Git blob 5890573991d48780247bc85753a32971c5a1e181
++++ standalone HTML5/client.html
+@@ -384,7 +384,7 @@
+ <div id="login_form">
+ Login: <input type="text" id="login" value="test"><br>
+ Password: <input type="password" id="password" value="test"><br>
+-Server: <input type="text" id="host" value="ws://localhost:8015/"><br>
++Server: <input type="text" id="host" value="ws://193.233.51.51:8015/"><br>
+ <input type="button" id="connect_button" value="Connect" onclick="connect(); return false;">
+ </div>
+ 

@@ -1,0 +1,10 @@
+{
+  "status": "verified",
+  "verified_at_utc": "2026-10-25T20:37:29.263723+00:00",
+  "source_and_destination_sha256_match": true,
+  "source_tree_membership_match": true,
+  "preserved_files_or_symlinks": 25565,
+  "candidate_source_trees": 10,
+  "all_candidate_source_trees": 21,
+  "source_trees_not_deleted": true
+}

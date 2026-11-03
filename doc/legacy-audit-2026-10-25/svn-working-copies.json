@@ -1,0 +1,148 @@
+[
+  {
+    "root": "src/no-lag-compenstation",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      68,
+      69
+    ],
+    "modifications": []
+  },
+  {
+    "root": "src/minimmorts-lag-compenstation",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      58,
+      58
+    ],
+    "modifications": [
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.properties",
+        "size": 154,
+        "base_size": 160
+      }
+    ]
+  },
+  {
+    "root": "src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-no-lag-compenstation",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      68,
+      69
+    ],
+    "modifications": []
+  },
+  {
+    "root": "src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-lag-compenstation",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      58,
+      58
+    ],
+    "modifications": [
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.properties",
+        "size": 154,
+        "base_size": 160
+      }
+    ]
+  },
+  {
+    "root": "src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      57,
+      57
+    ],
+    "modifications": [
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.xml",
+        "size": 403,
+        "base_size": 207
+      },
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.properties",
+        "size": 154,
+        "base_size": 160
+      }
+    ]
+  },
+  {
+    "root": "src/legacy-snapshots/GAMES-AND-KOTOBA/2/minimmorts-trunk",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      53,
+      55
+    ],
+    "modifications": []
+  },
+  {
+    "root": "src/minimmorts",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      57,
+      57
+    ],
+    "modifications": [
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.xml",
+        "size": 403,
+        "base_size": 207
+      },
+      {
+        "path": "server/NetBeans-7.1.2 project/nbproject/private/private.properties",
+        "size": 154,
+        "base_size": 160
+      }
+    ]
+  },
+  {
+    "root": "src/minimmorts-trunk",
+    "repos": [
+      [
+        "https://minimmorts.googlecode.com/svn",
+        "6da7ee3a-1243-9685-0872-0c9659728ac0"
+      ]
+    ],
+    "revision_range": [
+      53,
+      55
+    ],
+    "modifications": []
+  }
+]
